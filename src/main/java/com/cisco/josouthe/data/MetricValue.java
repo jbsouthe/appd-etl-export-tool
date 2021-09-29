@@ -1,7 +1,7 @@
 package com.cisco.josouthe.data;
 
 public class MetricValue {
-    Long startTimeInMillis, occurrences, current, min, max, count, sum, value;
-    Boolean useRange;
-    Double standardDeviation;
+    long startTimeInMillis, occurrences, current, min, max, count, sum, value;
+    boolean useRange;
+    double standardDeviation;
 }
