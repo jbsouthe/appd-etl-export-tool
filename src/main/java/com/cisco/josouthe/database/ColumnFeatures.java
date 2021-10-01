@@ -13,7 +13,7 @@ public class ColumnFeatures implements Cloneable {
     }
     public ColumnFeatures( String name, String isNullable, String typeAndSizeString ) {
         this.name = name.toLowerCase();
-        if( isNullable != null && isNullable.toLowerCase().equals("not null") ) this.isNull=true;
+        if( isNullable != null && isNullable.toLowerCase().equals("not null") ) this.isNull=false;
         if( typeAndSizeString.contains("(") ) { //has a size
             Pair<String,Integer> typeAndSize = Utility.parseTypeAndSizeString(typeAndSizeString);
             this.type = typeAndSize.first.toLowerCase();

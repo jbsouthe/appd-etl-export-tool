@@ -26,9 +26,9 @@ public class Database {
         metricDataDatabaseColumns.put("metricname", new ColumnFeatures("metricName", "varchar2", 200, false));
         metricDataDatabaseColumns.put("metricpath", new ColumnFeatures("metricPath", "varchar2", 200, false));
         metricDataDatabaseColumns.put("frequency", new ColumnFeatures("frequency", "varchar2", 50, false));
-        metricDataDatabaseColumns.put("userange", new ColumnFeatures("userange", "number", -1, false));
+        metricDataDatabaseColumns.put("userange", new ColumnFeatures("userange", "number", 22, false));
         for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value", "standardDeviation"})
-            metricDataDatabaseColumns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "number", -1, false));
+            metricDataDatabaseColumns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "number", 22, false));
 
         analyticsDataDatabaseColumns = new HashMap<>();
         logger.info("Testing Database connection returned: "+ isDatabaseAvailable());
@@ -247,18 +247,32 @@ public class Database {
         Connection conn = null;
         try{
             conn = DriverManager.getConnection( this.connectionString, this.user, this.password);
-            String query = String.format("describe '%s'", tableName);
+            String query = String.format("select sys.all_tab_columns.column_name, sys.all_tab_columns.data_type, sys.all_tab_columns.data_length, sys.all_tab_columns.nullable\n" +
+                    "from sys.all_tab_columns\n" +
+                    "         left join sys.all_ind_columns\n" +
+                    "                   on sys.all_ind_columns.index_owner = sys.all_tab_columns.owner\n" +
+                    "                       and sys.all_ind_columns.table_name = sys.all_tab_columns.table_name\n" +
+                    "                       and sys.all_ind_columns.column_name = sys.all_tab_columns.column_name\n" +
+                    "         left join sys.all_indexes\n" +
+                    "                   on sys.all_indexes.owner = sys.all_tab_columns.owner\n" +
+                    "                       and sys.all_indexes.table_name = sys.all_tab_columns.table_name\n" +
+                    "                       and sys.all_indexes.index_name = sys.all_ind_columns.index_name\n" +
+                    "                       and sys.all_indexes.index_type = 'NORMAL'\n" +
+                    "                       and sys.all_indexes.status = 'VALID'\n" +
+                    "where lower(sys.all_tab_columns.table_name) like lower('%s')\n" +
+                    "order by sys.all_tab_columns.column_id", tableName);
             Statement statement = conn.createStatement();
             ResultSet resultSet = statement.executeQuery(query);
             while( resultSet.next() ) {
-                String columnName = resultSet.getString(0);
-                String columnNullable = resultSet.getString(1);
-                String columnTypeSize = resultSet.getString(2);
-                ColumnFeatures columnFeatures = new ColumnFeatures(columnName, columnNullable, columnTypeSize);
+                String columnName = resultSet.getString(1);
+                String columnType = resultSet.getString(2);
+                int columnSize = resultSet.getInt(3);
+                String columnNullable = resultSet.getString(4);
+                ColumnFeatures columnFeatures = new ColumnFeatures(columnName, columnType, columnSize, ("N".equals(columnNullable) ? false : true));
                 columns.put(columnFeatures.name,columnFeatures);
             }
         } catch (Exception exception) {
-            logger.error("Error decribing table %s, Exception: %s", tableName, exception.toString());
+            logger.error("Error describing table %s, Exception: %s", tableName, exception.toString());
         } finally {
             if( conn != null ) {
                 try {
@@ -273,11 +287,11 @@ public class Database {
         Connection conn = null;
         try{
             conn = DriverManager.getConnection( this.connectionString, this.user, this.password);
-            String query = String.format("select table_name from user_tables where table_name='%s'", table);
+            String query = String.format("select table_name from all_tables where lower(table_name) like lower('%s')", table);
             Statement statement = conn.createStatement();
             ResultSet resultSet = statement.executeQuery(query);
             if( resultSet.next() ) {
-                String table_name = resultSet.getString(0);
+                String table_name = resultSet.getString(1);
                 logger.debug("doesTableExist(%s): Yes",table);
                 return true;
             } else {
