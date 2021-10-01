@@ -70,7 +70,7 @@ public class Controller {
 
         logger.trace("HttpClient created");
 
-        HttpPost request = new HttpPost(url.toString()+"controller/api/oauth/access_token");
+        HttpPost request = new HttpPost(url.toString()+"/controller/api/oauth/access_token");
         //request.addHeader(HttpHeaders.CONTENT_TYPE,"application/vnd.appd.cntrl+protobuf;v=1");
         ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
         postParameters.add( new BasicNameValuePair("grant_type","client_credentials"));
@@ -162,9 +162,9 @@ public class Controller {
     public TreeNode[] getApplicationMetricFolders(Application application, String path) {
         HttpGet request = null;
         if( "".equals(path)) {
-            request = new HttpGet(String.format("%scontroller/rest/applications/%s/metrics?output=JSON", this.url.toString(), Utility.encode(application.name)));
+            request = new HttpGet(String.format("%s/controller/rest/applications/%s/metrics?output=JSON", this.url.toString(), Utility.encode(application.name)));
         } else {
-            request = new HttpGet(String.format("%scontroller/rest/applications/%s/metrics?metric-path=%s&output=JSON", this.url.toString(), Utility.encode(application.name), Utility.encode(path)));
+            request = new HttpGet(String.format("%s/controller/rest/applications/%s/metrics?metric-path=%s&output=JSON", this.url.toString(), Utility.encode(application.name), Utility.encode(path)));
         }
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.debug("HTTP Method: %s",request);
