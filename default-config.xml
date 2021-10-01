@@ -9,25 +9,38 @@
     <!-- Only one database can be specified, and one must be specified. It is assumed the correct database driver is loaded in the classpath,
     and as of today, only oracle is provided and assumed. To add other database vendor support, we must ensure SQL compatibility and provide
     a list of reserved words so the database table can be created and verified
+
+    The user must have permissions to create and alter the table specified, since it will be fixed if something is missing or the wrong size
+    The DefaultTable must follow oracles rules for table names:
+    An acceptable Oracle name must:
+
+        Not be a reserved keyword. You cannot, for example, name your table TABLE or PROCEDURE or VARCHAR2.
+        Be no longer than 30 characters.
+        Begin with an alphabetical character. You can have numbers and certain special characters in the name, but the first character must be an alpha character.
+        Contain only alphabetical characters, numbers, or one of the following special characters: # $ _
+
     -->
     <TargetDB>
         <ConnectionString>jdbc:oracle:thin:@localhost:1521:orcl</ConnectionString>
-        <User>admin</User>
-        <Password>6hIUw!u01</Password>
+        <User>username</User>
+        <Password>password</Password>
         <DefaultTable>AppDynamics_DefaultTable</DefaultTable>
     </TargetDB>
     <!--multiple controller sections can be defined, and at least one controller and application must be configured, or the app will exit-->
     <Controller>
         <URL>https://southerland-test.saas.appdynamics.com/</URL>
         <ClientID>ETLClient@southerland-test</ClientID>
-        <ClientSecret>869b6e71-230c-4e6f-918d-6713fb73b3ad</ClientSecret>
+        <ClientSecret>the generated client secret</ClientSecret>
         <Application getAllAvailableMetrics="true">
             <Name>Agent Proxy</Name>
             <Defaults>
                 <TimeRangeType>BEFORE_NOW</TimeRangeType>
                 <DurationInMins>60</DurationInMins>
+                <DisableDataRollup>true</DisableDataRollup>
             </Defaults>
-           <!-- <Metric time-range-type="BEFORE_NOW" duration-in-mins="60">Business Transaction Performance|Business Transactions|ProxyTier|*|Average Response Time (ms)</Metric> -->
+           <!-- Metrics can be included manually, and wildcards are supported, the getAllAvailable metrics flag for the application must be false to specify individual metrics: 
+            <Metric time-range-type="BEFORE_NOW" duration-in-mins="60">Business Transaction Performance|Business Transactions|ProxyTier|*|Average Response Time (ms)</Metric> 
+            -->
         </Application>
     </Controller>
 </ETLTool>
