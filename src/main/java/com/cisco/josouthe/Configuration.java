@@ -1,6 +1,7 @@
 package com.cisco.josouthe;
 
 import com.cisco.josouthe.data.*;
+import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import org.apache.commons.digester3.Digester;
 import org.apache.logging.log4j.LogManager;

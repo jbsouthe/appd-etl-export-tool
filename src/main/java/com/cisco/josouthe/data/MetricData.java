@@ -26,7 +26,7 @@ public class MetricData {
     public String metricName, metricPath, frequency, hostname;
     public transient URL url;
     public List<MetricValue> metricValues;
-    public String targetTable;
+    public transient String targetTable = null;
     public String controllerHostname;
     public String applicationName;
 }

@@ -23,7 +23,7 @@ public class Scheduler {
             for( Controller controller : configuration.getControllerList() ) {
                 MetricData[] metricData = controller.getAllMetricsForAllApplications();
                 logger.info("Controller %s Collected %d Metrics for import into the Database", controller.hostname, metricData.length);
-                //configuration.getDatabase().importMetricData( metricData );
+                configuration.getDatabase().importMetricData( metricData );
             }
             if( configuration.getPropertyAsBoolean("scheduler-enabled", true) ) {
                 logger.info("Scheduler is enabled, so sleeping for %d minutes and running again", configuration.getPropertyAsLong("scheduler-pollIntervalMinutes", 60L));

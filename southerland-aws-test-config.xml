@@ -2,14 +2,12 @@
     <Scheduler enabled="false">
         <PollIntervalMinutes>60</PollIntervalMinutes>
     </Scheduler>
-<!--
     <TargetDB>
-        <ConnectionString>jdbc:oracle:thin:@etl-tool.cma3jmtv6ui6.us-east-1.rds.amazonaws.com:1521:orcl</ConnectionString>
+        <ConnectionString>jdbc:oracle:thin:@localhost:1521:orcl</ConnectionString>
         <User>admin</User>
         <Password>6hIUw!u01</Password>
-        <DefaultTable>AppDynamics-DefaultTable</DefaultTable>
+        <DefaultTable>AppDynamics_DefaultTable</DefaultTable>
     </TargetDB>
--->
     <Controller>
         <URL>https://southerland-test.saas.appdynamics.com/</URL>
         <ClientID>ETLClient@southerland-test</ClientID>

@@ -1,6 +1,6 @@
 package com.cisco.josouthe.data;
 
-import com.cisco.josouthe.util.Encoder;
+import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.codec.Charsets;
@@ -117,7 +117,7 @@ public class Controller {
     }
 
     public MetricData[] getMetricValue( Application application, ApplicationMetric metric ) {
-        return getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=%s&duration-in-mins=%s&output=JSON",this.url,Encoder.encode(application.name),Encoder.encode(metric.name),metric.timeRangeType,metric.durationInMins));
+        return getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=%s&duration-in-mins=%s&output=JSON",this.url, Utility.encode(application.name), Utility.encode(metric.name),metric.timeRangeType,metric.durationInMins));
     }
 
     public MetricData[] getMetricValue( String urlString ) {
@@ -161,9 +161,9 @@ public class Controller {
     public MetricOrFolder[] getApplicationMetricFolders(Application application, String path) {
         HttpGet request = null;
         if( "".equals(path)) {
-            request = new HttpGet(String.format("%scontroller/rest/applications/%s/metrics?output=JSON", this.url.toString(), Encoder.encode(application.name)));
+            request = new HttpGet(String.format("%scontroller/rest/applications/%s/metrics?output=JSON", this.url.toString(), Utility.encode(application.name)));
         } else {
-            request = new HttpGet(String.format("%scontroller/rest/applications/%s/metrics?metric-path=%s&output=JSON", this.url.toString(), Encoder.encode(application.name), Encoder.encode(path)));
+            request = new HttpGet(String.format("%scontroller/rest/applications/%s/metrics?metric-path=%s&output=JSON", this.url.toString(), Utility.encode(application.name), Utility.encode(path)));
         }
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.debug("HTTP Method: %s",request);
