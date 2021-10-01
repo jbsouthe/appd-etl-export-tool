@@ -28,7 +28,7 @@ public class Application {
             throw new InvalidConfigurationException("getAllAvailableMetrics is false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
         }
         //TODO validate the application exists in the controller, we have access to it, and populate metrics if get all availablle metric is set
-        MetricOrFolder[] folders = controller.getApplicationMetricFolders(this, "");
+        TreeNode[] folders = controller.getApplicationMetricFolders(this, "");
         logger.debug("Found %d folders we can go into", (folders == null ? "0" : folders.length));
         if( getAllAvailableMetrics ) {
             findMetrics( controller, folders, "");
@@ -37,9 +37,9 @@ public class Application {
     }
 
     private ArrayList<ApplicationMetric> metricsToAdd = new ArrayList<>();
-    private void findMetrics( Controller controller, MetricOrFolder[] somethings, String path) {
+    private void findMetrics(Controller controller, TreeNode[] somethings, String path) {
         if( somethings == null || somethings.length == 0 ) return;
-            for( MetricOrFolder something : somethings ) {
+            for( TreeNode something : somethings ) {
                 if( something.isFolder() ) {
                     if( !"".equals(path) ) path += "|";
                     path+=something.name;

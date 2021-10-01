@@ -158,7 +158,7 @@ public class Controller {
         return metricData;
     }
 
-    public MetricOrFolder[] getApplicationMetricFolders(Application application, String path) {
+    public TreeNode[] getApplicationMetricFolders(Application application, String path) {
         HttpGet request = null;
         if( "".equals(path)) {
             request = new HttpGet(String.format("%scontroller/rest/applications/%s/metrics?output=JSON", this.url.toString(), Utility.encode(application.name)));
@@ -193,7 +193,7 @@ public class Controller {
             return null;
         }
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return gson.fromJson(json, MetricOrFolder[].class);
+        return gson.fromJson(json, TreeNode[].class);
     }
 
     public MetricData[] getAllMetricsForAllApplications() {
