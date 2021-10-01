@@ -22,6 +22,9 @@ public class ETLTransferMain {
         } catch (SAXException e) {
             logger.fatal("XML Parser Error reading config file: %s Exception: %s", configFileName, e.getMessage());
             return;
+        } catch (Exception e) {
+            logger.fatal("A configuration exception was thrown that we can't handle, so we are quiting, Exception: %s",e);
+            return;
         }
 
         Scheduler scheduler = new Scheduler( config );

@@ -22,7 +22,7 @@ public class Application {
         this.metrics = metrics;
     }
 
-    public void validateConfiguration(Controller controller) throws Exception {
+    public void validateConfiguration(Controller controller) throws InvalidConfigurationException {
         if( !getAllAvailableMetrics && (metrics == null || metrics.length == 0)) {
             logger.warn("getAllAvailableMetrics is false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
             throw new InvalidConfigurationException("getAllAvailableMetrics is false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");

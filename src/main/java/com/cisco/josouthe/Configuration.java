@@ -3,16 +3,17 @@ package com.cisco.josouthe;
 import com.cisco.josouthe.data.*;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
+import com.cisco.josouthe.util.Utility;
 import org.apache.commons.digester3.Digester;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.xml.sax.SAXException;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 
 public class Configuration {
@@ -22,6 +23,9 @@ public class Configuration {
     private HashMap<String, Controller> controllerMap = null;
     private ArrayList<Application> applications = new ArrayList<>();;
     private ArrayList<ApplicationMetric> metrics = new ArrayList<>();;
+    private boolean definedScheduler = false;
+    private boolean definedController = false;
+    private boolean definedApplication = false;
 
     public String getProperty( String key ) {
         return getProperty(key, null);
@@ -40,7 +44,7 @@ public class Configuration {
     public Controller getController( String hostname ) { return controllerMap.get(hostname); }
     public Controller[] getControllerList() { return controllerMap.values().toArray(new Controller[0]); }
 
-    public Configuration( String configFileName) throws IOException, SAXException {
+    public Configuration( String configFileName) throws Exception {
         logger.info("Processing Config File: %s", configFileName);
         this.properties = new Properties();
         this.controllerMap = new HashMap<>();
@@ -78,26 +82,37 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/Application/Metric", 2);
 
         digester.parse( new File(configFileName) );
+        if( ! definedScheduler ) {
+            logger.warn("No scheduler defined in the config file, we are going to configure a basic one run scheduler for you");
+            setSchedulerProperties("false","");
+        }
+
         logger.info("Validating Configured Settings");
         for( Controller controller : getControllerList() ) {
+            definedController=true;
             logger.info("%s Authentication: %s",controller.hostname,controller.getBearerToken());
             for( Application application : controller.applications ){
                 try {
                     application.validateConfiguration(controller);
+                    definedApplication=true;
                     logger.info("%s %s is valid",controller.hostname,application.name);
-                } catch (Exception e) {
+                } catch (InvalidConfigurationException e) {
                     logger.info("%s %s is invalid, reason: ",controller.hostname,application.name,e);
                 }
             }
         }
+        if( ! definedController || ! definedApplication ) {
+            logger.warn("Config file doesn't have a controller or application configured? not one? we can't do much here");
+            throw new InvalidConfigurationException("Config file doesn't have a controller or application configured? not one? we can't do much here");
+        }
         if(database != null && database.isDatabaseAvailable()) {
             logger.info("Database is available");
         } else {
-            ///TODO
+            throw new InvalidConfigurationException("Database is not configured, available, or authetication information is incorrect. Something is wrong, giving up on this buddy");
         }
     }
 
-    public void addMetric( String timeRangeType, String durationInMins, String name ) throws Exception {
+    public void addMetric( String timeRangeType, String durationInMins, String name ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
             throw new InvalidConfigurationException("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
@@ -107,7 +122,7 @@ public class Configuration {
         logger.info("Added metric to list for collection: %s", name);
     }
 
-    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes) throws Exception {
+    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Application! Ensure Name is configured");
@@ -117,7 +132,7 @@ public class Configuration {
         metrics = new ArrayList<>();
     }
 
-    public void addController( String urlString, String clientID, String clientSecret) throws Exception {
+    public void addController( String urlString, String clientID, String clientSecret) throws InvalidConfigurationException {
         if( urlString == null || clientID == null || clientSecret == null ) {
             logger.warn("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
@@ -152,13 +167,40 @@ public class Configuration {
         this.properties.setProperty("scheduler-pollIntervalMinutes", pollIntervalMinutes);
     }
 
-    public void setTargetDBProperties( String connectionString, String user, String password, String defaultTable ) throws Exception {
+    public void setTargetDBProperties( String connectionString, String user, String password, String defaultTable ) throws InvalidConfigurationException {
         if( connectionString == null || user == null || password == null ) {
             logger.warn("No valid minimum config parameters for ETL Database! Ensure Connection String, User, and Password are configured");
-            throw new Exception("No valid minimum config parameters for ETL Database! Ensure Connection String, User, and Password are configured");
+            throw new InvalidConfigurationException("No valid minimum config parameters for ETL Database! Ensure Connection String, User, and Password are configured");
         }
         logger.debug("Setting Target DB: %s", connectionString);
-        if( ! "".equals(defaultTable) ) logger.debug("Default Table set to: %s", defaultTable);
-        this.database = new Database( connectionString, user, password, ( defaultTable == null ? "AppDynamics-DefaultTable" : defaultTable));
+        properties.setProperty("database-vendor", Utility.parseDatabaseVendor(connectionString));
+        if( ! "".equals(defaultTable) && isValidDatabaseTableName(defaultTable) ) logger.debug("Default Table set to: %s", defaultTable);
+        this.database = new Database( connectionString, user, password, ( defaultTable == null ? "AppDynamics_DefaultTable" : defaultTable));
+    }
+
+    private List<String> _tableNameForbiddenWords = null;
+    private boolean isValidDatabaseTableName( String tableName ) throws InvalidConfigurationException {
+        if(_tableNameForbiddenWords == null) loadTableNameInvalidWords();
+        if( tableName.length() > 30 ) throw new InvalidConfigurationException(String.format("Database table name longer than max 30 characters, by like %d characters. change this name: %s",(tableName.length()-30),tableName));
+        if(! Character.isAlphabetic(tableName.charAt(0))) throw new InvalidConfigurationException(String.format("Database table name must begin with an alphabetic character, not this thing '%s' change this table: %s",tableName.charAt(0),tableName));
+        long countSpecialCharacters = tableName.chars().filter(ch -> ch == '#' || ch == '$' || ch == '_').count();
+        long countInvalidCharacters = tableName.chars().filter(ch -> ch != '#' && ch != '$' && ch != '_' && ! Character.isAlphabetic(ch) && ! Character.isDigit(ch)).count();
+        if( countSpecialCharacters > 1 || countInvalidCharacters > 0 ) throw new InvalidConfigurationException(String.format("Only one of the special characters ($, #, or _) is allowed and the rest must be alphanumeric only, not my rules, (shrug), change this table name: %s",tableName));
+        if( _tableNameForbiddenWords.contains(tableName.toLowerCase()) ) throw new InvalidConfigurationException(String.format("The table name is a reserved word for this database vendor %s, please picking something different than: %s",getProperty("database-vendor", "OOPS, no vendor??"), tableName));
+        return true; //if we made it this far without an exception, we are good to go
+    }
+
+    private void loadTableNameInvalidWords() throws InvalidConfigurationException {
+        String filename = getProperty("database-vendor").toLowerCase() + "-forbidden-words.txt";
+        logger.debug("Loading file: %s",filename);
+        try (BufferedReader reader = new BufferedReader( new InputStreamReader(getClass().getClassLoader().getResourceAsStream(filename)))) {
+            _tableNameForbiddenWords = new ArrayList<>();
+            String word;
+            while ( (word = reader.readLine()) != null )
+                _tableNameForbiddenWords.add(word.toLowerCase());
+        } catch (IOException e) {
+            logger.warn("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s Exception: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!"), e.getMessage());
+            throw new InvalidConfigurationException(String.format("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!")));
+        }
     }
 }

@@ -18,4 +18,11 @@ public class Utility {
         }
         return null;
     }
+
+    public static String parseDatabaseVendor( String connectionString) {
+        Pattern pattern = Pattern.compile("jdbc:(\\S):.*");
+        Matcher matcher = pattern.matcher(connectionString);
+        if(matcher.find()) return matcher.group(0);
+        return "oracle";
+    }
 }
