@@ -38,6 +38,7 @@ public class Controller {
     public Application[] applications = null;
 
     public Controller( String urlString, String clientId, String clientSecret, Application[] applications ) throws MalformedURLException {
+        if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
         this.url = new URL(urlString);
         this.hostname = this.url.getHost();
         this.clientId = clientId;
