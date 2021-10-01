@@ -118,7 +118,10 @@ public class Controller {
     }
 
     public MetricData[] getMetricValue( Application application, ApplicationMetric metric ) {
-        return getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=%s&duration-in-mins=%s&output=JSON",this.url, Utility.encode(application.name), Utility.encode(metric.name),metric.timeRangeType,metric.durationInMins));
+        return getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=%s&duration-in-mins=%s&output=JSON&rollup=%s",
+                this.url, Utility.encode(application.name), Utility.encode(metric.name),metric.timeRangeType,metric.durationInMins,
+                (metric.disableDataRollup.toLowerCase().equals("true") ?"false":"true")
+        ));
     }
 
     public MetricData[] getMetricValue( String urlString ) {

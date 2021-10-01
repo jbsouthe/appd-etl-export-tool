@@ -12,13 +12,15 @@ public class Application {
     public String name;
     public String defaultTimeRangeType = "BEFORE_NOW";
     public String defaultDurationInMinutes = "60";
+    public String defaultDisableDataRollup = "false";
     public ApplicationMetric[] metrics = null;
 
-    public Application(String getAllAvailableMetrics, String name, String defaultTimeRangeType, String defaultDurationInMinutes, ApplicationMetric[] metrics) {
+    public Application(String getAllAvailableMetrics, String name, String defaultTimeRangeType, String defaultDurationInMinutes, String defaultDisableDataRollup, ApplicationMetric[] metrics) {
         if( getAllAvailableMetrics != null ) this.getAllAvailableMetrics= Boolean.parseBoolean(getAllAvailableMetrics);
         this.name = name;
         if( defaultTimeRangeType != null ) this.defaultTimeRangeType = defaultTimeRangeType;
         if( defaultDurationInMinutes != null ) this.defaultDurationInMinutes = defaultDurationInMinutes;
+        if( defaultDisableDataRollup != null ) this.defaultDisableDataRollup = defaultDisableDataRollup;
         this.metrics = metrics;
     }
 
@@ -46,7 +48,7 @@ public class Application {
                     findMetrics( controller, controller.getApplicationMetricFolders(this, path), path);
                 } else {
                     logger.debug("Adding metric: %s|%s",path,something.name);
-                    metricsToAdd.add( new ApplicationMetric(defaultTimeRangeType, defaultDurationInMinutes, path+"|"+something.name));
+                    metricsToAdd.add( new ApplicationMetric(defaultTimeRangeType, defaultDurationInMinutes, defaultDisableDataRollup, path+"|"+something.name));
                 }
             }
     }

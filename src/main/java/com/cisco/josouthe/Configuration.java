@@ -69,17 +69,20 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/ClientSecret", 2);
 
         //application config, within a controller
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 4);
+        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 5);
         digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
         digester.addCallParam("ETLTool/Controller/Application/Name", 1);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/TimeRangeType", 2);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/DurationInMins", 3);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 4);
+
 
         //metric config, within an application
-        digester.addCallMethod( "ETLTool/Controller/Application/Metric", "addMetric", 3);
+        digester.addCallMethod( "ETLTool/Controller/Application/Metric", "addMetric", 4);
         digester.addCallParam("ETLTool/Controller/Application/Metric", 0, "time-range-type");
         digester.addCallParam("ETLTool/Controller/Application/Metric", 1, "duration-in-mins");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 2);
+        digester.addCallParam("ETLTool/Controller/Application/Metric", 2, "disable-data-rollup");
+        digester.addCallParam("ETLTool/Controller/Application/Metric", 3);
 
         digester.parse( new File(configFileName) );
         if( ! definedScheduler ) {
@@ -112,22 +115,22 @@ public class Configuration {
         }
     }
 
-    public void addMetric( String timeRangeType, String durationInMins, String name ) throws InvalidConfigurationException {
+    public void addMetric( String timeRangeType, String durationInMins, String disableDataRollup, String name ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
             throw new InvalidConfigurationException("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
         }
-        ApplicationMetric metric = new ApplicationMetric( timeRangeType, durationInMins, name);
+        ApplicationMetric metric = new ApplicationMetric( timeRangeType, durationInMins, disableDataRollup, name);
         metrics.add(metric);
         logger.info("Added metric to list for collection: %s", name);
     }
 
-    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes) throws InvalidConfigurationException {
+    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes, String defaultDisableAutoRollup ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Application! Ensure Name is configured");
         }
-        Application application = new Application( getAllAvailableMetrics, name, defaultTimeRangeType, defaultDurationInMinutes, metrics.toArray( new ApplicationMetric[0] ));
+        Application application = new Application( getAllAvailableMetrics, name, defaultTimeRangeType, defaultDurationInMinutes, defaultDisableAutoRollup, metrics.toArray( new ApplicationMetric[0] ));
         applications.add(application);
         metrics = new ArrayList<>();
     }
