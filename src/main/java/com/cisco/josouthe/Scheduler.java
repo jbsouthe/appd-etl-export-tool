@@ -22,7 +22,10 @@ public class Scheduler {
         while( keepRunning ) {
             for( Controller controller : configuration.getControllerList() ) {
                 MetricData[] metricData = controller.getAllMetricsForAllApplications();
-                logger.info("Controller %s Collected %d Metrics for import into the Database", controller.hostname, metricData.length);
+                int countOfMetrics = 0;
+                for( MetricData metric : metricData )
+                    countOfMetrics += metric.metricValues.size();
+                logger.info("Controller %s Collected %d Metrics for import into the Database", controller.hostname, countOfMetrics);
                 configuration.getDatabase().importMetricData( metricData );
             }
             if( configuration.getPropertyAsBoolean("scheduler-enabled", true) ) {

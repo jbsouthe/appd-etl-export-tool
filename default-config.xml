@@ -24,7 +24,7 @@
         <ConnectionString>jdbc:oracle:thin:@localhost:1521:orcl</ConnectionString>
         <User>username</User>
         <Password>password</Password>
-        <DefaultTable>AppDynamics_DefaultTable</DefaultTable>
+        <DefaultMetricTable>AppDynamics_DefaultTable</DefaultMetricTable>
     </TargetDB>
     <!--multiple controller sections can be defined, and at least one controller and application must be configured, or the app will exit-->
     <Controller>

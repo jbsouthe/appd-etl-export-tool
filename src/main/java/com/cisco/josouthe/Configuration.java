@@ -56,11 +56,14 @@ public class Configuration {
         digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1 );
 
         //database configuration section
-        digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 4);
+        digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 6);
         digester.addCallParam("ETLTool/TargetDB/ConnectionString", 0);
         digester.addCallParam("ETLTool/TargetDB/User", 1);
         digester.addCallParam("ETLTool/TargetDB/Password", 2);
-        digester.addCallParam("ETLTool/TargetDB/DefaultTable", 3);
+        digester.addCallParam("ETLTool/TargetDB/DefaultMetricTable", 3);
+        digester.addCallParam("ETLTool/TargetDB/ControlTable", 4);
+        digester.addCallParam("ETLTool/TargetDB/DefaultEventTable", 5);
+
 
         //controller section, which centralizes authentication config
         digester.addCallMethod("ETLTool/Controller", "addController", 3);
@@ -69,12 +72,14 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/ClientSecret", 2);
 
         //application config, within a controller
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 5);
+        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 7);
         digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
         digester.addCallParam("ETLTool/Controller/Application/Name", 1);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/TimeRangeType", 2);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/DurationInMins", 3);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 4);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", 5);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", 6);
 
 
         //metric config, within an application
@@ -125,12 +130,14 @@ public class Configuration {
         logger.info("Added metric to list for collection: %s", name);
     }
 
-    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes, String defaultDisableAutoRollup ) throws InvalidConfigurationException {
+    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes, String defaultDisableAutoRollup, String metricTable, String eventTable ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Application! Ensure Name is configured");
         }
-        Application application = new Application( getAllAvailableMetrics, name, defaultTimeRangeType, defaultDurationInMinutes, defaultDisableAutoRollup, metrics.toArray( new ApplicationMetric[0] ));
+        if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
+        if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
+        Application application = new Application( getAllAvailableMetrics, name, defaultTimeRangeType, defaultDurationInMinutes, defaultDisableAutoRollup, metricTable, eventTable, metrics.toArray( new ApplicationMetric[0] ));
         applications.add(application);
         metrics = new ArrayList<>();
     }
@@ -170,19 +177,25 @@ public class Configuration {
         this.properties.setProperty("scheduler-pollIntervalMinutes", pollIntervalMinutes);
     }
 
-    public void setTargetDBProperties( String connectionString, String user, String password, String defaultTable ) throws InvalidConfigurationException {
+    public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable ) throws InvalidConfigurationException {
         if( connectionString == null || user == null || password == null ) {
             logger.warn("No valid minimum config parameters for ETL Database! Ensure Connection String, User, and Password are configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for ETL Database! Ensure Connection String, User, and Password are configured");
         }
         logger.debug("Setting Target DB: %s", connectionString);
         properties.setProperty("database-vendor", Utility.parseDatabaseVendor(connectionString));
-        if( ! "".equals(defaultTable) && isValidDatabaseTableName(defaultTable) ) logger.debug("Default Table set to: %s", defaultTable);
-        this.database = new Database( connectionString, user, password, ( defaultTable == null ? "AppDynamics_DefaultTable" : defaultTable));
+        if( metricTable == null ) metricTable = "AppDynamics_MetricTable";
+        if( controlTable == null ) controlTable = "AppDynamics_SchedulerControl";
+        if( eventTable == null ) eventTable = "AppDynamics_EventTable";
+        if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Default Metric Table set to: %s", metricTable);
+        if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Default Event Table set to: %s", eventTable);
+        if( ! "".equals(controlTable) && isValidDatabaseTableName(controlTable) ) logger.debug("Run Control Table set to: %s", controlTable);
+        this.database = new Database( connectionString, user, password, metricTable, controlTable, eventTable);
     }
 
     private List<String> _tableNameForbiddenWords = null;
     private boolean isValidDatabaseTableName( String tableName ) throws InvalidConfigurationException {
+        if( tableName == null ) return false;
         if(_tableNameForbiddenWords == null) loadTableNameInvalidWords();
         if( tableName.length() > 30 ) throw new InvalidConfigurationException(String.format("Database table name longer than max 30 characters, by like %d characters. change this name: %s",(tableName.length()-30),tableName));
         if(! Character.isAlphabetic(tableName.charAt(0))) throw new InvalidConfigurationException(String.format("Database table name must begin with an alphabetic character, not this thing '%s' change this table: %s",tableName.charAt(0),tableName));

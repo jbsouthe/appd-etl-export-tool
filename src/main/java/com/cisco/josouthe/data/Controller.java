@@ -27,6 +27,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Controller {
     private static final Logger logger = LogManager.getFormatterLogger();
@@ -118,10 +120,11 @@ public class Controller {
     }
 
     public MetricData[] getMetricValue( Application application, ApplicationMetric metric ) {
-        return getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=%s&duration-in-mins=%s&output=JSON&rollup=%s",
+        MetricData[] metrics = getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=%s&duration-in-mins=%s&output=JSON&rollup=%s",
                 this.url, Utility.encode(application.name), Utility.encode(metric.name),metric.timeRangeType,metric.durationInMins,
                 (metric.disableDataRollup.toLowerCase().equals("true") ?"false":"true")
         ));
+        return metrics;
     }
 
     public MetricData[] getMetricValue( String urlString ) {
@@ -163,12 +166,34 @@ public class Controller {
     }
 
     public TreeNode[] getApplicationMetricFolders(Application application, String path) {
-        HttpGet request = null;
+        String json = null;
         if( "".equals(path)) {
-            request = new HttpGet(String.format("%s/controller/rest/applications/%s/metrics?output=JSON", this.url.toString(), Utility.encode(application.name)));
+            json = getRequest(String.format("controller/rest/applications/%s/metrics?output=JSON", Utility.encode(application.name)));
         } else {
-            request = new HttpGet(String.format("%s/controller/rest/applications/%s/metrics?metric-path=%s&output=JSON", this.url.toString(), Utility.encode(application.name), Utility.encode(path)));
+            json = getRequest(String.format("controller/rest/applications/%s/metrics?metric-path=%s&output=JSON", Utility.encode(application.name), Utility.encode(path)));
         }
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        return gson.fromJson(json, TreeNode[].class);
+    }
+
+    public MetricData[] getAllMetricsForAllApplications() {
+        ArrayList<MetricData> metrics = new ArrayList<>();
+        for( Application application : this.applications ) {
+            for( ApplicationMetric applicationMetric : application.metrics ) {
+                for( MetricData metricData : getMetricValue( application, applicationMetric )) {
+                    metricData.controllerHostname = this.hostname;
+                    metricData.applicationName = application.name;
+                    metricData.targetTable = application.defaultMetricTableName;
+                    metrics.add(metricData);
+                }
+            }
+        }
+        return metrics.toArray( new MetricData[0] );
+    }
+
+    private String getRequest( String uri ) {
+        HttpGet request = new HttpGet(String.format("%s%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.debug("HTTP Method: %s",request);
         HttpClient client = HttpClientBuilder.create()
@@ -178,7 +203,7 @@ public class Controller {
             response = client.execute(request);
             logger.debug("Response Status Line: %s",response.getStatusLine());
         } catch (IOException e) {
-            logger.error("Exception in attempting to get metric list, Exception: %s",e.getMessage());
+            logger.error("Exception in attempting to get controller data, Exception: %s",e.getMessage());
             return null;
         }
         if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
@@ -196,22 +221,20 @@ public class Controller {
             logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
             return null;
         }
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return gson.fromJson(json, TreeNode[].class);
+        return json;
     }
 
-    public MetricData[] getAllMetricsForAllApplications() {
-        ArrayList<MetricData> metrics = new ArrayList<>();
-        for( Application application : this.applications ) {
-            for( ApplicationMetric applicationMetric : application.metrics ) {
-                for( MetricData metricData : getMetricValue( application, applicationMetric )) {
-                    metricData.controllerHostname = this.hostname;
-                    metricData.applicationName = application.name;
-                    metrics.add(metricData);
-                }
-            }
+    Map<String,Integer> _applicationIdMap = null;
+    public Application getApplication( String name ) {
+        if( _applicationIdMap == null ) { //go get em
+            String json = getRequest("controller/rest/applications?output=JSON");
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            Application[] apps = gson.fromJson(json, Application[].class);
+            _applicationIdMap = new HashMap<>();
+            for( Application app : apps )
+                _applicationIdMap.put(app.name, app.id);
         }
-        return metrics.toArray( new MetricData[0] );
+        return new Application(name, _applicationIdMap.get(name));
     }
 
     public static void main( String... args ) throws MalformedURLException {

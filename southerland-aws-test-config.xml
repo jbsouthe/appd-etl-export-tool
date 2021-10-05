@@ -6,7 +6,7 @@
         <ConnectionString>jdbc:oracle:thin:@localhost:1521:orcl</ConnectionString>
         <User>admin</User>
         <Password>6hIUw!u01</Password>
-        <DefaultTable>AppDynamics_DefaultTable</DefaultTable>
+        <DefaultMetricTable>AppDynamics_DefaultTable</DefaultMetricTable>
     </TargetDB>
     <Controller>
         <URL>https://southerland-test.saas.appdynamics.com/</URL>
@@ -18,6 +18,8 @@
                 <TimeRangeType>BEFORE_NOW</TimeRangeType>
                 <DurationInMins>60</DurationInMins>
                 <DisableDataRollup>true</DisableDataRollup>
+                <MetricTable>ProxyAppMetrics</MetricTable>
+                <EventTable>ProxyAppEvents</EventTable>
             </Defaults>
            <!-- <Metric time-range-type="BEFORE_NOW" duration-in-mins="60">Business Transaction Performance|Business Transactions|ProxyTier|*|Average Response Time (ms)</Metric> -->
         </Application>

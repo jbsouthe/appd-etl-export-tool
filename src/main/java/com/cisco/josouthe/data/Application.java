@@ -10,17 +10,27 @@ public class Application {
     private static final Logger logger = LogManager.getFormatterLogger();
     public boolean getAllAvailableMetrics = true;
     public String name;
+    public int id;
     public String defaultTimeRangeType = "BEFORE_NOW";
     public String defaultDurationInMinutes = "60";
     public String defaultDisableDataRollup = "false";
+    public String defaultMetricTableName = null;
+    public String defaultEventTableName = null;
     public ApplicationMetric[] metrics = null;
 
-    public Application(String getAllAvailableMetrics, String name, String defaultTimeRangeType, String defaultDurationInMinutes, String defaultDisableDataRollup, ApplicationMetric[] metrics) {
+    public Application( String name, int id ) {
+        this.name=name;
+        this.id=id;
+    }
+
+    public Application(String getAllAvailableMetrics, String name, String defaultTimeRangeType, String defaultDurationInMinutes, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, ApplicationMetric[] metrics) {
         if( getAllAvailableMetrics != null ) this.getAllAvailableMetrics= Boolean.parseBoolean(getAllAvailableMetrics);
         this.name = name;
         if( defaultTimeRangeType != null ) this.defaultTimeRangeType = defaultTimeRangeType;
         if( defaultDurationInMinutes != null ) this.defaultDurationInMinutes = defaultDurationInMinutes;
         if( defaultDisableDataRollup != null ) this.defaultDisableDataRollup = defaultDisableDataRollup;
+        if( defaultMetricTableName != null ) this.defaultMetricTableName = defaultMetricTableName;
+        if( defaultEventTableName != null ) this.defaultEventTableName = defaultEventTableName;
         this.metrics = metrics;
     }
 

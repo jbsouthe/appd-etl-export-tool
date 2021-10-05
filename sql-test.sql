@@ -39,3 +39,7 @@ from sys.all_tab_columns
                        and sys.all_indexes.status = 'VALID'
 where lower(sys.all_tab_columns.table_name) like lower('AppDynamics_DefaultTable')
 order by sys.all_tab_columns.column_id
+
+drop table AppDynamics_DefaultTable;
+
+select * from appdynamics_defaultTable;
