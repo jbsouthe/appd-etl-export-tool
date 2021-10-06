@@ -25,6 +25,7 @@ public class MetricTable extends Table {
         for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value", "standardDeviation"})
             columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "number", 22, false));
         columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "date", -1, false));
+        this.initTable();
     }
 
     public int insert(Object object) {

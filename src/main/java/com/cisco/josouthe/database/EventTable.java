@@ -26,6 +26,7 @@ public class EventTable extends Table{
         columns.put("triggeredEntityName", new ColumnFeatures("triggeredEntityName", "varchar2", 50, true));
         columns.put("triggeredEntityType", new ColumnFeatures("triggeredEntityType", "varchar2", 50, false));
         columns.put("eventTimestamp", new ColumnFeatures("eventTimestamp", "date", -1, false));
+        this.initTable();
     }
 
     @Override
