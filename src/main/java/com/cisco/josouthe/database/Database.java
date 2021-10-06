@@ -122,8 +122,7 @@ public class Database {
         String objectTypeName="UNKNOWN";
         //StringBuilder query = new StringBuilder(String.format("create table %s ( id serial NOT NULL, ",tableName));
         StringBuilder query = new StringBuilder(String.format("create table %s ( ",table.getName()));
-        if( table instanceof MetricTable ) {
-            objectTypeName="Metric Data";
+        if( table instanceof MetricTable || table instanceof EventTable ) {
             Iterator<ColumnFeatures> iterator = table.getColumns().values().iterator();
             while( iterator.hasNext() ) {
                 ColumnFeatures column = iterator.next();
@@ -143,7 +142,7 @@ public class Database {
             Statement statement = conn.createStatement();
             statement.executeUpdate(query.toString());
         } catch (SQLException exception) {
-            logger.error("Error creating new %s for %s data, SQL State: %s Exception: %s", table.getName(), objectTypeName, exception.getSQLState(), exception.toString());
+            logger.error("Error creating new %s for %s data, SQL State: %s Exception: %s", table.getName(), table.getType(), exception.getSQLState(), exception.toString());
         } finally {
             if( conn != null ) {
                 try {
@@ -155,6 +154,7 @@ public class Database {
 
     private void addMissingColumns(Table table) {
         Map<String,ColumnFeatures> columns = getMissingColumns(table);
+        if( columns == null ) return;
         for( ColumnFeatures column : columns.values() ) {
             if( column.isMissing ) alterTableToAddColumn( table, column);
             if( column.isWrongNullable || column.isWrongType ) logger.warn("We can't fix this problem with the table %s.%s, wrong nullable: %s, wrong type: %s is %s but should be", table.getName(), column.name, column.isWrongNullable, column.isWrongType, column.type, table.getColumns().get(column.name).type);
@@ -209,29 +209,27 @@ public class Database {
 
     private Map<String, ColumnFeatures> getMissingColumns(Table table) {
         Map<String,ColumnFeatures> columns = getTableColumns(table);
-        if( table instanceof MetricTable ) {
-            for( ColumnFeatures masterColumn : table.getColumns().values() ) {
-                ColumnFeatures existingColumn = columns.get(masterColumn.name);
-                if( existingColumn != null ) { //column exists, check all features
-                    boolean foundADifference=false;
-                    if( ! existingColumn.type.equals(masterColumn.type) ) {
-                        existingColumn.isWrongType=true;
-                        foundADifference=true;
-                    }
-                    if( existingColumn.size != masterColumn.size ) {
-                        existingColumn.isWrongSize=true;
-                        foundADifference=true;
-                    }
-                    if( existingColumn.isNull != masterColumn.isNull ) {
-                        existingColumn.isWrongNullable=true;
-                        foundADifference=true;
-                    }
-                    if( !foundADifference ) columns.remove(existingColumn.name);
-                } else { //column is missing entirely, mark for creation
-                    ColumnFeatures newColumn = masterColumn.clone();
-                    newColumn.isMissing=true;
-                    columns.put(newColumn.name, newColumn);
+        for( ColumnFeatures masterColumn : table.getColumns().values() ) {
+            ColumnFeatures existingColumn = columns.get(masterColumn.name);
+            if( existingColumn != null ) { //column exists, check all features
+                boolean foundADifference=false;
+                if( ! existingColumn.type.equals(masterColumn.type) ) {
+                    existingColumn.isWrongType=true;
+                    foundADifference=true;
                 }
+                if( existingColumn.size != masterColumn.size ) {
+                    existingColumn.isWrongSize=true;
+                    foundADifference=true;
+                }
+                if( existingColumn.isNull != masterColumn.isNull ) {
+                    existingColumn.isWrongNullable=true;
+                    foundADifference=true;
+                }
+                if( !foundADifference ) columns.remove(existingColumn.name);
+            } else { //column is missing entirely, mark for creation
+                ColumnFeatures newColumn = masterColumn.clone();
+                newColumn.isMissing=true;
+                columns.put(newColumn.name, newColumn);
             }
             return columns;
         }
