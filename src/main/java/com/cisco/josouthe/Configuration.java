@@ -141,11 +141,11 @@ public class Configuration {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Application! Ensure Name is configured");
         }
-        if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
-        if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
+        if( metricTable != null && isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
+        if( eventTable != null && isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
         Application application = new Application( getAllAvailableMetrics, name, defaultTimeRangeType, defaultDurationInMinutes, defaultDisableAutoRollup, metricTable, eventTable, getAllEvents, getAllHealthRuleViolations, metrics.toArray( new ApplicationMetric[0] ));
         application.setEventTypeList( getEventListForApplication(includeEventList, excludeEventList));
-        if( ! "".equals(eventSeverities) ) application.eventSeverities = eventSeverities;
+        if( eventSeverities != null ) application.eventSeverities = eventSeverities;
         applications.add(application);
         metrics = new ArrayList<>();
     }
@@ -232,12 +232,12 @@ public class Configuration {
     private String getEventListForApplication( String includeListString, String excludeListString) throws InvalidConfigurationException {
         if(_eventList == null) loadEventList();
         List<String> includeList=null, excludeList=null;
-        if( ! "".equals(includeListString) ) {
+        if( includeListString != null ) {
             includeList = new ArrayList<>();
             for( String event : includeListString.toUpperCase().split(","))
                 includeList.add(event);
         }
-        if( ! "".equals(excludeListString) ) {
+        if( excludeListString != null) {
             excludeList = new ArrayList<>();
             for( String event : excludeListString.toUpperCase().split(","))
                 excludeList.add(event);
