@@ -68,15 +68,30 @@ public class Database {
 
     public void importMetricData(MetricData[] metricData) {
         logger.trace("Beginning of import metric data method");
+        if( metricData == null || metricData.length == 0 ) {
+            logger.debug("Nothing to import, leaving quickly");
+            return;
+        }
         int cntStarted = 0;
         int cntFinished = 0;
+        int cntAverageCalc = 0;
+        long startTimeOverall = Utility.now();
+        long maxDurationTime = -1;
+        long minDurationTime = Long.MAX_VALUE;
         for( MetricData metric : metricData ) {
             if( "METRIC DATA NOT FOUND".equals(metric.metricName) ) continue;
             cntStarted+=metric.metricValues.size();
             MetricTable table = getMetricTable(metric.targetTable);
+            long startTimeTransaction = Utility.now();
             cntFinished += table.insert(metric);
+            cntAverageCalc++;
+            long durationTimeTransaction = Utility.now() - startTimeTransaction;
+            if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
+            if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
         }
-        logger.info("Attempted to load %d metrics, succeeded in loading %d metrics",cntStarted,cntFinished);
+        long durationTimeOverallMS = Utility.now() - startTimeOverall;
+        logger.info("Attempted to load %d metrics, succeeded in loading %d metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntAverageCalc);
+
     }
 
     public void importEventData(EventData[] events) {
@@ -94,10 +109,10 @@ public class Database {
             cntStarted++;
             long startTimeTransaction = Utility.now();
             EventTable table = getEventTable(event.targetTable);
+            cntFinished += table.insert(event);
             long durationTimeTransaction = Utility.now() - startTimeTransaction;
             if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
             if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
-            cntFinished += table.insert(event);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
         logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntStarted);
