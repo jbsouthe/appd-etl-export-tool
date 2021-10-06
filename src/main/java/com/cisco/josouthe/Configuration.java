@@ -11,10 +11,7 @@ import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class Configuration {
     private static final Logger logger = LogManager.getFormatterLogger();
@@ -72,7 +69,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/ClientSecret", 2);
 
         //application config, within a controller
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 7);
+        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 12);
         digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
         digester.addCallParam("ETLTool/Controller/Application/Name", 1);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/TimeRangeType", 2);
@@ -80,6 +77,12 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 4);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", 5);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", 6);
+        digester.addCallParam("ETLTool/Controller/Application", 7, "getAllEvents");
+        digester.addCallParam("ETLTool/Controller/Application", 8, "getAllHealthRuleViolations");
+        digester.addCallParam("ETLTool/Controller/Application/Events/Include", 9);
+        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 10);
+        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 11);
+
 
 
         //metric config, within an application
@@ -130,14 +133,19 @@ public class Configuration {
         logger.info("Added metric to list for collection: %s", name);
     }
 
-    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes, String defaultDisableAutoRollup, String metricTable, String eventTable ) throws InvalidConfigurationException {
+    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes,
+                                String defaultDisableAutoRollup, String metricTable, String eventTable, String getAllEvents, String getAllHealthRuleViolations,
+                                String includeEventList, String excludeEventList, String eventSeverities
+                                ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Application! Ensure Name is configured");
         }
         if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
         if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
-        Application application = new Application( getAllAvailableMetrics, name, defaultTimeRangeType, defaultDurationInMinutes, defaultDisableAutoRollup, metricTable, eventTable, metrics.toArray( new ApplicationMetric[0] ));
+        Application application = new Application( getAllAvailableMetrics, name, defaultTimeRangeType, defaultDurationInMinutes, defaultDisableAutoRollup, metricTable, eventTable, getAllEvents, getAllHealthRuleViolations, metrics.toArray( new ApplicationMetric[0] ));
+        application.setEventTypeList( getEventListForApplication(includeEventList, excludeEventList));
+        if( ! "".equals(eventSeverities) ) application.eventSeverities = eventSeverities;
         applications.add(application);
         metrics = new ArrayList<>();
     }
@@ -214,6 +222,45 @@ public class Configuration {
             String word;
             while ( (word = reader.readLine()) != null )
                 _tableNameForbiddenWords.add(word.toLowerCase());
+        } catch (IOException e) {
+            logger.warn("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s Exception: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!"), e.getMessage());
+            throw new InvalidConfigurationException(String.format("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!")));
+        }
+    }
+
+    private List<String> _eventList = null;
+    private String getEventListForApplication( String includeListString, String excludeListString) throws InvalidConfigurationException {
+        if(_eventList == null) loadEventList();
+        List<String> includeList=null, excludeList=null;
+        if( ! "".equals(includeListString) ) {
+            includeList = new ArrayList<>();
+            for( String event : includeListString.toUpperCase().split(","))
+                includeList.add(event);
+        }
+        if( ! "".equals(excludeListString) ) {
+            excludeList = new ArrayList<>();
+            for( String event : excludeListString.toUpperCase().split(","))
+                excludeList.add(event);
+        }
+        StringBuilder eventListStringBuilder = new StringBuilder();
+        for( String event : _eventList ) {
+            if( includeList != null && !includeList.contains(event) ) continue;
+            if( excludeList != null && excludeList.contains(event) ) continue;
+            if(eventListStringBuilder.length() > 0 ) eventListStringBuilder.append(",");
+            eventListStringBuilder.append(event);
+        }
+        logger.debug("Returning event list: %s",eventListStringBuilder);
+        return eventListStringBuilder.toString();
+    }
+
+    private void loadEventList() throws InvalidConfigurationException {
+        String filename = "eventList.txt";
+        logger.debug("Loading file: %s",filename);
+        try (BufferedReader reader = new BufferedReader( new InputStreamReader(getClass().getClassLoader().getResourceAsStream(filename)))) {
+            _eventList = new ArrayList<>();
+            String word;
+            while ( (word = reader.readLine()) != null )
+                _eventList.add(word.toUpperCase());
         } catch (IOException e) {
             logger.warn("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s Exception: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!"), e.getMessage());
             throw new InvalidConfigurationException(String.format("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!")));

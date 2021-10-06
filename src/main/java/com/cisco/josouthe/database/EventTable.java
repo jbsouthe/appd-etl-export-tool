@@ -1,23 +1,66 @@
 package com.cisco.josouthe.database;
 
+import com.cisco.josouthe.data.EventData;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
 public class EventTable extends Table{
 
     public EventTable( String tableName, Database database ) {
         super(tableName, database);
         columns.put("controller", new ColumnFeatures("controller", "varchar2", 50, false));
         columns.put("application", new ColumnFeatures("application", "varchar2", 50, false));
-        columns.put("metricname", new ColumnFeatures("metricName", "varchar2", 200, false));
-        columns.put("metricpath", new ColumnFeatures("metricPath", "varchar2", 200, false));
-        columns.put("frequency", new ColumnFeatures("frequency", "varchar2", 50, false));
-        columns.put("userange", new ColumnFeatures("userange", "number", 22, false));
-        for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value", "standardDeviation"})
-            columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "number", 22, false));
-        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "date", 7, false));
+        columns.put("id", new ColumnFeatures("id", "number", 22, false));
+        columns.put("eventTime", new ColumnFeatures("eventTime", "number", 22, false));
+        columns.put("type", new ColumnFeatures("type", "varchar2", 50, false));
+        columns.put("subType", new ColumnFeatures("subType", "varchar2", 50, false));
+        columns.put("severity", new ColumnFeatures("severity", "varchar2", 20, false));
+        columns.put("summary", new ColumnFeatures("summary", "varchar2", 120, false));
+        columns.put("triggeredEntityId", new ColumnFeatures("triggeredEntityId", "number", 22, false));
+        columns.put("triggeredEntityName", new ColumnFeatures("triggeredEntityName", "varchar2", 50, false));
+        columns.put("triggeredEntityType", new ColumnFeatures("triggeredEntityType", "varchar2", 50, false));
+        columns.put("eventTimestamp", new ColumnFeatures("eventTimestamp", "date", 7, false));
     }
 
     @Override
     public int insert(Object object) {
-        return 0;
+        EventData event = (EventData) object;
+        int counter=0;
+        StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
+        insertSQL.append("controller, application, id, eventTime, type, subtype, severity, summary, triggeredEntityId, triggeredEntityName, triggeredEntityType, eventTimestamp");
+        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
+        logger.debug("insertMetric SQL: %s",insertSQL);
+        Connection conn = null;
+        try{
+            conn = DriverManager.getConnection( this.database.connectionString, this.database.user, this.database.password);
+            PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());
+            int parameterIndex = 1;
+            preparedStatement.setString(parameterIndex++, event.controllerHostname);
+            preparedStatement.setString(parameterIndex++, event.applicationName);
+            preparedStatement.setLong(parameterIndex++, event.id);
+            preparedStatement.setLong(parameterIndex++, event.eventTime);
+            preparedStatement.setString(parameterIndex++, event.type);
+            preparedStatement.setString(parameterIndex++, event.subType);
+            preparedStatement.setString(parameterIndex++, event.severity);
+            preparedStatement.setString(parameterIndex++, event.summary);
+            preparedStatement.setInt(parameterIndex++, event.triggeredEntity.entityId);
+            preparedStatement.setString(parameterIndex++, event.triggeredEntity.name);
+            preparedStatement.setString(parameterIndex++, event.triggeredEntity.entityType);
+            preparedStatement.setLong(parameterIndex++, event.eventTime);
+            counter += preparedStatement.executeUpdate();
+        } catch (Exception exception) {
+            logger.error("Error inserting events into %s, Exception: %s", name, exception.toString());
+        } finally {
+            if( conn != null ) {
+                try {
+                    conn.close();
+                } catch (SQLException ignored) {}
+            }
+        }
+        return counter;
     }
 
 

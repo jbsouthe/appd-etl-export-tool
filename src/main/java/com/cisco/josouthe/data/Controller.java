@@ -1,5 +1,8 @@
 package com.cisco.josouthe.data;
 
+import com.cisco.josouthe.data.model.Model;
+import com.cisco.josouthe.data.model.Node;
+import com.cisco.josouthe.data.model.Tier;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -38,6 +41,7 @@ public class Controller {
     private String clientId, clientSecret;
     private AccessToken accessToken = null;
     public Application[] applications = null;
+    public Model controllerModel = null;
 
     public Controller( String urlString, String clientId, String clientSecret, Application[] applications ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
@@ -192,8 +196,31 @@ public class Controller {
         return metrics.toArray( new MetricData[0] );
     }
 
+    public EventData[] getAllEventsForAllApplications() {
+        ArrayList<EventData> events = new ArrayList<>();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        for( Application application : this.applications ) {
+            if( application.getAllEvents ) {
+                String json = getRequest("controller/rest/applications/%s/events?time-range-type=%s&duration-in-mins=%s&event-types=%s&severities=%s&output=JSON",
+                        Utility.encode(application.name), application.defaultTimeRangeType, application.defaultDurationInMinutes, application.eventTypeList, application.eventSeverities);
+                for (EventData event : gson.fromJson(json, EventData[].class)) {
+                    event.controllerHostname = this.hostname;
+                    event.applicationName = application.name;
+                    event.targetTable = application.defaultEventTableName;
+                    events.add(event);
+                }
+            }
+        }
+        return events.toArray( new EventData[0]);
+    }
+
+    private String getRequest( String formatOrURI, Object... args ) {
+        if( args == null || args.length == 0 ) return getRequest(formatOrURI);
+        return getRequest( String.format(formatOrURI,args));
+    }
+
     private String getRequest( String uri ) {
-        HttpGet request = new HttpGet(String.format("%s%s", this.url.toString(), uri));
+        HttpGet request = new HttpGet(String.format("%s/%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.debug("HTTP Method: %s",request);
         HttpClient client = HttpClientBuilder.create()
@@ -225,7 +252,7 @@ public class Controller {
     }
 
     Map<String,Integer> _applicationIdMap = null;
-    public Application getApplication( String name ) {
+    public int getApplicationId( String name ) {
         if( _applicationIdMap == null ) { //go get em
             String json = getRequest("controller/rest/applications?output=JSON");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -234,7 +261,22 @@ public class Controller {
             for( Application app : apps )
                 _applicationIdMap.put(app.name, app.id);
         }
-        return new Application(name, _applicationIdMap.get(name));
+        return _applicationIdMap.get(name);
+    }
+
+    public Model getModel() {
+        if( this.controllerModel == null ) {
+            String json = getRequest("controller/rest/applications");
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            this.controllerModel = new Model( gson.fromJson(json, com.cisco.josouthe.data.model.Application[].class));
+            for(com.cisco.josouthe.data.model.Application application : this.controllerModel.getApplications() ) {
+                json = getRequest("controller/rest/applications/%d/tiers",application.id);
+                application.tiers = gson.fromJson(json, Tier[].class);
+                json = getRequest("controller/rest/applications/%d/nodes",application.id);
+                application.nodes = gson.fromJson(json, Node[].class);
+            }
+        }
+        return this.controllerModel;
     }
 
     public static void main( String... args ) throws MalformedURLException {

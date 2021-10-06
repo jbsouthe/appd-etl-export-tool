@@ -2,6 +2,7 @@ package com.cisco.josouthe.util;
 
 import jdk.internal.net.http.common.Pair;
 
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,4 +26,6 @@ public class Utility {
         if(matcher.find()) return matcher.group(0);
         return "oracle";
     }
+
+    public static long now() { return new Date().getTime(); }
 }

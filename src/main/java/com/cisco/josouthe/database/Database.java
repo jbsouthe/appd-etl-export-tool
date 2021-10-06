@@ -1,6 +1,8 @@
 package com.cisco.josouthe.database;
 
+import com.cisco.josouthe.data.EventData;
 import com.cisco.josouthe.data.MetricData;
+import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,7 +81,29 @@ public class Database {
         logger.info("Attempted to load %d metrics, succeeded in loading %d metrics",cntStarted,cntFinished);
     }
 
-
+    public void importEventData(EventData[] events) {
+        logger.trace("Beginning of import event data method");
+        if( events == null || events.length == 0 ) {
+            logger.debug("Nothing to import, leaving quickly");
+            return;
+        }
+        int cntStarted = 0;
+        int cntFinished = 0;
+        long startTimeOverall = Utility.now();
+        long maxDurationTime = -1;
+        long minDurationTime = Long.MAX_VALUE;
+        for( EventData event : events ) {
+            cntStarted++;
+            long startTimeTransaction = Utility.now();
+            EventTable table = getEventTable(event.targetTable);
+            long durationTimeTransaction = Utility.now() - startTimeTransaction;
+            if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
+            if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
+            cntFinished += table.insert(event);
+        }
+        long durationTimeOverallMS = Utility.now() - startTimeOverall;
+        logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntStarted);
+    }
 
     private List<String> _createTableIfDoesNotExistOrColumnsAreMissingAlreadyDoneList = null;
     private void createTableIfDoesNotExistOrColumnsAreMissing(Table table) {
