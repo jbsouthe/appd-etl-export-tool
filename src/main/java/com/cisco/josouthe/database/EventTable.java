@@ -1,6 +1,8 @@
 package com.cisco.josouthe.database;
 
 import com.cisco.josouthe.data.EventData;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -8,9 +10,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class EventTable extends Table{
+    protected static final Logger logger = LogManager.getFormatterLogger();
 
     public EventTable( String tableName, Database database ) {
-        super(tableName, database);
+        super(tableName, "Event Table", database);
         columns.put("controller", new ColumnFeatures("controller", "varchar2", 50, false));
         columns.put("application", new ColumnFeatures("application", "varchar2", 50, false));
         columns.put("id", new ColumnFeatures("id", "number", 22, false));
@@ -20,9 +23,9 @@ public class EventTable extends Table{
         columns.put("severity", new ColumnFeatures("severity", "varchar2", 20, false));
         columns.put("summary", new ColumnFeatures("summary", "varchar2", 120, false));
         columns.put("triggeredEntityId", new ColumnFeatures("triggeredEntityId", "number", 22, false));
-        columns.put("triggeredEntityName", new ColumnFeatures("triggeredEntityName", "varchar2", 50, false));
+        columns.put("triggeredEntityName", new ColumnFeatures("triggeredEntityName", "varchar2", 50, true));
         columns.put("triggeredEntityType", new ColumnFeatures("triggeredEntityType", "varchar2", 50, false));
-        columns.put("eventTimestamp", new ColumnFeatures("eventTimestamp", "date", 7, false));
+        columns.put("eventTimestamp", new ColumnFeatures("eventTimestamp", "date", -1, false));
     }
 
     @Override
@@ -46,9 +49,19 @@ public class EventTable extends Table{
             preparedStatement.setString(parameterIndex++, event.subType);
             preparedStatement.setString(parameterIndex++, event.severity);
             preparedStatement.setString(parameterIndex++, event.summary);
-            preparedStatement.setInt(parameterIndex++, event.triggeredEntity.entityId);
-            preparedStatement.setString(parameterIndex++, event.triggeredEntity.name);
-            preparedStatement.setString(parameterIndex++, event.triggeredEntity.entityType);
+            if( event.triggeredEntity != null ) {
+                preparedStatement.setInt(parameterIndex++, event.triggeredEntity.entityId);
+                preparedStatement.setString(parameterIndex++, event.triggeredEntity.name);
+                preparedStatement.setString(parameterIndex++, event.triggeredEntity.entityType);
+            } else if( event.affectedEntities != null ) {
+                    preparedStatement.setInt(parameterIndex++, event.affectedEntities.get(0).entityId);
+                    preparedStatement.setString(parameterIndex++, event.affectedEntities.get(0).name);
+                    preparedStatement.setString(parameterIndex++, event.affectedEntities.get(0).entityType);
+            } else {
+                preparedStatement.setInt(parameterIndex++, -1);
+                preparedStatement.setString(parameterIndex++, "");
+                preparedStatement.setString(parameterIndex++, "");
+            }
             preparedStatement.setLong(parameterIndex++, event.eventTime);
             counter += preparedStatement.executeUpdate();
         } catch (Exception exception) {

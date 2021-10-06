@@ -2,6 +2,8 @@ package com.cisco.josouthe.database;
 
 import com.cisco.josouthe.data.MetricData;
 import com.cisco.josouthe.data.MetricValue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -10,9 +12,10 @@ import java.sql.SQLException;
 
 
 public class MetricTable extends Table {
+    protected static final Logger logger = LogManager.getFormatterLogger();
 
     public MetricTable( String tableName, Database database ) {
-        super(tableName,database);
+        super(tableName,"Metric Table",database);
         columns.put("controller", new ColumnFeatures("controller", "varchar2", 50, false));
         columns.put("application", new ColumnFeatures("application", "varchar2", 50, false));
         columns.put("metricname", new ColumnFeatures("metricName", "varchar2", 200, false));
@@ -21,7 +24,7 @@ public class MetricTable extends Table {
         columns.put("userange", new ColumnFeatures("userange", "number", 22, false));
         for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value", "standardDeviation"})
             columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "number", 22, false));
-        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "date", 7, false));
+        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "date", -1, false));
     }
 
     public int insert(Object object) {
