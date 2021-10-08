@@ -35,7 +35,7 @@ public class MetricTable extends Table {
         insertSQL.append("controller, application, metricname, metricpath, frequency, metricid, userange, ");
         insertSQL.append("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
         insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
-        logger.debug("insertMetric SQL: %s",insertSQL);
+        logger.trace("insertMetric SQL: %s",insertSQL);
         Connection conn = null;
         try{
             conn = DriverManager.getConnection( this.database.connectionString, this.database.user, this.database.password);

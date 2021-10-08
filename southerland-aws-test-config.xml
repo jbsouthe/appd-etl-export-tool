@@ -1,6 +1,7 @@
 <ETLTool>
     <Scheduler enabled="false">
         <PollIntervalMinutes>60</PollIntervalMinutes>
+        <FirstRunHistoricNumberOfHours>48</FirstRunHistoricNumberOfHours>
     </Scheduler>
     <TargetDB>
         <ConnectionString>jdbc:oracle:thin:@localhost:1521:orcl</ConnectionString>
@@ -12,11 +13,9 @@
         <URL>https://southerland-test.saas.appdynamics.com/</URL>
         <ClientID>ETLClient@southerland-test</ClientID>
         <ClientSecret>869b6e71-230c-4e6f-918d-6713fb73b3ad</ClientSecret>
-        <Application getAllAvailableMetrics="true">
+        <Application getAllAvailableMetrics="true" getAllEvents="true" getAllHealthRuleViolations="false">
             <Name>Agent Proxy</Name>
             <Defaults>
-                <TimeRangeType>BEFORE_NOW</TimeRangeType>
-                <DurationInMins>60</DurationInMins>
                 <DisableDataRollup>true</DisableDataRollup>
                 <MetricTable>ProxyAppMetrics</MetricTable>
                 <EventTable>ProxyAppEvents</EventTable>

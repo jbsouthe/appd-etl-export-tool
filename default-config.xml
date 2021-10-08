@@ -4,6 +4,7 @@
     only one config option is available, that is the amount of time to sleep between runs, in minutes
     <Scheduler enabled="false">
         <PollIntervalMinutes>60</PollIntervalMinutes>
+        <FirstRunHistoricNumberOfHours>48</FirstRunHistoricNumberOfHours>
     </Scheduler>
     -->
     <!-- Only one database can be specified, and one must be specified. It is assumed the correct database driver is loaded in the classpath,
@@ -36,8 +37,6 @@
         <Application getAllAvailableMetrics="true" getAllEvents="false"> <!-- these are the default options in default values -->
             <Name>Agent Proxy</Name>
             <Defaults>
-                <TimeRangeType>BEFORE_NOW</TimeRangeType>
-                <DurationInMins>60</DurationInMins>
                 <DisableDataRollup>true</DisableDataRollup>
                 <MetricTable>ProxyAppMetrics</MetricTable>
                 <EventTable>ProxyAppEvents</EventTable>

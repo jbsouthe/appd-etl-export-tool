@@ -16,16 +16,19 @@ public class Database {
     Table defaultMetricTable, controlTable, defaulEventTable;
     Map<String,Table> tablesMap;
 
-    public Database( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable) {
+    public Database( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, Long firstRunHistoricNumberOfHours) {
         this.connectionString = connectionString;
         this.user = user;
         this.password = password;
         this.defaultMetricTable = new MetricTable(metricTable, this);
         this.controlTable = new ControlTable(controlTable, this);
+        if( firstRunHistoricNumberOfHours != null ) ((ControlTable)this.controlTable).setDefaultLoadNumberOfHoursIfControlRowMissing(firstRunHistoricNumberOfHours.intValue());
         this.defaulEventTable = new EventTable(eventTable, this);
         this.tablesMap = new HashMap<>();
         logger.info("Testing Database connection returned: "+ isDatabaseAvailable());
     }
+
+    public ControlTable getControlTable() { return (ControlTable) controlTable; }
 
     private MetricTable getMetricTable( String name ) {
         if( name != null ) {
@@ -88,6 +91,7 @@ public class Database {
             long durationTimeTransaction = Utility.now() - startTimeTransaction;
             if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
             if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
+            logger.debug("Loaded %d metrics into the database in time %d(ms)", metric.metricValues.size(), durationTimeTransaction);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
         logger.info("Attempted to load %d metrics, succeeded in loading %d metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntAverageCalc);
@@ -113,6 +117,7 @@ public class Database {
             long durationTimeTransaction = Utility.now() - startTimeTransaction;
             if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
             if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
+            logger.debug("Loaded %d event into the database in time %d(ms)", 1, durationTimeTransaction);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
         logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntStarted);

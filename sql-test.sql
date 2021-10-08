@@ -43,3 +43,12 @@ order by sys.all_tab_columns.column_id
 drop table AppDynamics_DefaultTable;
 
 select * from appdynamics_defaultTable;
+
+create table ProxyAppEvents ( severity varchar2(20) NOT NULL, summary varchar2(120) NOT NULL, controller varchar2(50) NOT NULL,
+application varchar2(50) NOT NULL, triggeredentityid number(22) NOT NULL, triggeredentitytype varchar2(50) NOT NULL,
+eventtime number(22) NOT NULL, subtype varchar2(50) NOT NULL, id number(22) NOT NULL, triggeredentityname varchar2(50) NOT NULL,
+type varchar2(50) NOT NULL, eventtimestamp date(7) NOT NULL)
+
+drop table AppDynamics_SchedulerControl;
+
+select * from AppDynamics_SchedulerControl;

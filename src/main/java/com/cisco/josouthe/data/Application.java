@@ -14,8 +14,6 @@ public class Application {
     public boolean getAllHealthRuleViolations = false;
     public String name;
     public int id;
-    public String defaultTimeRangeType = "BEFORE_NOW";
-    public String defaultDurationInMinutes = "60";
     public String defaultDisableDataRollup = "false";
     public String defaultMetricTableName = null;
     public String defaultEventTableName = null;
@@ -24,13 +22,11 @@ public class Application {
     public ApplicationMetric[] metrics = null;
 
 
-    public Application(String getAllAvailableMetrics, String name, String defaultTimeRangeType, String defaultDurationInMinutes, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String getAllEvents, String getAllHealthRuleViolations, ApplicationMetric[] metrics) {
+    public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String getAllEvents, String getAllHealthRuleViolations, ApplicationMetric[] metrics) {
         if( getAllAvailableMetrics != null ) this.getAllAvailableMetrics= Boolean.parseBoolean(getAllAvailableMetrics);
         if( getAllEvents != null ) this.getAllEvents= Boolean.parseBoolean(getAllEvents);
         if( getAllHealthRuleViolations != null ) this.getAllHealthRuleViolations= Boolean.parseBoolean(getAllHealthRuleViolations);
         this.name = name;
-        if( defaultTimeRangeType != null ) this.defaultTimeRangeType = defaultTimeRangeType;
-        if( defaultDurationInMinutes != null ) this.defaultDurationInMinutes = defaultDurationInMinutes;
         if( defaultDisableDataRollup != null ) this.defaultDisableDataRollup = defaultDisableDataRollup;
         if( defaultMetricTableName != null ) this.defaultMetricTableName = defaultMetricTableName;
         if( defaultEventTableName != null ) this.defaultEventTableName = defaultEventTableName;
@@ -63,7 +59,7 @@ public class Application {
                     findMetrics( controller, controller.getApplicationMetricFolders(this, path), path);
                 } else {
                     logger.debug("Adding metric: %s|%s",path,something.name);
-                    metricsToAdd.add( new ApplicationMetric(defaultTimeRangeType, defaultDurationInMinutes, defaultDisableDataRollup, path+"|"+something.name));
+                    metricsToAdd.add( new ApplicationMetric(defaultDisableDataRollup, path+"|"+something.name));
                 }
             }
     }

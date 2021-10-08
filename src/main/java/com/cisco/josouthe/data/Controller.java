@@ -3,6 +3,7 @@ package com.cisco.josouthe.data;
 import com.cisco.josouthe.data.model.Model;
 import com.cisco.josouthe.data.model.Node;
 import com.cisco.josouthe.data.model.Tier;
+import com.cisco.josouthe.database.ControlTable;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -42,6 +43,7 @@ public class Controller {
     private AccessToken accessToken = null;
     public Application[] applications = null;
     public Model controllerModel = null;
+    private ControlTable controlTable = null;
 
     public Controller( String urlString, String clientId, String clientSecret, Application[] applications ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
@@ -51,6 +53,8 @@ public class Controller {
         this.clientSecret = clientSecret;
         this.applications = applications;
     }
+
+    public void setControlTable( ControlTable table ) { this.controlTable=table; }
 
     public String getBearerToken() {
         if( isAccessTokenExpired() && !refreshAccessToken()) return null;
@@ -66,9 +70,9 @@ public class Controller {
     private boolean refreshAccessToken() { //returns true on successful refresh, false if an error occurs
         CredentialsProvider provider = new BasicCredentialsProvider();
         UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(clientId, clientSecret);
-        logger.debug("credentials configured: %s",credentials.toString());
+        logger.trace("credentials configured: %s",credentials.toString());
         provider.setCredentials(AuthScope.ANY, credentials);
-        logger.debug("provider configured: %s",provider.toString());
+        logger.trace("provider configured: %s",provider.toString());
 
         HttpClient client = HttpClientBuilder.create()
                 .setDefaultCredentialsProvider(provider)
@@ -88,16 +92,16 @@ public class Controller {
             logger.warn("Unsupported Encoding Exception in post parameter encoding: %s",e.getMessage());
         }
 
-        if( logger.isDebugEnabled()){
-            logger.debug("Request to run: %s",request.toString());
+        if( logger.isTraceEnabled()){
+            logger.trace("Request to run: %s",request.toString());
             for( Header header : request.getAllHeaders())
-                logger.debug("with header: %s",header.toString());
+                logger.trace("with header: %s",header.toString());
         }
 
         HttpResponse response = null;
         try {
             response = client.execute(request);
-            logger.debug("Response Status Line: %s",response.getStatusLine());
+            logger.trace("Response Status Line: %s",response.getStatusLine());
         } catch (IOException e) {
             logger.error("Exception in attempting to get access token, Exception: %s",e.getMessage());
             return false;
@@ -123,9 +127,9 @@ public class Controller {
         return true;
     }
 
-    public MetricData[] getMetricValue( Application application, ApplicationMetric metric ) {
-        MetricData[] metrics = getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=%s&duration-in-mins=%s&output=JSON&rollup=%s",
-                this.url, Utility.encode(application.name), Utility.encode(metric.name),metric.timeRangeType,metric.durationInMins,
+    public MetricData[] getMetricValue( Application application, ApplicationMetric metric, long startTimestamp, long endTimestamp ) {
+        MetricData[] metrics = getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=%s",
+                this.url, Utility.encode(application.name), Utility.encode(metric.name),startTimestamp, endTimestamp,
                 (metric.disableDataRollup.toLowerCase().equals("true") ?"false":"true")
         ));
         return metrics;
@@ -134,17 +138,17 @@ public class Controller {
     public MetricData[] getMetricValue( String urlString ) {
         MetricData[] metricData = null;
         if( urlString == null ) return null;
-        logger.debug("metric url: %s",urlString);
+        logger.trace("metric url: %s",urlString);
         if( ! urlString.contains("output=JSON") ) urlString += "&output=JSON";
         HttpGet request = new HttpGet(urlString);
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
-        logger.debug("HTTP Method: %s",request);
+        logger.trace("HTTP Method: %s",request);
         HttpClient client = HttpClientBuilder.create()
                 .build();
         HttpResponse response = null;
         try {
             response = client.execute(request);
-            logger.debug("Response Status Line: %s",response.getStatusLine());
+            logger.trace("Response Status Line: %s",response.getStatusLine());
         } catch (IOException e) {
             logger.error("Exception in attempting to get access token, Exception: %s",e.getMessage());
             return null;
@@ -184,14 +188,17 @@ public class Controller {
     public MetricData[] getAllMetricsForAllApplications() {
         ArrayList<MetricData> metrics = new ArrayList<>();
         for( Application application : this.applications ) {
+            long startTimestamp = this.controlTable.getLastRunTimestamp(hostname, application.name, "MetricData" );
+            long endTimestamp = Utility.now();
             for( ApplicationMetric applicationMetric : application.metrics ) {
-                for( MetricData metricData : getMetricValue( application, applicationMetric )) {
+                for( MetricData metricData : getMetricValue( application, applicationMetric, startTimestamp, endTimestamp )) {
                     metricData.controllerHostname = this.hostname;
                     metricData.applicationName = application.name;
                     metricData.targetTable = application.defaultMetricTableName;
                     metrics.add(metricData);
                 }
             }
+            this.controlTable.setLastRunTimestamp(hostname, application.name, "MetricData", endTimestamp);
         }
         return metrics.toArray( new MetricData[0] );
     }
@@ -200,9 +207,11 @@ public class Controller {
         ArrayList<EventData> events = new ArrayList<>();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         for( Application application : this.applications ) {
+            long startTimestamp = this.controlTable.getLastRunTimestamp(hostname, application.name, "EventData" );
+            long endTimestamp = Utility.now();
             if( application.getAllEvents ) {
-                String json = getRequest("controller/rest/applications/%s/events?time-range-type=%s&duration-in-mins=%s&event-types=%s&severities=%s&output=JSON",
-                        Utility.encode(application.name), application.defaultTimeRangeType, application.defaultDurationInMinutes, application.eventTypeList, application.eventSeverities);
+                String json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
+                        Utility.encode(application.name), startTimestamp, endTimestamp, application.eventTypeList, application.eventSeverities);
                 for (EventData event : gson.fromJson(json, EventData[].class)) {
                     event.controllerHostname = this.hostname;
                     event.applicationName = application.name;
@@ -210,6 +219,7 @@ public class Controller {
                     events.add(event);
                 }
             }
+            this.controlTable.setLastRunTimestamp(hostname, application.name, "EventData", endTimestamp);
         }
         return events.toArray( new EventData[0]);
     }
@@ -222,13 +232,13 @@ public class Controller {
     private String getRequest( String uri ) {
         HttpGet request = new HttpGet(String.format("%s/%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
-        logger.debug("HTTP Method: %s",request);
+        logger.trace("HTTP Method: %s",request);
         HttpClient client = HttpClientBuilder.create()
                 .build();
         HttpResponse response = null;
         try {
             response = client.execute(request);
-            logger.debug("Response Status Line: %s",response.getStatusLine());
+            logger.trace("Response Status Line: %s",response.getStatusLine());
         } catch (IOException e) {
             logger.error("Exception in attempting to get controller data, Exception: %s",e.getMessage());
             return null;

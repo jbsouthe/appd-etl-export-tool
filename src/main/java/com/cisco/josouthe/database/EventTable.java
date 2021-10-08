@@ -36,7 +36,7 @@ public class EventTable extends Table{
         StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
         insertSQL.append("controller, application, id, eventTime, type, subtype, severity, summary, triggeredEntityId, triggeredEntityName, triggeredEntityType, eventTimestamp");
         insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
-        logger.debug("insertMetric SQL: %s",insertSQL);
+        logger.trace("insertMetric SQL: %s",insertSQL);
         Connection conn = null;
         try{
             conn = DriverManager.getConnection( this.database.connectionString, this.database.user, this.database.password);

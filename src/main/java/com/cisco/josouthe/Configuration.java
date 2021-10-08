@@ -48,9 +48,10 @@ public class Configuration {
         Digester digester = new Digester();
         digester.push(this);
         //scheduler config section default enabled with 10 minute run intervals
-        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 2 );
+        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 3 );
         digester.addCallParam("ETLTool/Scheduler", 0 , "enabled");
         digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1 );
+        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2 );
 
         //database configuration section
         digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 6);
@@ -69,19 +70,17 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/ClientSecret", 2);
 
         //application config, within a controller
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 12);
+        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 10);
         digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
         digester.addCallParam("ETLTool/Controller/Application/Name", 1);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/TimeRangeType", 2);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/DurationInMins", 3);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 4);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", 5);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", 6);
-        digester.addCallParam("ETLTool/Controller/Application", 7, "getAllEvents");
-        digester.addCallParam("ETLTool/Controller/Application", 8, "getAllHealthRuleViolations");
-        digester.addCallParam("ETLTool/Controller/Application/Events/Include", 9);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 10);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 11);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 2);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", 3);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", 4);
+        digester.addCallParam("ETLTool/Controller/Application", 5, "getAllEvents");
+        digester.addCallParam("ETLTool/Controller/Application", 6, "getAllHealthRuleViolations");
+        digester.addCallParam("ETLTool/Controller/Application/Events/Include", 7);
+        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 8);
+        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 9);
 
 
 
@@ -95,11 +94,12 @@ public class Configuration {
         digester.parse( new File(configFileName) );
         if( ! definedScheduler ) {
             logger.warn("No scheduler defined in the config file, we are going to configure a basic one run scheduler for you");
-            setSchedulerProperties("false","");
+            setSchedulerProperties("false","", "1");
         }
 
         logger.info("Validating Configured Settings");
         for( Controller controller : getControllerList() ) {
+            controller.setControlTable( database.getControlTable() );
             definedController=true;
             logger.info("%s Authentication: %s",controller.hostname,controller.getBearerToken());
             for( Application application : controller.applications ){
@@ -128,13 +128,14 @@ public class Configuration {
             logger.warn("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
             throw new InvalidConfigurationException("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
         }
-        ApplicationMetric metric = new ApplicationMetric( timeRangeType, durationInMins, disableDataRollup, name);
+        ApplicationMetric metric = new ApplicationMetric( disableDataRollup, name);
         metrics.add(metric);
         logger.info("Added metric to list for collection: %s", name);
     }
 
-    public void addApplication( String getAllAvailableMetrics, String name , String defaultTimeRangeType, String defaultDurationInMinutes,
-                                String defaultDisableAutoRollup, String metricTable, String eventTable, String getAllEvents, String getAllHealthRuleViolations,
+    public void addApplication( String getAllAvailableMetrics, String name , String defaultDisableAutoRollup,
+                                String metricTable, String eventTable,
+                                String getAllEvents, String getAllHealthRuleViolations,
                                 String includeEventList, String excludeEventList, String eventSeverities
                                 ) throws InvalidConfigurationException {
         if( name == null ) {
@@ -143,7 +144,7 @@ public class Configuration {
         }
         if( metricTable != null && isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
         if( eventTable != null && isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
-        Application application = new Application( getAllAvailableMetrics, name, defaultTimeRangeType, defaultDurationInMinutes, defaultDisableAutoRollup, metricTable, eventTable, getAllEvents, getAllHealthRuleViolations, metrics.toArray( new ApplicationMetric[0] ));
+        Application application = new Application( getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, getAllEvents, getAllHealthRuleViolations, metrics.toArray( new ApplicationMetric[0] ));
         application.setEventTypeList( getEventListForApplication(includeEventList, excludeEventList));
         if( eventSeverities != null ) application.eventSeverities = eventSeverities;
         applications.add(application);
@@ -169,7 +170,7 @@ public class Configuration {
         }
     }
 
-    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes ) {
+    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours ) {
         Boolean enabled = true;
         if( "false".equalsIgnoreCase(enabledFlag) ) {
             logger.info("Scheduler is disabled, running only once");
@@ -178,11 +179,16 @@ public class Configuration {
         } else {
             properties.setProperty("scheduler-enabled", "true");
         }
-        if( "".equals(pollIntervalMinutes) ) {
+        if( "".equals(pollIntervalMinutes) || pollIntervalMinutes == null ) {
             pollIntervalMinutes = "10";
         }
         logger.info("Setting poll interval to every %s minutes", pollIntervalMinutes);
         this.properties.setProperty("scheduler-pollIntervalMinutes", pollIntervalMinutes);
+        if( "".equals(firstRunHistoricNumberOfHours) || firstRunHistoricNumberOfHours == null ) {
+            firstRunHistoricNumberOfHours = "48";
+        }
+        logger.info("Setting first run historic data to pull to %s hours", firstRunHistoricNumberOfHours);
+        this.properties.setProperty("scheduler-FirstRunHistoricNumberOfHours", firstRunHistoricNumberOfHours);
     }
 
     public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable ) throws InvalidConfigurationException {
@@ -198,7 +204,7 @@ public class Configuration {
         if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Default Metric Table set to: %s", metricTable);
         if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Default Event Table set to: %s", eventTable);
         if( ! "".equals(controlTable) && isValidDatabaseTableName(controlTable) ) logger.debug("Run Control Table set to: %s", controlTable);
-        this.database = new Database( connectionString, user, password, metricTable, controlTable, eventTable);
+        this.database = new Database( connectionString, user, password, metricTable, controlTable, eventTable, getPropertyAsLong("scheduler-FirstRunHistoricNumberOfHours", 48L));
     }
 
     private List<String> _tableNameForbiddenWords = null;
