@@ -10,7 +10,7 @@ public class ETLTransferMain {
     private static final Logger logger = LogManager.getFormatterLogger();
 
     public static void main( String... args ) {
-        logger.info("Initializing ETL Transfer Tool");
+        logger.info("Initializing ETL Transfer Tool version %s build date %s", MetaData.VERSION, MetaData.BUILDTIMESTAMP);
         String configFileName = "default-config.xml";
         if( args.length > 0 ) configFileName=args[0];
         Configuration config = null;
