@@ -3,6 +3,7 @@ package com.cisco.josouthe.data;
 import com.cisco.josouthe.data.model.Model;
 import com.cisco.josouthe.data.model.Node;
 import com.cisco.josouthe.data.model.Tier;
+import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.ControlTable;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
@@ -188,7 +189,8 @@ public class Controller {
     public MetricData[] getAllMetricsForAllApplications() {
         ArrayList<MetricData> metrics = new ArrayList<>();
         for( Application application : this.applications ) {
-            long startTimestamp = this.controlTable.getLastRunTimestamp(hostname, application.name, "MetricData" );
+            ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "MetricData" );
+            long startTimestamp = controlEntry.timestamp;
             long endTimestamp = Utility.now();
             for( ApplicationMetric applicationMetric : application.metrics ) {
                 for( MetricData metricData : getMetricValue( application, applicationMetric, startTimestamp, endTimestamp )) {
@@ -198,7 +200,8 @@ public class Controller {
                     metrics.add(metricData);
                 }
             }
-            this.controlTable.setLastRunTimestamp(hostname, application.name, "MetricData", endTimestamp);
+            controlEntry.timestamp = endTimestamp;
+            this.controlTable.setLastRunTimestamp(controlEntry);
         }
         return metrics.toArray( new MetricData[0] );
     }
@@ -207,7 +210,8 @@ public class Controller {
         ArrayList<EventData> events = new ArrayList<>();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         for( Application application : this.applications ) {
-            long startTimestamp = this.controlTable.getLastRunTimestamp(hostname, application.name, "EventData" );
+            ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "EventData" );
+            long startTimestamp = controlEntry.timestamp;
             long endTimestamp = Utility.now();
             if( application.getAllEvents ) {
                 String json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
@@ -219,7 +223,8 @@ public class Controller {
                     events.add(event);
                 }
             }
-            this.controlTable.setLastRunTimestamp(hostname, application.name, "EventData", endTimestamp);
+            controlEntry.timestamp = endTimestamp;
+            this.controlTable.setLastRunTimestamp(controlEntry);
         }
         return events.toArray( new EventData[0]);
     }
