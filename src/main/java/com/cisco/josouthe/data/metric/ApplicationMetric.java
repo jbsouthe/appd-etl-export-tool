@@ -1,8 +1,8 @@
-package com.cisco.josouthe.data;
+package com.cisco.josouthe.data.metric;
 
 public class ApplicationMetric {
-    String disableDataRollup = "false";
-    String name = null;
+    public String disableDataRollup = "false";
+    public String name = null;
     public ApplicationMetric( String disableDataRollup, String name) {
         if( disableDataRollup != null ) this.disableDataRollup=disableDataRollup;
         this.name=name;

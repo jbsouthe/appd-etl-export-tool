@@ -1,4 +1,4 @@
-package com.cisco.josouthe.data;
+package com.cisco.josouthe.data.model;
 
 public class TreeNode {
     public String name, type;

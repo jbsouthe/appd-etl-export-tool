@@ -1,7 +1,7 @@
 package com.cisco.josouthe.database;
 
-import com.cisco.josouthe.data.EventData;
-import com.cisco.josouthe.data.MetricData;
+import com.cisco.josouthe.data.event.EventData;
+import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

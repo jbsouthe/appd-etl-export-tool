@@ -1,4 +1,4 @@
-package com.cisco.josouthe.data;
+package com.cisco.josouthe.data.event;
 
 public class EntityDefinition {
     public int entityId;

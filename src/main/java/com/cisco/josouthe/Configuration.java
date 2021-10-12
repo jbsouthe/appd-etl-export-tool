@@ -1,13 +1,13 @@
 package com.cisco.josouthe;
 
 import com.cisco.josouthe.data.*;
+import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
 import org.apache.commons.digester3.Digester;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.xml.sax.SAXException;
 
 import java.io.*;
 import java.net.MalformedURLException;

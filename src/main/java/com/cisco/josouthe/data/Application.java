@@ -1,11 +1,12 @@
 package com.cisco.josouthe.data;
 
+import com.cisco.josouthe.data.metric.ApplicationMetric;
+import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class Application {
     private static final Logger logger = LogManager.getFormatterLogger();

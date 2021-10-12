@@ -1,8 +1,8 @@
 package com.cisco.josouthe;
 
 import com.cisco.josouthe.data.Controller;
-import com.cisco.josouthe.data.EventData;
-import com.cisco.josouthe.data.MetricData;
+import com.cisco.josouthe.data.event.EventData;
+import com.cisco.josouthe.data.metric.MetricData;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.logging.log4j.LogManager;

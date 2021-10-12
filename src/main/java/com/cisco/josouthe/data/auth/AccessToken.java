@@ -1,4 +1,4 @@
-package com.cisco.josouthe.data;
+package com.cisco.josouthe.data.auth;
 
 public class AccessToken {
     public String access_token = null;

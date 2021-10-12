@@ -1,7 +1,7 @@
 package com.cisco.josouthe.database;
 
-import com.cisco.josouthe.data.MetricData;
-import com.cisco.josouthe.data.MetricValue;
+import com.cisco.josouthe.data.metric.MetricData;
+import com.cisco.josouthe.data.metric.MetricValue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -1,8 +1,13 @@
 package com.cisco.josouthe.data;
 
+import com.cisco.josouthe.data.auth.AccessToken;
+import com.cisco.josouthe.data.event.EventData;
+import com.cisco.josouthe.data.metric.ApplicationMetric;
+import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.model.Model;
 import com.cisco.josouthe.data.model.Node;
 import com.cisco.josouthe.data.model.Tier;
+import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.ControlTable;
 import com.cisco.josouthe.util.Utility;
@@ -128,7 +133,7 @@ public class Controller {
         return true;
     }
 
-    public MetricData[] getMetricValue( Application application, ApplicationMetric metric, long startTimestamp, long endTimestamp ) {
+    public MetricData[] getMetricValue(Application application, ApplicationMetric metric, long startTimestamp, long endTimestamp ) {
         MetricData[] metrics = getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=%s",
                 this.url, Utility.encode(application.name), Utility.encode(metric.name),startTimestamp, endTimestamp,
                 (metric.disableDataRollup.toLowerCase().equals("true") ?"false":"true")

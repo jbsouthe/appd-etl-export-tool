@@ -1,6 +1,6 @@
 package com.cisco.josouthe.database;
 
-import com.cisco.josouthe.data.EventData;
+import com.cisco.josouthe.data.event.EventData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
