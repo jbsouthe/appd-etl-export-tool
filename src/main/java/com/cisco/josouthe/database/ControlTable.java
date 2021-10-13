@@ -15,8 +15,8 @@ public class ControlTable extends Table{
 
     public ControlTable( String tableName, Database database ) {
         super(tableName,"Control Table", database);
-        columns.put("controller", new ColumnFeatures("controller", "varchar2", 50, false));
-        columns.put("application", new ColumnFeatures("application", "varchar2", 50, false));
+        columns.put("controller", new ColumnFeatures("controller", "varchar2", 120, false));
+        columns.put("application", new ColumnFeatures("application", "varchar2", 120, false));
         columns.put("dataType", new ColumnFeatures("dataType", "varchar2", 50, false));
         columns.put("lastRunTimestamp", new ColumnFeatures("lastRunTimestamp", "number", 22, false));
         initTable();
@@ -63,7 +63,7 @@ public class ControlTable extends Table{
         try{
             conn = database.getConnection();
             StringBuilder update = new StringBuilder(String.format(" merge into %s C using dual on ( lower(controller) like lower('%s') and lower(application) like lower('%s') and lower(dataType) like lower('%s') )", this.name, controlEntry.controller, controlEntry.application, controlEntry.type ));
-            update.append(String.format(" when not matched then insert (controller,application,dataType,lastRunTimestamp) values ('%s','%s','%s',%d) ", controlEntry.controller, controlEntry.application, controlEntry.timestamp, controlEntry.timestamp));
+            update.append(String.format(" when not matched then insert (controller,application,dataType,lastRunTimestamp) values ('%s','%s','%s',%d) ", controlEntry.controller, controlEntry.application, controlEntry.type, controlEntry.timestamp));
             update.append(String.format(" when matched then update set lastRunTimestamp = %d",controlEntry.timestamp));
             Statement statement = conn.createStatement();
             return statement.executeUpdate(update.toString());
