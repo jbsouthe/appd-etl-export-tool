@@ -50,6 +50,8 @@ public class Controller {
     public Application[] applications = null;
     public Model controllerModel = null;
     private ControlTable controlTable = null;
+    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    HttpClient client = HttpClientBuilder.create().build();
 
     public Controller( String urlString, String clientId, String clientSecret, Application[] applications ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
@@ -213,7 +215,6 @@ public class Controller {
 
     public EventData[] getAllEventsForAllApplications() {
         ArrayList<EventData> events = new ArrayList<>();
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         for( Application application : this.applications ) {
             ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "EventData" );
             long startTimestamp = controlEntry.timestamp;
@@ -243,8 +244,6 @@ public class Controller {
         HttpGet request = new HttpGet(String.format("%s/%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.trace("HTTP Method: %s",request);
-        HttpClient client = HttpClientBuilder.create()
-                .build();
         HttpResponse response = null;
         try {
             response = client.execute(request);
