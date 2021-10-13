@@ -1,6 +1,8 @@
 package com.cisco.josouthe;
 
+import com.cisco.josouthe.data.Analytics;
 import com.cisco.josouthe.data.Controller;
+import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.MetricData;
 import org.apache.http.client.HttpClient;
@@ -38,6 +40,17 @@ public class Scheduler {
 
                 //Get Health Rule Violations
 
+            }
+
+            for(Analytics analytic : configuration.getAnalyticsList() ) {
+                //get Analytics search results
+                Result[] results = analytic.getAllSearches();
+                if( results == null ) {
+                    logger.warn("No results from analytics searches?");
+                } else {
+                    logger.info("Analytics acount %s collected %d search results for import into the Database", analytic.APIAccountName, results.length);
+                    configuration.getDatabase().importAnalyticData( results );
+                }
             }
             if( configuration.getPropertyAsBoolean("scheduler-enabled", true) ) {
                 logger.info("Scheduler is enabled, so sleeping for %d minutes and running again", configuration.getPropertyAsLong("scheduler-pollIntervalMinutes", 60L));

@@ -1,5 +1,6 @@
 package com.cisco.josouthe.database;
 
+import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.util.Utility;
@@ -125,4 +126,7 @@ public class Database {
 
     public Connection getConnection() throws SQLException { return DriverManager.getConnection( this.connectionString, this.user, this.password); }
 
+    public void importAnalyticData(Result[] results) {
+        //TODO the magic here
+    }
 }
