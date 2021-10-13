@@ -54,4 +54,12 @@
             -->
         </Application>
     </Controller>
+    <!-- multiple analytic sections are supported, but not if the account name is the same -->
+    <Analytics>
+        <URL>https://analytics.api.appdynamics.com/</URL> <!-- north america Saas -->
+        <GlobalAccountName>southerland-test_65322e21-efed-4126-8827-920141a9ac21</GlobalAccountName>
+        <APIKey>generate your own key</APIKey> <!-- API Key is created in analytics configuration settings -->
+        <TableNamePrefix>AppDynamics_Analytics_</TableNamePrefix> <!-- this is the prefix table name for data extracted, final table is <PrefixTableName><Search name> -->
+        <Search name="UniqueTransactionCount" limit="20000">SELECT transactionName, count(*) FROM transactions</Search> <!--limit is optional and defaults to 20000, name must be unique for this section -->
+    </Analytics>
 </ETLTool>

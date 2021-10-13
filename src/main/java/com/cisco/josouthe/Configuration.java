@@ -1,6 +1,7 @@
 package com.cisco.josouthe;
 
 import com.cisco.josouthe.data.*;
+import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
@@ -20,9 +21,12 @@ public class Configuration {
     private HashMap<String, Controller> controllerMap = null;
     private ArrayList<Application> applications = new ArrayList<>();;
     private ArrayList<ApplicationMetric> metrics = new ArrayList<>();;
+    private ArrayList<Analytics> analytics = new ArrayList<>();
+    private ArrayList<Search> searches = new ArrayList<>();
     private boolean definedScheduler = false;
     private boolean definedController = false;
     private boolean definedApplication = false;
+    private boolean definedAnalytics = false;
 
     public String getProperty( String key ) {
         return getProperty(key, null);
@@ -40,6 +44,7 @@ public class Configuration {
     public Database getDatabase() { return database; }
     public Controller getController( String hostname ) { return controllerMap.get(hostname); }
     public Controller[] getControllerList() { return controllerMap.values().toArray(new Controller[0]); }
+    public Analytics[] getAnalyticsList() { return analytics.toArray( new Analytics[0]); }
 
     public Configuration( String configFileName) throws Exception {
         logger.info("Processing Config File: %s", configFileName);
@@ -47,6 +52,7 @@ public class Configuration {
         this.controllerMap = new HashMap<>();
         Digester digester = new Digester();
         digester.push(this);
+        int paramCounter=0;
         //scheduler config section default enabled with 10 minute run intervals
         digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 3 );
         digester.addCallParam("ETLTool/Scheduler", 0 , "enabled");
@@ -91,6 +97,20 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/Application/Metric", 2, "disable-data-rollup");
         digester.addCallParam("ETLTool/Controller/Application/Metric", 3);
 
+        paramCounter=0;
+        digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 4);
+        digester.addCallParam("ETLTool/Analytics/URL", paramCounter++);
+        digester.addCallParam("ETLTool/Analytics/GlobalAccountName", paramCounter++);
+        digester.addCallParam("ETLTool/Analytics/APIKey", paramCounter++);
+        digester.addCallParam("ETLTool/Analytics/TableNamePrefix", paramCounter++);
+
+        paramCounter=0;
+        digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 3);
+        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "name");
+        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++);
+        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
+
+
         digester.parse( new File(configFileName) );
         if( ! definedScheduler ) {
             logger.warn("No scheduler defined in the config file, we are going to configure a basic one run scheduler for you");
@@ -112,14 +132,43 @@ public class Configuration {
                 }
             }
         }
-        if( ! definedController || ! definedApplication ) {
-            logger.warn("Config file doesn't have a controller or application configured? not one? we can't do much here");
+        for( Analytics analytic : analytics ) {
+            analytic.setControlTable( database.getControlTable() );
+        }
+        if( (! definedController || ! definedApplication ) && ! definedAnalytics) {
+            logger.warn("Config file doesn't have a controller or application and no analytics collection configured? not one? we can't do much here");
             throw new InvalidConfigurationException("Config file doesn't have a controller or application configured? not one? we can't do much here");
         }
         if(database != null && database.isDatabaseAvailable()) {
             logger.info("Database is available");
         } else {
-            throw new InvalidConfigurationException("Database is not configured, available, or authetication information is incorrect. Something is wrong, giving up on this buddy");
+            throw new InvalidConfigurationException("Database is not configured, available, or authentication information is incorrect. Something is wrong, giving up on this buddy");
+        }
+    }
+
+    public void addAnalyticsSearch( String name, String query, String limit ) throws InvalidConfigurationException {
+        if( name == null || query == null ) {
+            logger.warn("No valid minimum config parameters for Analytics Search! The name is used for the destination table and the query is the search");
+            throw new InvalidConfigurationException("No valid minimum config parameters for Analytics Search! The name is used for the destination table and the query is the search");
+        }
+        if( limit == null ) limit="20000";
+        searches.add(new Search(name, query, Integer.parseInt(limit)));
+        logger.info("Added Search %s: '%s' to list for collection",name, query);
+    }
+
+    public void addAnalytics( String urlString, String accountName, String apiKey, String tableNamePrefix ) throws InvalidConfigurationException {
+        if( urlString == null || accountName == null || apiKey == null ) {
+            logger.warn("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
+            throw new InvalidConfigurationException("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
+        }
+        if( this.searches.size() == 0 ) throw new InvalidConfigurationException("We can't add an Analytics section without any Searches!");
+        try {
+            Analytics analytic = new Analytics( urlString, accountName, apiKey, tableNamePrefix, (ArrayList<Search>) this.searches.clone());
+            this.searches = new ArrayList<>();
+            this.analytics.add(analytic);
+            this.definedAnalytics=true;
+        } catch (MalformedURLException exception) {
+            exception.printStackTrace();
         }
     }
 
