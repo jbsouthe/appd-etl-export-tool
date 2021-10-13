@@ -48,7 +48,7 @@ public class Scheduler {
                 if( results == null ) {
                     logger.warn("No results from analytics searches?");
                 } else {
-                    logger.info("Analytics acount %s collected %d search results for import into the Database", analytic.APIAccountName, results.length);
+                    logger.info("Analytics account %s collected %d search results for import into the Database", analytic.APIAccountName, results.length);
                     configuration.getDatabase().importAnalyticData( results );
                 }
             }
