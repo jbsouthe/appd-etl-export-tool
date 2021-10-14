@@ -41,8 +41,25 @@ public abstract class Table {
     public String getType() { return type; }
 
     public Map<String, ColumnFeatures> getColumns() { return columns; }
+    public ColumnFeatures getColumn( String name ) {
+        ColumnFeatures columnFeatures = getColumns().get(name);
+        if( columnFeatures == null ) columnFeatures = getColumn(name.toLowerCase());
+        if( columnFeatures == null )
+            for( ColumnFeatures possibleColumn : getColumns().values() )
+                if( possibleColumn.name.toLowerCase().equals(name.toLowerCase()) ) columnFeatures = possibleColumn;
+        return columnFeatures;
+    }
 
     public String toString() { return getName(); }
+
+    public String fitToSize( String text, String name ) {
+        return fitToSize(text, getColumn(name).size);
+    }
+
+    public String fitToSize( String text, int maxSize) {
+        if( text.length() <= maxSize) return text;
+        return text.substring(0,maxSize);
+    }
 
     public abstract int insert(Object object);
 
@@ -88,7 +105,7 @@ public abstract class Table {
                 if( columnFeatures != null && column.size < columnFeatures.size ) { //we can increase column size
                     alterTableToIncreaseColumnSize(column, columnFeatures.size);
                 } else {
-                    logger.info("We can't fix this problem with the table %s.%s, actual column size(%d) is larger than required(%d), this arguably isn't a problem now that i think about it",getName(),column.name, column.size, columnFeatures.size);
+                    logger.trace("We can't fix this problem with the table %s.%s, actual column size(%d) is larger than required(%d), this arguably isn't a problem now that i think about it",getName(),column.name, column.size, columnFeatures.size);
                 }
             }
         }

@@ -49,7 +49,7 @@ public class EventTable extends Table{
             preparedStatement.setString(parameterIndex++, event.type);
             preparedStatement.setString(parameterIndex++, event.subType);
             preparedStatement.setString(parameterIndex++, event.severity);
-            preparedStatement.setString(parameterIndex++, event.summary);
+            preparedStatement.setString(parameterIndex++, fitToSize(event.summary, "summary"));
             if( event.triggeredEntity != null ) {
                 preparedStatement.setInt(parameterIndex++, event.triggeredEntity.entityId);
                 preparedStatement.setString(parameterIndex++, event.triggeredEntity.name);
