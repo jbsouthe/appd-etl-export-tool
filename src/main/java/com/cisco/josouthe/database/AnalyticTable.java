@@ -110,10 +110,12 @@ public class AnalyticTable extends Table{
                                             //logger.trace("This String/Thing is not a date: %s",data);
                                             preparedStatement.setString(
                                                     parameterIndex++,
+                                                    fitToSize(String.valueOf(data), getColumn(key).size)
+                                                    /* this is a bit obtuse, and better as a method for other uses
                                                     String.valueOf(data).substring(
                                                             0,
                                                             Math.min(getColumns().get(key).size, String.valueOf(data).length())
-                                                    )
+                                                    )*/
                                             );
                                         }
                                     }

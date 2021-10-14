@@ -43,8 +43,8 @@ public class MetricTable extends Table {
             for(MetricValue metricValue : metric.metricValues ) {
                 preparedStatement.setString(1, metric.controllerHostname);
                 preparedStatement.setString(2, metric.applicationName);
-                preparedStatement.setString(3, metric.metricName);
-                preparedStatement.setString(4, metric.metricPath);
+                preparedStatement.setString(3, fitToSize(metric.metricName, "metricname"));
+                preparedStatement.setString(4, fitToSize(metric.metricPath, "metricpath"));
                 preparedStatement.setString(5, metric.frequency);
                 preparedStatement.setLong(6, metric.metricId);
                 preparedStatement.setInt(7, (metricValue.useRange ? 1: 0 ));
