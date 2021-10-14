@@ -2,7 +2,8 @@ package com.cisco.josouthe.util;
 
 import jdk.internal.net.http.common.Pair;
 
-import java.time.LocalDateTime;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -11,6 +12,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utility {
+    private static Pattern patternConnectionString = Pattern.compile("jdbc:(\\S):.*");
+    private static Pattern patternAnalyticsDateString = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
+    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+
     public static String encode( String original ){
         return original.replace("|","%7C").replace(" ", "%20").replace(":","%3A").replace(".", "%2E").replace("-", "%2D");
     }
@@ -32,11 +37,23 @@ public class Utility {
     }
 
     public static String parseDatabaseVendor( String connectionString) {
-        Pattern pattern = Pattern.compile("jdbc:(\\S):.*");
-        Matcher matcher = pattern.matcher(connectionString);
+        Matcher matcher = patternConnectionString.matcher(connectionString);
         if(matcher.find()) return matcher.group(0);
         return "oracle";
     }
 
     public static long now() { return new Date().getTime(); }
+
+    public static boolean isThisStringADate(String data) {
+        if( data == null ) return false;
+        //"2021-10-14T18:00:51.435Z"
+        Matcher matcher = patternAnalyticsDateString.matcher(data);
+        if(matcher.matches()) return true;
+        return false;
+    }
+
+    public static long parseDateString(String data) throws ParseException {
+        //"2021-10-14T18:00:51.435Z"
+        return simpleDateFormat.parse(data).getTime();
+    }
 }

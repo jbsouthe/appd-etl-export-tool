@@ -49,6 +49,15 @@ application varchar2(50) NOT NULL, triggeredentityid number(22) NOT NULL, trigge
 eventtime number(22) NOT NULL, subtype varchar2(50) NOT NULL, id number(22) NOT NULL, triggeredentityname varchar2(50) NOT NULL,
 type varchar2(50) NOT NULL, eventtimestamp date(7) NOT NULL)
 
-drop table AppDynamics_SchedulerControl;
+drop table AppDynamics_Analytics_transactionDetails;
+
 
 select * from AppDynamics_SchedulerControl;
+
+select * from AppDynamics_Analytics_UniqueTransactionCount;
+
+select * from AppDynamics_Analytics_transactionDetails;
+
+select * from AppDynamics_Analytics_allTransactionDetails;
+
+select * from ProxyAppEvents;

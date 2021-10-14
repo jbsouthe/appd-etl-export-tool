@@ -95,4 +95,6 @@ public class ColumnFeatures implements Cloneable, Comparable {
         }
         return -1;
     }
+
+    public String toString() { return name +" "+ printConstraints(); }
 }

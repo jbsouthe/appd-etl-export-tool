@@ -7,6 +7,7 @@ public class Result {
     public Field[] fields;
     public Object[][] results;
     public String name, targetTable;
+    public long startTimestamp, endTimestamp;
 
     public String toString() {
         int rows =0, columns=0;
