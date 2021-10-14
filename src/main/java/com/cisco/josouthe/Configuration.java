@@ -191,8 +191,8 @@ public class Configuration {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Application! Ensure Name is configured");
         }
-        if( metricTable != null && isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
-        if( eventTable != null && isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
+        if( metricTable != null && database.isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
+        if( eventTable != null && database.isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
         Application application = new Application( getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, getAllEvents, getAllHealthRuleViolations, metrics.toArray( new ApplicationMetric[0] ));
         application.setEventTypeList( getEventListForApplication(includeEventList, excludeEventList));
         if( eventSeverities != null ) application.eventSeverities = eventSeverities;
@@ -250,38 +250,10 @@ public class Configuration {
         if( metricTable == null ) metricTable = "AppDynamics_MetricTable";
         if( controlTable == null ) controlTable = "AppDynamics_SchedulerControl";
         if( eventTable == null ) eventTable = "AppDynamics_EventTable";
-        if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Default Metric Table set to: %s", metricTable);
-        if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Default Event Table set to: %s", eventTable);
-        if( ! "".equals(controlTable) && isValidDatabaseTableName(controlTable) ) logger.debug("Run Control Table set to: %s", controlTable);
         this.database = new Database( connectionString, user, password, metricTable, controlTable, eventTable, getPropertyAsLong("scheduler-FirstRunHistoricNumberOfHours", 48L));
     }
 
-    private List<String> _tableNameForbiddenWords = null;
-    private boolean isValidDatabaseTableName( String tableName ) throws InvalidConfigurationException {
-        if( tableName == null ) return false;
-        if(_tableNameForbiddenWords == null) loadTableNameInvalidWords();
-        if( tableName.length() > 30 ) throw new InvalidConfigurationException(String.format("Database table name longer than max 30 characters, by like %d characters. change this name: %s",(tableName.length()-30),tableName));
-        if(! Character.isAlphabetic(tableName.charAt(0))) throw new InvalidConfigurationException(String.format("Database table name must begin with an alphabetic character, not this thing '%s' change this table: %s",tableName.charAt(0),tableName));
-        long countSpecialCharacters = tableName.chars().filter(ch -> ch == '#' || ch == '$' || ch == '_').count();
-        long countInvalidCharacters = tableName.chars().filter(ch -> ch != '#' && ch != '$' && ch != '_' && ! Character.isAlphabetic(ch) && ! Character.isDigit(ch)).count();
-        if( countSpecialCharacters > 1 || countInvalidCharacters > 0 ) throw new InvalidConfigurationException(String.format("Only one of the special characters ($, #, or _) is allowed and the rest must be alphanumeric only, not my rules, (shrug), change this table name: %s",tableName));
-        if( _tableNameForbiddenWords.contains(tableName.toLowerCase()) ) throw new InvalidConfigurationException(String.format("The table name is a reserved word for this database vendor %s, please picking something different than: %s",getProperty("database-vendor", "OOPS, no vendor??"), tableName));
-        return true; //if we made it this far without an exception, we are good to go
-    }
 
-    private void loadTableNameInvalidWords() throws InvalidConfigurationException {
-        String filename = getProperty("database-vendor").toLowerCase() + "-forbidden-words.txt";
-        logger.debug("Loading file: %s",filename);
-        try (BufferedReader reader = new BufferedReader( new InputStreamReader(getClass().getClassLoader().getResourceAsStream(filename)))) {
-            _tableNameForbiddenWords = new ArrayList<>();
-            String word;
-            while ( (word = reader.readLine()) != null )
-                _tableNameForbiddenWords.add(word.toLowerCase());
-        } catch (IOException e) {
-            logger.warn("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s Exception: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!"), e.getMessage());
-            throw new InvalidConfigurationException(String.format("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!")));
-        }
-    }
 
     private List<String> _eventList = null;
     private String getEventListForApplication( String includeListString, String excludeListString) throws InvalidConfigurationException {

@@ -164,6 +164,8 @@ public class Analytics {
             result.name = name;
             result.query = query;
             result.targetTable = this.tableNamePrefix+name;
+            result.startTimestamp = startTimestamp;
+            result.endTimestamp = endTimestamp;
         }
         return results;
     }

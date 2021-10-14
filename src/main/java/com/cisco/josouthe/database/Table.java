@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public abstract class Table {
@@ -14,12 +15,13 @@ public abstract class Table {
     protected String name = null;
     protected String type = "UNKNOWN TABLE TYPE";
     protected Database database = null;
+    protected boolean initialized=false;
 
     public Table( String tableName, String tableType, Database database ) {
         this.name = tableName;
         this.type = tableType;
         this.database = database;
-        columns = new HashMap<>();
+        columns = new LinkedHashMap<>();
     }
 
     protected void initTable() {
@@ -28,6 +30,11 @@ public abstract class Table {
         } else {
             createTable();
         }
+        this.initialized=true;
+    }
+
+    public boolean isInitialized() {
+        return initialized;
     }
 
     public String getName() { return name; }
@@ -77,15 +84,28 @@ public abstract class Table {
             if( column.isMissing ) alterTableToAddColumn( column);
             if( column.isWrongNullable || column.isWrongType ) logger.warn("We can't fix this problem with the table %s.%s, wrong nullable: %s, wrong type: %s is %s but should be", getName(), column.name, column.isWrongNullable, column.isWrongType, column.type, getColumns().get(column.name).type);
             if( column.isWrongSize && !column.isWrongType ) {
-                if( column.size < getColumns().get(column.name).size ) { //we can increase column size
-                    alterTableToIncreaseColumnSize(column, getColumns().get(column.name).size);
+                ColumnFeatures columnFeatures = getColumnDefinition(column.name);
+                if( columnFeatures != null && column.size < columnFeatures.size ) { //we can increase column size
+                    alterTableToIncreaseColumnSize(column, columnFeatures.size);
                 } else {
-                    logger.info("We can't fix this problem with the table %s.%s, actual column size(%d) is larger than required(%d), this arguably isn't a problem now that i think about it",getName(),column.name, column.size, getColumns().get(column.name).size);
+                    logger.info("We can't fix this problem with the table %s.%s, actual column size(%d) is larger than required(%d), this arguably isn't a problem now that i think about it",getName(),column.name, column.size, columnFeatures.size);
                 }
             }
         }
     }
+
+    private ColumnFeatures getColumnDefinition(String name) {
+        ColumnFeatures columnFeatures = getColumns().get(name);
+        if( columnFeatures != null ) return columnFeatures;
+        for( ColumnFeatures column : getColumns().values() ) {
+            if( column.name.toLowerCase().equals(name.toLowerCase()) )
+                return column;
+        }
+        return null;
+    }
+
     private void alterTableToIncreaseColumnSize(ColumnFeatures column, int size) {
+        if( column == null ) return;
         Connection conn = null;
         try{
             conn = database.getConnection();
