@@ -2,7 +2,6 @@ package com.cisco.josouthe.data;
 
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.analytic.Search;
-import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.ControlTable;
 import com.cisco.josouthe.util.Utility;
@@ -28,7 +27,6 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 
 /*
 curl -X POST "https://analytics.api.appdynamics.com/events/query"
