@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.*;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.oracle.OracleDatabase;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
 import org.apache.commons.digester3.Digester;
@@ -250,7 +251,15 @@ public class Configuration {
         if( metricTable == null ) metricTable = "AppDynamics_MetricTable";
         if( controlTable == null ) controlTable = "AppDynamics_SchedulerControl";
         if( eventTable == null ) eventTable = "AppDynamics_EventTable";
-        this.database = new Database( connectionString, user, password, metricTable, controlTable, eventTable, getPropertyAsLong("scheduler-FirstRunHistoricNumberOfHours", 48L));
+        switch( Utility.parseDatabaseVendor(connectionString).toLowerCase() ) {
+            case "oracle": {
+                this.database = new OracleDatabase(connectionString, user, password, metricTable, controlTable, eventTable, getPropertyAsLong("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                break;
+            }
+            default: {
+                throw new InvalidConfigurationException("Unknown Database Vendor: '"+ Utility.parseDatabaseVendor(connectionString)+"' this is a typo or an unsupported database");
+            }
+        }
     }
 
 
