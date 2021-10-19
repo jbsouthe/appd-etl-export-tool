@@ -23,7 +23,7 @@ public class ETLTransferMain {
             logger.fatal("XML Parser Error reading config file: %s Exception: %s", configFileName, e.getMessage());
             return;
         } catch (Exception e) {
-            logger.fatal("A configuration exception was thrown that we can't handle, so we are quiting, Exception: %s",e);
+            logger.fatal("A configuration exception was thrown that we can't handle, so we are quiting, Exception: ",e);
             return;
         }
 

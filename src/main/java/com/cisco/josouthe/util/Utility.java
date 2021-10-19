@@ -12,7 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utility {
-    private static Pattern patternConnectionString = Pattern.compile("jdbc:(\\S):.*");
+    private static Pattern patternConnectionString = Pattern.compile("^(?<jdbc>[j|J][d|D][b|B][c|C]:)?(?<vendor>[^:]+):(?<driver>[^:]+):(?<path>.*);?");
     private static Pattern patternAnalyticsDateString = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
     private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
@@ -38,8 +38,18 @@ public class Utility {
 
     public static String parseDatabaseVendor( String connectionString) {
         Matcher matcher = patternConnectionString.matcher(connectionString);
-        if(matcher.find()) return matcher.group(0);
+        if(matcher.find()) return matcher.group("vendor");
         return "oracle";
+    }
+
+    public static String parseDatabasePath( String connectionString ) {
+        Matcher matcher = patternConnectionString.matcher(connectionString);
+        if(matcher.find()) return matcher.group("path");
+        return null;
+    }
+
+    public static String cleanFileName( String in ) {
+        return in.replace('.', '_').replace(' ', '_');
     }
 
     public static long now() { return new Date().getTime(); }

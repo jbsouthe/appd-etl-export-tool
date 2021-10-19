@@ -9,8 +9,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class Database {
@@ -25,7 +27,7 @@ public abstract class Database {
 
     protected String connectionString, user, password, vendorName;
     protected Table defaultMetricTable, controlTable, defaulEventTable;
-    protected Map<String,Table> tablesMap;
+    protected Map<String,Table> tablesMap = new HashMap<>();
 
     public Database( String connectionString, String user, String password ) {
         this.connectionString = connectionString;
@@ -36,17 +38,92 @@ public abstract class Database {
 
 
     public ControlTable getControlTable() { return (ControlTable) controlTable; }
-
+    protected abstract AnalyticTable getAnalyticTable(Result result );
+    protected abstract EventTable getEventTable(String name );
+    protected abstract MetricTable getMetricTable(String name );
 
     public abstract boolean isDatabaseAvailable();
 
-    public abstract void importMetricData(MetricData[] metricData);
+    public void importMetricData(MetricData[] metricData) {
+        logger.trace("Beginning of import metric data method");
+        if( metricData == null || metricData.length == 0 ) {
+            logger.debug("Nothing to import, leaving quickly");
+            return;
+        }
+        int cntStarted = 0;
+        int cntFinished = 0;
+        int cntAverageCalc = 0;
+        long startTimeOverall = Utility.now();
+        long maxDurationTime = -1;
+        long minDurationTime = Long.MAX_VALUE;
+        for( MetricData metric : metricData ) {
+            if( "METRIC DATA NOT FOUND".equals(metric.metricName) ) continue;
+            cntStarted+=metric.metricValues.size();
+            MetricTable table = (MetricTable) getMetricTable(metric.targetTable);
+            long startTimeTransaction = Utility.now();
+            cntFinished += table.insert(metric);
+            cntAverageCalc++;
+            long durationTimeTransaction = Utility.now() - startTimeTransaction;
+            if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
+            if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
+            logger.debug("Loaded %d metrics into the database in time %d(ms)", metric.metricValues.size(), durationTimeTransaction);
+        }
+        long durationTimeOverallMS = Utility.now() - startTimeOverall;
+        logger.info("Attempted to load %d metrics, succeeded in loading %d metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntAverageCalc);
 
-    public abstract void importEventData(EventData[] events);
+    }
+
+    public void importEventData(EventData[] events) {
+        logger.trace("Beginning of import event data method");
+        if( events == null || events.length == 0 ) {
+            logger.debug("Nothing to import, leaving quickly");
+            return;
+        }
+        int cntStarted = 0;
+        int cntFinished = 0;
+        long startTimeOverall = Utility.now();
+        long maxDurationTime = -1;
+        long minDurationTime = Long.MAX_VALUE;
+        for( EventData event : events ) {
+            cntStarted++;
+            long startTimeTransaction = Utility.now();
+            EventTable table = (EventTable) getEventTable(event.targetTable);
+            cntFinished += table.insert(event);
+            long durationTimeTransaction = Utility.now() - startTimeTransaction;
+            if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
+            if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
+            logger.debug("Loaded %d event into the database in time %d(ms)", 1, durationTimeTransaction);
+        }
+        long durationTimeOverallMS = Utility.now() - startTimeOverall;
+        logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntStarted);
+    }
+
+    public void importAnalyticData(Result[] results) {
+        logger.trace("Begining of import analytics search results method");
+        if( results == null || results.length == 0 ) {
+            logger.debug("Nothing to import, leaving quickly");
+            return;
+        }
+        int cntStarted = 0;
+        int cntFinished = 0;
+        long startTimeOverall = Utility.now();
+        long maxDurationTime = -1;
+        long minDurationTime = Long.MAX_VALUE;
+        for( Result result : results ) {
+            cntStarted+=result.results.length;
+            long startTimeTransaction = Utility.now();
+            AnalyticTable table = (AnalyticTable) getAnalyticTable(result);
+            cntFinished += table.insert(result);
+            long durationTimeTransaction = Utility.now() - startTimeTransaction;
+            if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
+            if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
+            logger.debug("Loaded %d analytic search results into the database in time %d(ms)", result.results.length, durationTimeTransaction);
+        }
+        long durationTimeOverallMS = Utility.now() - startTimeOverall;
+        logger.info("Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntStarted);
+    }
 
     public abstract Connection getConnection() throws SQLException;
-
-    public abstract void importAnalyticData(Result[] results);
 
     public abstract String convertToAcceptableColumnName(String label, Collection<ColumnFeatures> existingColumns);
 
