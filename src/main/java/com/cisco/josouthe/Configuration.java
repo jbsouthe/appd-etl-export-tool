@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.*;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.csv.CSVDatabase;
 import com.cisco.josouthe.database.oracle.OracleDatabase;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
@@ -242,9 +243,9 @@ public class Configuration {
     }
 
     public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable ) throws InvalidConfigurationException {
-        if( connectionString == null || user == null || password == null ) {
-            logger.warn("No valid minimum config parameters for ETL Database! Ensure Connection String, User, and Password are configured");
-            throw new InvalidConfigurationException("No valid minimum config parameters for ETL Database! Ensure Connection String, User, and Password are configured");
+        if( connectionString == null ) {
+            logger.warn("No valid minimum config parameters for ETL Database! Ensure Connection String is configured");
+            throw new InvalidConfigurationException("No valid minimum config parameters for ETL Database! Ensure Connection String is configured");
         }
         logger.debug("Setting Target DB: %s", connectionString);
         properties.setProperty("database-vendor", Utility.parseDatabaseVendor(connectionString));
@@ -256,8 +257,12 @@ public class Configuration {
                 this.database = new OracleDatabase(connectionString, user, password, metricTable, controlTable, eventTable, getPropertyAsLong("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
+            case "csv": {
+                this.database = new CSVDatabase( connectionString, metricTable, controlTable, eventTable, getPropertyAsLong("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                break;
+            }
             default: {
-                throw new InvalidConfigurationException("Unknown Database Vendor: '"+ Utility.parseDatabaseVendor(connectionString)+"' this is a typo or an unsupported database");
+                throw new InvalidConfigurationException("Unknown Database Vendor: '"+ Utility.parseDatabaseVendor(connectionString)+"' this is a typo or an unsupported database: "+ connectionString);
             }
         }
     }
