@@ -11,6 +11,8 @@
     and as of today, only oracle is provided and assumed. To add other database vendor support, we must ensure SQL compatibility and provide
     a list of reserved words so the database table can be created and verified
 
+    For Oracle the following connection string works, with the libraries packaged: "jdbc:oracle:thin:@<hostname>:<port ie: 1521>:<schema ie: orcl>"
+
     The user must have permissions to create and alter the table specified, since it will be fixed if something is missing or the wrong size
     The DefaultTable must follow oracles rules for table names:
     An acceptable Oracle name must:
@@ -18,7 +20,10 @@
         Not be a reserved keyword. You cannot, for example, name your table TABLE or PROCEDURE or VARCHAR2.
         Be no longer than 30 characters.
         Begin with an alphabetical character. You can have numbers and certain special characters in the name, but the first character must be an alpha character.
-        Contain only alphabetical characters, numbers, or one of the following special characters: # $ _
+        Contain only alphabetical characters, numbers, or '_' (we do not support other special characters and will attempt to strip them out
+
+    We support CSV output into a target directory as well, using the following connection string format "csv:none:<data directory to create files in>"
+        for example: csv:none:./data to specify csv file output, with no driver, in the ./data directory, which we will attempt to create if it does not exist.
 
     -->
     <TargetDB>
@@ -29,7 +34,7 @@
         <DefaultMetricTable>AppDynamics_DefaultTable</DefaultMetricTable>
         <DefaultEventTable>AppDynamics_EventTable</DefaultEventTable>
     </TargetDB>
-    <!--multiple controller sections can be defined, and at least one controller and application must be configured, or the app will exit-->
+    <!--multiple controller sections can be defined, and at least one controller and application or analytics section must be configured, or the app will exit-->
     <Controller>
         <URL>https://southerland-test.saas.appdynamics.com/</URL>
         <ClientID>ETLClient@southerland-test</ClientID>
