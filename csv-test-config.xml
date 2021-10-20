@@ -4,9 +4,7 @@
         <FirstRunHistoricNumberOfHours>48</FirstRunHistoricNumberOfHours>
     </Scheduler>
     <TargetDB>
-        <ConnectionString>jdbc:oracle:thin:@localhost:1521:orcl</ConnectionString>
-        <User>admin</User>
-        <Password>6hIUw!u01</Password>
+        <ConnectionString>csv:none:./data</ConnectionString>
         <DefaultMetricTable>AppDynamics_DefaultTable</DefaultMetricTable>
     </TargetDB>
     <Controller>
