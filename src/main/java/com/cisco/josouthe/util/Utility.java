@@ -21,7 +21,7 @@ public class Utility {
     private static Set<DataScope> snapshotDatascope;
 
     public static String encode( String original ){
-        return original.replace("|","%7C").replace(" ", "%20").replace(":","%3A").replace(".", "%2E").replace("-", "%2D");
+        return original.replace("|","%7C").replace(" ", "%20").replace(":","%3A").replace(".", "%2E").replace("-", "%2D").replace("#", "%23");
     }
 
     public static String getDateString(long dateTime) { //ISO8601 Date (Extend) https://dencode.com/en/date/iso8601
