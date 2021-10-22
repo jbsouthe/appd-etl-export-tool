@@ -222,13 +222,13 @@ public class Configuration {
     }
 
     public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours ) {
-        Boolean enabled = true;
         if( "false".equalsIgnoreCase(enabledFlag) ) {
             logger.info("Scheduler is disabled, running only once");
             properties.setProperty("scheduler-enabled", "false");
             return;
         } else {
             properties.setProperty("scheduler-enabled", "true");
+            this.definedScheduler = true;
         }
         if( "".equals(pollIntervalMinutes) || pollIntervalMinutes == null ) {
             pollIntervalMinutes = "10";
