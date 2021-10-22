@@ -118,10 +118,6 @@ public class Controller {
             logger.error("Exception in attempting to get access token, Exception: %s",e.getMessage());
             return false;
         }
-        if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            logger.warn("Access Key retreival returned bad status: %s", response.getStatusLine());
-            return false;
-        }
         HttpEntity entity = response.getEntity();
         Header encodingHeader = entity.getContentEncoding();
         Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 : Charsets.toCharset(encodingHeader.getValue());
@@ -131,6 +127,10 @@ public class Controller {
             logger.trace("JSON returned: %s",json);
         } catch (IOException e) {
             logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
+            return false;
+        }
+        if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+            logger.warn("Access Key retreival returned bad status: %s", response.getStatusLine());
             return false;
         }
         Gson gson = new Gson();
@@ -193,7 +193,6 @@ public class Controller {
             json = getRequest(String.format("controller/rest/applications/%s/metrics?metric-path=%s&output=JSON", Utility.encode(application.name), Utility.encode(path)));
         }
 
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         TreeNode[] treeNodes = null;
         try {
             treeNodes = gson.fromJson(json, TreeNode[].class);
@@ -280,10 +279,6 @@ public class Controller {
             logger.error("Exception in attempting to get controller data, Exception: %s",e.getMessage());
             return null;
         }
-        if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            logger.warn("request returned bad status: %s", response.getStatusLine());
-            return null;
-        }
         HttpEntity entity = response.getEntity();
         Header encodingHeader = entity.getContentEncoding();
         Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 : Charsets.toCharset(encodingHeader.getValue());
@@ -293,6 +288,10 @@ public class Controller {
             logger.trace("JSON returned: %s",json);
         } catch (IOException e) {
             logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
+            return null;
+        }
+        if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+            logger.warn("request returned bad status: %s message: %s", response.getStatusLine(), json);
             return null;
         }
         return json;
