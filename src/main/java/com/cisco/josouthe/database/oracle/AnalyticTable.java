@@ -75,6 +75,7 @@ public class AnalyticTable extends Table implements com.cisco.josouthe.database.
         StringBuilder insertSQL = new StringBuilder(sqlBeginning.substring(0, sqlBeginning.length()-1));
         insertSQL.append( sqlEnding.substring(0, sqlEnding.length()-1) );
         insertSQL.append(")");
+        logger.trace("Data to inser: %s", result.toString());
         logger.trace("insertAnalytics SQL: %s", insertSQL);
         Connection conn = null;
         try{
