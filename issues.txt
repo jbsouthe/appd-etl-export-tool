@@ -1,0 +1,5 @@
+returning in xml though we specified json:
+14:37:52.330 [main] TRACE com.cisco.josouthe.data.Controller - HTTP Method: GET https://diners-nonprod.saas.appdynamics.com//controller/rest/applications/IIB10%2DTC%2DPREPROD/metrics?metric-path=Overall%20Application%20Performance%7Ciib10pprod2%7CExternal%20Calls%7CCall%2DIIB_NODE%20to%20Discovered%20backend%20call%20%2D%20ec/com/dinersclub/comprobantes/WSComprobantesRetencion#FCMComposite_1_2&output=JSON HTTP/1.1
+14:37:52.417 [main] TRACE com.cisco.josouthe.data.Controller - Response Status Line: HTTP/1.1 200 OK
+14:37:52.418 [main] TRACE com.cisco.josouthe.data.Controller - JSON returned: <metric-items></metric-items>
+
