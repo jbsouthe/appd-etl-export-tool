@@ -56,8 +56,7 @@ public class Application {
             for( TreeNode something : somethings ) {
                 if( something.isFolder() ) {
                     if( !"".equals(path) ) path += "|";
-                    path+=something.name;
-                    findMetrics( controller, controller.getApplicationMetricFolders(this, path), path);
+                    findMetrics( controller, controller.getApplicationMetricFolders(this, path+something.name), path);
                 } else {
                     logger.debug("Adding metric: %s|%s",path,something.name);
                     metricsToAdd.add( new ApplicationMetric(defaultDisableDataRollup, path+"|"+something.name));
