@@ -16,6 +16,7 @@ import com.cisco.josouthe.database.ControlTable;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import org.apache.commons.codec.Charsets;
 import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
@@ -193,18 +194,26 @@ public class Controller {
         }
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return gson.fromJson(json, TreeNode[].class);
+        TreeNode[] treeNodes = null;
+        try {
+            treeNodes = gson.fromJson(json, TreeNode[].class);
+        } catch (JsonSyntaxException jsonSyntaxException) {
+            logger.warn("Error in parsing returned text, this may be a bug JSON '%s' Exception: %s",json, jsonSyntaxException.getMessage());
+        }
+        return treeNodes;
     }
 
     public MetricData[] getAllMetricsForAllApplications() {
         ArrayList<MetricData> metrics = new ArrayList<>();
         for( Application application : this.applications ) {
-            Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Metrics", null, "Get Application Metrics", EntryTypes.POJO, false);
+            //Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Metrics", null, "Get Application Metrics", EntryTypes.POJO, false);
             ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "MetricData" );
+            /*
             serviceEndPoint.collectData("Controller", controlEntry.controller, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Application", controlEntry.application, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Datatype", controlEntry.type, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Start-Timestamp", String.valueOf(controlEntry.timestamp), Utility.getSnapshotDatascope());
+             */
             long startTimestamp = controlEntry.timestamp;
             long endTimestamp = Utility.now();
             for( ApplicationMetric applicationMetric : application.metrics ) {
@@ -216,8 +225,8 @@ public class Controller {
                 }
             }
             controlEntry.timestamp = endTimestamp;
-            serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
-            serviceEndPoint.end();
+            //serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
+            //serviceEndPoint.end();
             this.controlTable.setLastRunTimestamp(controlEntry);
         }
         return metrics.toArray( new MetricData[0] );
@@ -226,12 +235,14 @@ public class Controller {
     public EventData[] getAllEventsForAllApplications() {
         ArrayList<EventData> events = new ArrayList<>();
         for( Application application : this.applications ) {
-            Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Events", null, "Get Application Events", EntryTypes.POJO, false);
+            //Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Events", null, "Get Application Events", EntryTypes.POJO, false);
             ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "EventData" );
-            serviceEndPoint.collectData("Controller", controlEntry.controller, Utility.getSnapshotDatascope());
+            /* serviceEndPoint.collectData("Controller", controlEntry.controller, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Application", controlEntry.application, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Datatype", controlEntry.type, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Start-Timestamp", String.valueOf(controlEntry.timestamp), Utility.getSnapshotDatascope());
+
+             */
             long startTimestamp = controlEntry.timestamp;
             long endTimestamp = Utility.now();
             if( application.getAllEvents ) {
@@ -245,8 +256,8 @@ public class Controller {
                 }
             }
             controlEntry.timestamp = endTimestamp;
-            serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
-            serviceEndPoint.end();
+            //serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
+            //serviceEndPoint.end();
             this.controlTable.setLastRunTimestamp(controlEntry);
         }
         return events.toArray( new EventData[0]);
