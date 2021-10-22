@@ -1,5 +1,8 @@
 package com.cisco.josouthe.data;
 
+import com.appdynamics.agent.api.AppdynamicsAgent;
+import com.appdynamics.agent.api.EntryTypes;
+import com.appdynamics.agent.api.Transaction;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.database.ControlEntry;
@@ -101,8 +104,11 @@ public class Analytics {
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now();
         for( Search search : searches ) {
+            Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Analytics Search", null, "Analytics Search "+ search.name, EntryTypes.POJO, false);
+            serviceEndPoint.collectData("Search Query", search.query, Utility.getSnapshotDatascope());
             for( Result result : runAnalyticsQuery(search, startTimestamp, endTimestamp))
                 results.add(result);
+            serviceEndPoint.end();
         }
         controlEntry.timestamp = endTimestamp;
         this.controlTable.setLastRunTimestamp(controlEntry);

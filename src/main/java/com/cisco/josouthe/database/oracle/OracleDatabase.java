@@ -92,7 +92,10 @@ public class OracleDatabase extends Database {
         return (com.cisco.josouthe.database.AnalyticTable) this.tablesMap.get(result.targetTable);
     }
 
-    public Connection getConnection() throws SQLException { return DriverManager.getConnection( this.connectionString, this.user, this.password); }
+    public Connection getConnection() throws SQLException {
+        logger.trace("Getting Connection to DB for user %s",this.user);
+        return DriverManager.getConnection( this.connectionString, this.user, this.password);
+    }
 
     @Override
     public String convertToAcceptableColumnName(String label, Collection<ColumnFeatures> existingColumns) {
