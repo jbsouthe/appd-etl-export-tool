@@ -1,5 +1,6 @@
 package com.cisco.josouthe.util;
 
+import com.appdynamics.apm.appagent.api.DataScope;
 import jdk.internal.net.http.common.Pair;
 
 import java.text.ParseException;
@@ -8,6 +9,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,6 +18,7 @@ public class Utility {
     private static Pattern patternConnectionString = Pattern.compile("^(?<jdbc>[j|J][d|D][b|B][c|C]:)?(?<vendor>[^:]+):(?<driver>[^:]+):(?<path>.*);?");
     private static Pattern patternAnalyticsDateString = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
     private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    private static Set<DataScope> snapshotDatascope;
 
     public static String encode( String original ){
         return original.replace("|","%7C").replace(" ", "%20").replace(":","%3A").replace(".", "%2E").replace("-", "%2D");
@@ -65,5 +69,13 @@ public class Utility {
     public static long parseDateString(String data) throws ParseException {
         //"2021-10-14T18:00:51.435Z"
         return simpleDateFormat.parse(data).getTime();
+    }
+
+    public static Set<DataScope> getSnapshotDatascope() {
+        if( snapshotDatascope == null ) {
+            snapshotDatascope = new HashSet<>();
+            snapshotDatascope.add(DataScope.SNAPSHOTS);
+        }
+        return snapshotDatascope;
     }
 }

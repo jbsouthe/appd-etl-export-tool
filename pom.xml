@@ -17,6 +17,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.appdynamics.agent</groupId>
+            <artifactId>agent-api</artifactId>
+            <version>20.6.0.30246</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>2.14.1</version>
@@ -53,6 +58,30 @@
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.appdynamics.agent</groupId>
+                                    <artifactId>agent-api</artifactId>
+                                    <type>jar</type>
+                                    <includes>com/appdynamics/agent/api/AppdynamicsAgent.class</includes>
+                                    <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>templating-maven-plugin</artifactId>

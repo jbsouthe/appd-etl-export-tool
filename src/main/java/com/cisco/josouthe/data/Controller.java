@@ -1,5 +1,8 @@
 package com.cisco.josouthe.data;
 
+import com.appdynamics.agent.api.AppdynamicsAgent;
+import com.appdynamics.agent.api.EntryTypes;
+import com.appdynamics.agent.api.Transaction;
 import com.cisco.josouthe.data.auth.AccessToken;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
@@ -196,7 +199,12 @@ public class Controller {
     public MetricData[] getAllMetricsForAllApplications() {
         ArrayList<MetricData> metrics = new ArrayList<>();
         for( Application application : this.applications ) {
+            Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Metrics", null, "Get Application Metrics", EntryTypes.POJO, false);
             ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "MetricData" );
+            serviceEndPoint.collectData("Controller", controlEntry.controller, Utility.getSnapshotDatascope());
+            serviceEndPoint.collectData("Application", controlEntry.application, Utility.getSnapshotDatascope());
+            serviceEndPoint.collectData("Datatype", controlEntry.type, Utility.getSnapshotDatascope());
+            serviceEndPoint.collectData("Start-Timestamp", String.valueOf(controlEntry.timestamp), Utility.getSnapshotDatascope());
             long startTimestamp = controlEntry.timestamp;
             long endTimestamp = Utility.now();
             for( ApplicationMetric applicationMetric : application.metrics ) {
@@ -208,6 +216,8 @@ public class Controller {
                 }
             }
             controlEntry.timestamp = endTimestamp;
+            serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
+            serviceEndPoint.end();
             this.controlTable.setLastRunTimestamp(controlEntry);
         }
         return metrics.toArray( new MetricData[0] );
@@ -216,7 +226,12 @@ public class Controller {
     public EventData[] getAllEventsForAllApplications() {
         ArrayList<EventData> events = new ArrayList<>();
         for( Application application : this.applications ) {
+            Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Events", null, "Get Application Events", EntryTypes.POJO, false);
             ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "EventData" );
+            serviceEndPoint.collectData("Controller", controlEntry.controller, Utility.getSnapshotDatascope());
+            serviceEndPoint.collectData("Application", controlEntry.application, Utility.getSnapshotDatascope());
+            serviceEndPoint.collectData("Datatype", controlEntry.type, Utility.getSnapshotDatascope());
+            serviceEndPoint.collectData("Start-Timestamp", String.valueOf(controlEntry.timestamp), Utility.getSnapshotDatascope());
             long startTimestamp = controlEntry.timestamp;
             long endTimestamp = Utility.now();
             if( application.getAllEvents ) {
@@ -230,6 +245,8 @@ public class Controller {
                 }
             }
             controlEntry.timestamp = endTimestamp;
+            serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
+            serviceEndPoint.end();
             this.controlTable.setLastRunTimestamp(controlEntry);
         }
         return events.toArray( new EventData[0]);
