@@ -22,12 +22,12 @@ public class EventTable extends Table implements com.cisco.josouthe.database.Eve
         columns.put("id", new ColumnFeatures("id", "number", 22, false));
         columns.put("eventTime", new ColumnFeatures("eventTime", "number", 22, false));
         columns.put("type", new ColumnFeatures("type", "varchar2", 50, false));
-        columns.put("subType", new ColumnFeatures("subType", "varchar2", 50, false));
+        columns.put("subType", new ColumnFeatures("subType", "varchar2", 50, true));
         columns.put("severity", new ColumnFeatures("severity", "varchar2", 20, false));
-        columns.put("summary", new ColumnFeatures("summary", "varchar2", 120, false));
+        columns.put("summary", new ColumnFeatures("summary", "varchar2", 120, true));
         columns.put("triggeredEntityId", new ColumnFeatures("triggeredEntityId", "number", 22, false));
-        columns.put("triggeredEntityName", new ColumnFeatures("triggeredEntityName", "varchar2", 50, true));
-        columns.put("triggeredEntityType", new ColumnFeatures("triggeredEntityType", "varchar2", 50, false));
+        columns.put("triggeredEntityName", new ColumnFeatures("triggeredEntityName", "varchar2", 120, true));
+        columns.put("triggeredEntityType", new ColumnFeatures("triggeredEntityType", "varchar2", 120, false));
         columns.put("eventTimestamp", new ColumnFeatures("eventTimestamp", "date", -1, false));
         this.initTable();
     }
@@ -45,22 +45,22 @@ public class EventTable extends Table implements com.cisco.josouthe.database.Eve
             conn = database.getConnection();
             PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());
             int parameterIndex = 1;
-            preparedStatement.setString(parameterIndex++, event.controllerHostname);
-            preparedStatement.setString(parameterIndex++, event.applicationName);
+            preparedStatement.setString(parameterIndex++, fitToSize(event.controllerHostname, "controller"));
+            preparedStatement.setString(parameterIndex++, fitToSize(event.applicationName, "application"));
             preparedStatement.setLong(parameterIndex++, event.id);
             preparedStatement.setLong(parameterIndex++, event.eventTime);
-            preparedStatement.setString(parameterIndex++, event.type);
-            preparedStatement.setString(parameterIndex++, event.subType);
-            preparedStatement.setString(parameterIndex++, event.severity);
+            preparedStatement.setString(parameterIndex++, fitToSize(event.type, "type"));
+            preparedStatement.setString(parameterIndex++, fitToSize(event.subType, "subType"));
+            preparedStatement.setString(parameterIndex++, fitToSize(event.severity, "severity"));
             preparedStatement.setString(parameterIndex++, fitToSize(event.summary, "summary"));
             if( event.triggeredEntity != null ) {
                 preparedStatement.setInt(parameterIndex++, event.triggeredEntity.entityId);
-                preparedStatement.setString(parameterIndex++, event.triggeredEntity.name);
-                preparedStatement.setString(parameterIndex++, event.triggeredEntity.entityType);
+                preparedStatement.setString(parameterIndex++, fitToSize(event.triggeredEntity.name,"triggeredEntityName"));
+                preparedStatement.setString(parameterIndex++, fitToSize(event.triggeredEntity.entityType, "triggeredEntityType"));
             } else if( event.affectedEntities != null ) {
                     preparedStatement.setInt(parameterIndex++, event.affectedEntities.get(0).entityId);
-                    preparedStatement.setString(parameterIndex++, event.affectedEntities.get(0).name);
-                    preparedStatement.setString(parameterIndex++, event.affectedEntities.get(0).entityType);
+                    preparedStatement.setString(parameterIndex++, fitToSize(event.affectedEntities.get(0).name, "triggeredEntityName"));
+                    preparedStatement.setString(parameterIndex++, fitToSize(event.affectedEntities.get(0).entityType, "triggeredEntityType"));
             } else {
                 preparedStatement.setInt(parameterIndex++, -1);
                 preparedStatement.setString(parameterIndex++, "");
