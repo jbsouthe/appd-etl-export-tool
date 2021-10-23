@@ -86,12 +86,6 @@ public class Controller {
         provider.setCredentials(AuthScope.ANY, credentials);
         logger.trace("provider configured: %s",provider.toString());
 
-        HttpClient client = HttpClientBuilder.create()
-                .setDefaultCredentialsProvider(provider)
-                .build();
-
-        logger.trace("HttpClient created");
-
         HttpPost request = new HttpPost(url.toString()+"/controller/api/oauth/access_token");
         //request.addHeader(HttpHeaders.CONTENT_TYPE,"application/vnd.appd.cntrl+protobuf;v=1");
         ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
@@ -130,12 +124,11 @@ public class Controller {
             return false;
         }
         if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            logger.warn("Access Key retreival returned bad status: %s", response.getStatusLine());
+            logger.warn("Access Key retreival returned bad status: %s message: %s", response.getStatusLine(), json);
             return false;
         }
-        Gson gson = new Gson();
         this.accessToken = gson.fromJson(json, AccessToken.class); //if this doesn't work consider creating a custom instance creator
-        this.accessToken.expires_at = new Date().getTime() + (accessToken.expires_in*60000); //hoping this is enough, worry is the time difference
+        this.accessToken.expires_at = new Date().getTime() + (accessToken.expires_in*1000); //hoping this is enough, worry is the time difference
         return true;
     }
 
@@ -332,5 +325,9 @@ public class Controller {
         System.out.printf("%s Test 2: %d elements\n", Controller.class, metricData.length);
         metricData = controller.getMetricValue("https://southerland-test.saas.appdynamics.com/controller/rest/applications/Agent%20Proxy/metric-data?metric-path=Business%20Transaction%20Performance%7CBusiness%20Transactions%7C*%7C*%7CAverage%20Response%20Time%20%28ms%29&time-range-type=BEFORE_NOW&duration-in-mins=60");
         System.out.printf("%s Test 3: %d elements\n", Controller.class, metricData.length);
+    }
+
+    public void discardToken() {
+        this.accessToken=null;
     }
 }
