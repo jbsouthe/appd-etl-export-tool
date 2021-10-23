@@ -20,7 +20,7 @@ public class Result {
             maxSizes[i] = fields[i].label.length();
         for( int j=0; j< results.length; j++)
             for( int k=0; k< results[j].length; k++)
-                maxSizes[k] = Integer.max(results[j][k].toString().length(), maxSizes[k]);
+                maxSizes[k] = Integer.max(String.valueOf(results[j][k]).length(), maxSizes[k]);
         sb.append("\t| ");
         for( Field field : fields ) {
             sb.append(field.label +" |");
@@ -34,7 +34,7 @@ public class Result {
         for( int i = 0; i < results.length; i++) {
             sb.append("\t| ");
             for( int j=0; j < results[i].length ; j++)
-                sb.append(printWithPadding(results[i][j].toString(), maxSizes[j])+" |");
+                sb.append(printWithPadding(String.valueOf(results[i][j]), maxSizes[j])+" |");
             sb.append("\n");
         }
         return sb.toString();
