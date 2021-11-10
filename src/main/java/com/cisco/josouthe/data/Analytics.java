@@ -181,7 +181,7 @@ public class Analytics {
             logger.info(result);
 
         //SELECT transactionName, eventTimestamp, application, segments.tier FROM transactions
-        results = analytics.runAnalyticsQuery("TransactionDetails","SELECT transactionName, eventTimestamp, application, segments.tier FROM transactions");
+        results = analytics.runAnalyticsQuery("TransactionDetails","SELECT transactionName, eventTimestamp, application, segments.tier, count(*) FROM transactions");
         for( Result result : results)
             logger.info(result);
     }
