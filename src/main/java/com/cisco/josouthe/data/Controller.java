@@ -85,7 +85,6 @@ public class Controller {
         logger.trace("credentials configured: %s",credentials.toString());
         provider.setCredentials(AuthScope.ANY, credentials);
         logger.trace("provider configured: %s",provider.toString());
-
         HttpPost request = new HttpPost(url.toString()+"/controller/api/oauth/access_token");
         //request.addHeader(HttpHeaders.CONTENT_TYPE,"application/vnd.appd.cntrl+protobuf;v=1");
         ArrayList<NameValuePair> postParameters = new ArrayList<NameValuePair>();
@@ -133,7 +132,7 @@ public class Controller {
     }
 
     public MetricData[] getMetricValue(Application application, ApplicationMetric metric, long startTimestamp, long endTimestamp ) {
-        MetricData[] metrics = getMetricValue( String.format("%s/controller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=%s",
+        MetricData[] metrics = getMetricValue( String.format("%scontroller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=%s",
                 this.url, Utility.encode(application.name), Utility.encode(metric.name),startTimestamp, endTimestamp,
                 (metric.disableDataRollup.toLowerCase().equals("true") ?"false":"true")
         ));
@@ -148,8 +147,11 @@ public class Controller {
         HttpGet request = new HttpGet(urlString);
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.trace("HTTP Method: %s",request);
+        /*
         HttpClient client = HttpClientBuilder.create()
                 .build();
+
+         */
         HttpResponse response = null;
         try {
             response = client.execute(request);
@@ -261,7 +263,7 @@ public class Controller {
     }
 
     private String getRequest( String uri ) {
-        HttpGet request = new HttpGet(String.format("%s/%s", this.url.toString(), uri));
+        HttpGet request = new HttpGet(String.format("%s%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.trace("HTTP Method: %s",request);
         HttpResponse response = null;
