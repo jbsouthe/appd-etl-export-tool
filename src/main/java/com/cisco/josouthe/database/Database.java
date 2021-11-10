@@ -95,7 +95,7 @@ public abstract class Database {
             logger.debug("Loaded %d event into the database in time %d(ms)", 1, durationTimeTransaction);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
-        logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntStarted);
+        logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime,  (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
     }
 
     public void importAnalyticData(Result[] results) {
@@ -110,6 +110,7 @@ public abstract class Database {
         long maxDurationTime = -1;
         long minDurationTime = Long.MAX_VALUE;
         for( Result result : results ) {
+            if( result.results == null ) continue;
             cntStarted+=result.results.length;
             long startTimeTransaction = Utility.now();
             AnalyticTable table = (AnalyticTable) getAnalyticTable(result);
@@ -120,7 +121,7 @@ public abstract class Database {
             logger.debug("Loaded %d analytic search results into the database in time %d(ms)", result.results.length, durationTimeTransaction);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
-        logger.info("Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntStarted);
+        logger.info("Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
     }
 
     public abstract Connection getConnection() throws SQLException;
