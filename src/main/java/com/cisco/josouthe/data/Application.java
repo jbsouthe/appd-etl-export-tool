@@ -53,14 +53,15 @@ public class Application {
     private ArrayList<ApplicationMetric> metricsToAdd = new ArrayList<>();
     private void findMetrics(Controller controller, TreeNode[] somethings, String path) {
         if( somethings == null || somethings.length == 0 ) return;
-            for( TreeNode something : somethings ) {
-                if( something.isFolder() ) {
-                    if( !"".equals(path) ) path += "|";
-                    findMetrics( controller, controller.getApplicationMetricFolders(this, path+something.name), path);
-                } else {
-                    logger.debug("Adding metric: %s|%s",path,something.name);
-                    metricsToAdd.add( new ApplicationMetric(defaultDisableDataRollup, path+"|"+something.name));
-                }
+        if( !"".equals(path) ) path += "|";
+
+        for( TreeNode something : somethings ) {
+            if( something.isFolder() ) {
+                findMetrics( controller, controller.getApplicationMetricFolders(this, path+something.name), path+something.name);
+            } else {
+                logger.debug("Adding metric: %s|%s",path,something.name);
+                metricsToAdd.add(new ApplicationMetric(defaultDisableDataRollup, path+something.name));
             }
+        }
     }
 }
