@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Controller {
     private static final Logger logger = LogManager.getFormatterLogger();
@@ -200,61 +201,81 @@ public class Controller {
     public MetricData[] getAllMetricsForAllApplications() {
         ArrayList<MetricData> metrics = new ArrayList<>();
         for( Application application : this.applications ) {
-            //Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Metrics", null, "Get Application Metrics", EntryTypes.POJO, false);
-            ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "MetricData" );
+            metrics.addAll(getAllMetrics(application, null));
+        }
+        return metrics.toArray( new MetricData[0] );
+    }
+
+    public ArrayList<MetricData> getAllMetrics( Application application, LinkedBlockingQueue<Object[]> dataQueue ) {
+        ArrayList<MetricData> metrics = new ArrayList<>();
+        //Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Metrics", null, "Get Application Metrics", EntryTypes.POJO, false);
+        ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "MetricData" );
             /*
             serviceEndPoint.collectData("Controller", controlEntry.controller, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Application", controlEntry.application, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Datatype", controlEntry.type, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Start-Timestamp", String.valueOf(controlEntry.timestamp), Utility.getSnapshotDatascope());
              */
-            long startTimestamp = controlEntry.timestamp;
-            long endTimestamp = Utility.now();
-            for( ApplicationMetric applicationMetric : application.metrics ) {
-                for( MetricData metricData : getMetricValue( application, applicationMetric, startTimestamp, endTimestamp )) {
-                    metricData.controllerHostname = this.hostname;
-                    metricData.applicationName = application.name;
-                    metricData.targetTable = application.defaultMetricTableName;
-                    metrics.add(metricData);
-                }
+        long startTimestamp = controlEntry.timestamp;
+        long endTimestamp = Utility.now();
+        for( ApplicationMetric applicationMetric : application.metrics ) {
+            for( MetricData metricData : getMetricValue( application, applicationMetric, startTimestamp, endTimestamp )) {
+                metricData.controllerHostname = this.hostname;
+                metricData.applicationName = application.name;
+                metricData.targetTable = application.defaultMetricTableName;
+                metrics.add(metricData);
             }
-            controlEntry.timestamp = endTimestamp;
-            //serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
-            //serviceEndPoint.end();
-            this.controlTable.setLastRunTimestamp(controlEntry);
+            if( dataQueue != null ) {
+                dataQueue.add(metrics.toArray(new MetricData[0]));
+                metrics.clear();
+            }
         }
-        return metrics.toArray( new MetricData[0] );
+        controlEntry.timestamp = endTimestamp;
+        //serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
+        //serviceEndPoint.end();
+        this.controlTable.setLastRunTimestamp(controlEntry);
+        return metrics;
     }
 
     public EventData[] getAllEventsForAllApplications() {
         ArrayList<EventData> events = new ArrayList<>();
         for( Application application : this.applications ) {
-            //Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Events", null, "Get Application Events", EntryTypes.POJO, false);
-            ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "EventData" );
+            events.addAll( getAllEvents(application, null) );
+        }
+        return events.toArray( new EventData[0]);
+    }
+
+    public ArrayList<EventData> getAllEvents( Application application, LinkedBlockingQueue<Object[]> dataQueue ) {
+        ArrayList<EventData> events = new ArrayList<>();
+        //Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Get Application Events", null, "Get Application Events", EntryTypes.POJO, false);
+        ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(hostname, application.name, "EventData" );
             /* serviceEndPoint.collectData("Controller", controlEntry.controller, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Application", controlEntry.application, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Datatype", controlEntry.type, Utility.getSnapshotDatascope());
             serviceEndPoint.collectData("Start-Timestamp", String.valueOf(controlEntry.timestamp), Utility.getSnapshotDatascope());
 
              */
-            long startTimestamp = controlEntry.timestamp;
-            long endTimestamp = Utility.now();
-            if( application.getAllEvents ) {
-                String json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
-                        Utility.encode(application.name), startTimestamp, endTimestamp, application.eventTypeList, application.eventSeverities);
-                for (EventData event : gson.fromJson(json, EventData[].class)) {
-                    event.controllerHostname = this.hostname;
-                    event.applicationName = application.name;
-                    event.targetTable = application.defaultEventTableName;
-                    events.add(event);
-                }
+        long startTimestamp = controlEntry.timestamp;
+        long endTimestamp = Utility.now();
+        if( application.getAllEvents ) {
+            String json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
+                    Utility.encode(application.name), startTimestamp, endTimestamp, application.eventTypeList, application.eventSeverities);
+            for (EventData event : gson.fromJson(json, EventData[].class)) {
+                event.controllerHostname = this.hostname;
+                event.applicationName = application.name;
+                event.targetTable = application.defaultEventTableName;
+                events.add(event);
             }
-            controlEntry.timestamp = endTimestamp;
-            //serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
-            //serviceEndPoint.end();
-            this.controlTable.setLastRunTimestamp(controlEntry);
+            if( dataQueue != null ) {
+                dataQueue.add(events.toArray(new EventData[0]));
+                events.clear();
+            }
         }
-        return events.toArray( new EventData[0]);
+        controlEntry.timestamp = endTimestamp;
+        //serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
+        //serviceEndPoint.end();
+        this.controlTable.setLastRunTimestamp(controlEntry);
+        return events;
     }
 
     private String getRequest( String formatOrURI, Object... args ) {

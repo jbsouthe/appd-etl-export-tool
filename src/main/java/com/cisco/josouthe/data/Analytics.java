@@ -30,6 +30,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /*
 curl -X POST "https://analytics.api.appdynamics.com/events/query"
@@ -99,6 +100,10 @@ public class Analytics {
     }
 
     public Result[] getAllSearches() {
+        return getAllSearches(null);
+    }
+
+    public Result[] getAllSearches(LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue) {
         ArrayList<Result> results = new ArrayList<>();
         ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(url.getHost(), this.APIAccountName, "AnalyticsData");
         long startTimestamp = controlEntry.timestamp;
@@ -109,6 +114,10 @@ public class Analytics {
             for( Result result : runAnalyticsQuery(search, startTimestamp, endTimestamp))
                 results.add(result);
             //serviceEndPoint.end();
+        }
+        if( dataToInsertLinkedBlockingQueue != null ) {
+            dataToInsertLinkedBlockingQueue.add(results.toArray( new Result[0]));
+            results.clear();
         }
         controlEntry.timestamp = endTimestamp;
         this.controlTable.setLastRunTimestamp(controlEntry);

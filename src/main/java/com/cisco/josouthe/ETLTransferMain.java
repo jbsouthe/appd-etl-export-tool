@@ -1,5 +1,6 @@
 package com.cisco.josouthe;
 
+import com.cisco.josouthe.scheduler.MainControlScheduler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.xml.sax.SAXException;
@@ -27,8 +28,8 @@ public class ETLTransferMain {
             return;
         }
 
-        Scheduler scheduler = new Scheduler( config );
-        scheduler.run();
+        MainControlScheduler mainControlScheduler = new MainControlScheduler( config );
+        mainControlScheduler.run();
 
     }
 }

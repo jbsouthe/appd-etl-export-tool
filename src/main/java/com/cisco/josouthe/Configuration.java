@@ -29,18 +29,25 @@ public class Configuration {
     private boolean definedController = false;
     private boolean definedApplication = false;
     private boolean definedAnalytics = false;
+    private boolean running = true;
+
+    public boolean isRunning() { return this.running; }
+    public void setRunning( boolean b ) { this.running=b; }
 
     public String getProperty( String key ) {
-        return getProperty(key, null);
+        return getProperty(key, (String)null);
     }
     public String getProperty( String key , String defaultValue) {
         return this.properties.getProperty(key, defaultValue);
     }
-    public Boolean getPropertyAsBoolean( String key, Boolean defaultBoolean) {
+    public Boolean getProperty( String key, Boolean defaultBoolean) {
         return Boolean.parseBoolean( getProperty(key, defaultBoolean.toString()));
     }
-    public Long getPropertyAsLong( String key, Long defaultLong ) {
+    public Long getProperty( String key, Long defaultLong ) {
         return Long.parseLong( getProperty(key, defaultLong.toString()));
+    }
+    public Integer getProperty( String key, Integer defaultInteger ) {
+        return Integer.parseInt( getProperty(key, defaultInteger.toString()));
     }
 
     public Database getDatabase() { return database; }
@@ -56,10 +63,13 @@ public class Configuration {
         digester.push(this);
         int paramCounter=0;
         //scheduler config section default enabled with 10 minute run intervals
-        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 3 );
+        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 6 );
         digester.addCallParam("ETLTool/Scheduler", 0 , "enabled");
         digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1 );
         digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2 );
+        digester.addCallParam("ETLTool/Scheduler/ControllerThreads", 3 );
+        digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", 4 );
+        digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5 );
 
         //database configuration section
         digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 6);
@@ -116,7 +126,7 @@ public class Configuration {
         digester.parse( new File(configFileName) );
         if( ! definedScheduler ) {
             logger.warn("No scheduler defined in the config file, we are going to configure a basic one run scheduler for you");
-            setSchedulerProperties("false","", "1");
+            setSchedulerProperties("false","", "1", "10", "50", "12");
         }
 
         logger.info("Validating Configured Settings");
@@ -221,9 +231,9 @@ public class Configuration {
         }
     }
 
-    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours ) {
+    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours ) {
         if( "false".equalsIgnoreCase(enabledFlag) ) {
-            logger.info("Scheduler is disabled, running only once");
+            logger.info("MainControlScheduler is disabled, running only once");
             properties.setProperty("scheduler-enabled", "false");
             return;
         } else {
@@ -240,6 +250,21 @@ public class Configuration {
         }
         logger.info("Setting first run historic data to pull to %s hours", firstRunHistoricNumberOfHours);
         this.properties.setProperty("scheduler-FirstRunHistoricNumberOfHours", firstRunHistoricNumberOfHours);
+        if( "".equals(numberOfControllerThreads) || numberOfControllerThreads == null ) {
+            numberOfControllerThreads="10";
+        }
+        logger.info("Setting Number of Controller Communication Threads to %s", numberOfControllerThreads);
+        this.properties.setProperty("scheduler-NumberOfControllerThreads", numberOfControllerThreads);
+        if( "".equals(numberOfDatabaseThreads) || numberOfDatabaseThreads == null ) {
+            numberOfDatabaseThreads="50";
+        }
+        logger.info("Setting Number of Database Communication Threads to %s", numberOfDatabaseThreads);
+        this.properties.setProperty("scheduler-NumberOfDatabaseThreads", numberOfDatabaseThreads);
+        if( "".equals(numberConfigRefreshHours) || numberConfigRefreshHours == null ) {
+            numberConfigRefreshHours="12";
+        }
+        logger.info("Setting Number of Hours to refresh controller application metric list to %s", numberConfigRefreshHours);
+        this.properties.setProperty("scheduler-ConfigRefreshHours", numberConfigRefreshHours);
     }
 
     public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable ) throws InvalidConfigurationException {
@@ -254,11 +279,11 @@ public class Configuration {
         if( eventTable == null ) eventTable = "AppDynamics_EventTable";
         switch( Utility.parseDatabaseVendor(connectionString).toLowerCase() ) {
             case "oracle": {
-                this.database = new OracleDatabase(connectionString, user, password, metricTable, controlTable, eventTable, getPropertyAsLong("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                this.database = new OracleDatabase(connectionString, user, password, metricTable, controlTable, eventTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
             case "csv": {
-                this.database = new CSVDatabase( connectionString, metricTable, controlTable, eventTable, getPropertyAsLong("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                this.database = new CSVDatabase( connectionString, metricTable, controlTable, eventTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
             default: {
