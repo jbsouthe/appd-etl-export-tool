@@ -44,6 +44,19 @@ public abstract class Database {
 
     public abstract boolean isDatabaseAvailable();
 
+    public void importData( Object[] someData ) {
+        if( someData == null || someData.length == 0 ) return;
+        if( someData instanceof MetricData[] ) {
+            importMetricData((MetricData[]) someData);
+        } else if( someData instanceof EventData[] ) {
+            importEventData((EventData[]) someData);
+        } else if( someData instanceof Result[] ) {
+            importAnalyticData((Result[]) someData);
+        } else {
+            logger.warn("Could not determine the datatype for %s %d records",someData,someData.length);
+        }
+    }
+
     public void importMetricData(MetricData[] metricData) {
         logger.trace("Beginning of import metric data method");
         if( metricData == null || metricData.length == 0 ) {
@@ -69,7 +82,8 @@ public abstract class Database {
             logger.debug("Loaded %d metrics into the database in time %d(ms)", metric.metricValues.size(), durationTimeTransaction);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
-        logger.info("Attempted to load %d metrics, succeeded in loading %d metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, durationTimeOverallMS/cntAverageCalc);
+        if( cntStarted > 0 )
+            logger.info("Attempted to load %d metrics, succeeded in loading %d metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
 
     }
 

@@ -41,12 +41,18 @@ public class Application {
             logger.warn("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
             throw new InvalidConfigurationException("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
         }
-        //TODO validate the application exists in the controller, we have access to it, and populate metrics if get all availablle metric is set
-        TreeNode[] folders = controller.getApplicationMetricFolders(this, "");
-        logger.debug("Found %d folders we can go into", (folders == null ? "0" : folders.length));
-        if( getAllAvailableMetrics ) {
-            findMetrics( controller, folders, "");
-            this.metrics = metricsToAdd.toArray( new ApplicationMetric[0] );
+        this.refreshAllAvailableMetricsIfEnabled(controller);
+    }
+
+    public void refreshAllAvailableMetricsIfEnabled(Controller controller) {
+        synchronized (this.metricsToAdd) {
+            this.metricsToAdd.clear();
+            if( getAllAvailableMetrics ) {
+                TreeNode[] folders = controller.getApplicationMetricFolders(this, "");
+                logger.debug("Found %d folders we can go into", (folders == null ? "0" : folders.length));
+                findMetrics( controller, folders, "");
+                this.metrics = metricsToAdd.toArray( new ApplicationMetric[0] );
+            }
         }
     }
 
@@ -59,7 +65,7 @@ public class Application {
             if( something.isFolder() ) {
                 findMetrics( controller, controller.getApplicationMetricFolders(this, path+something.name), path+something.name);
             } else {
-                logger.debug("Adding metric: %s|%s",path,something.name);
+                logger.debug("Adding metric: %s%s",path,something.name);
                 metricsToAdd.add(new ApplicationMetric(defaultDisableDataRollup, path+something.name));
             }
         }

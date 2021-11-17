@@ -1,6 +1,6 @@
 <ETLTool>
     <Scheduler enabled="false">
-        <PollIntervalMinutes>60</PollIntervalMinutes>
+        <PollIntervalMinutes>5</PollIntervalMinutes>
         <FirstRunHistoricNumberOfHours>48</FirstRunHistoricNumberOfHours>
     </Scheduler>
     <TargetDB>
