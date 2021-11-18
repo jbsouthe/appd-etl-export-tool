@@ -120,7 +120,7 @@ The default settings are shown:
     <Scheduler enabled="false">
         <PollIntervalMinutes>60</PollIntervalMinutes>
         <FirstRunHistoricNumberOfHours>48</FirstRunHistoricNumberOfHours>
-        <ControllerThreads>10</ControllerThreads>
+        <ControllerThreads>50</ControllerThreads>
         <DatabaseThreads>50</DatabaseThreads>
         <ConfigurationRefreshEveryHours>12</ConfigurationRefreshEveryHours>
     </Scheduler>
@@ -128,7 +128,7 @@ The default settings are shown:
 * enabled=false causes the Scheduler to exit after one run, true is the default, when this option is missing.
 * PollIntervalMinutes 60, if enabled, causes the Scheduler to sleep for 60 minutes and run again, continuously
 * FirstRunHistoricNumberOfHours 48, causes the extract to default in pulling the last 48 hours of data for a given query, if no previous run is detected in the control table, specified in the database section later
-* ControllerThreads 10, the number of threads to run pulling data from the controllers concurrently
+* ControllerThreads 50, the number of threads to run pulling data from the controllers concurrently
 * DatabaseThreads 50, the number of worker threads watching the data queue to insert into the database
 * ConfigurationRefreshEveryHours 12, after this many hours, all the applications with the configuration setting to pull all metrics, will refresh the metrics in case new ones are registered since start.
 
