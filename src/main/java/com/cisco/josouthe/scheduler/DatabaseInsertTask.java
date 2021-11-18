@@ -36,7 +36,7 @@ public class DatabaseInsertTask implements Runnable{
         while( configuration.isRunning() || !dataQueue.isEmpty() ) {
             try {
                 Object[] data = dataQueue.poll(5000, TimeUnit.MILLISECONDS);
-                if( data != null ) {
+                if( data != null && data.length > 0 ) {
                     logger.debug("Poll returned %d data elements to insert into the database", (data == null ? 0 : data.length));
                     this.database.importData(data);
                 }

@@ -12,12 +12,10 @@ public class ApplicationMetricTask implements Runnable{
     private static final Logger logger = LogManager.getFormatterLogger();
 
     private Application application;
-    private Controller controller;
     private LinkedBlockingQueue<Object[]> dataQueue;
 
-    public ApplicationMetricTask(Application application, Controller controller, LinkedBlockingQueue<Object[]> dataQueue) {
+    public ApplicationMetricTask(Application application, LinkedBlockingQueue<Object[]> dataQueue) {
         this.application=application;
-        this.controller=controller;
         this.dataQueue=dataQueue;
     }
 
@@ -34,6 +32,11 @@ public class ApplicationMetricTask implements Runnable{
      */
     @Override
     public void run() {
-        this.controller.getAllMetrics(this.application, dataQueue);
+        while( ! this.application.isFinishedInitialization() ) {
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException ignored) { }
+        }
+        this.application.getAllMetrics(dataQueue);
     }
 }

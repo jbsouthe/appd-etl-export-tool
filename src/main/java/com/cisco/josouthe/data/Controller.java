@@ -220,6 +220,7 @@ public class Controller {
         long endTimestamp = Utility.now();
         for( ApplicationMetric applicationMetric : application.metrics ) {
             for( MetricData metricData : getMetricValue( application, applicationMetric, startTimestamp, endTimestamp )) {
+                if( "METRIC DATA NOT FOUND".equals(metricData.metricName) ) continue;
                 metricData.controllerHostname = this.hostname;
                 metricData.applicationName = application.name;
                 metricData.targetTable = application.defaultMetricTableName;
