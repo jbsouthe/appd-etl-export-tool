@@ -64,7 +64,7 @@ public class AnalyticTable extends Table implements com.cisco.josouthe.database.
     }
 
     @Override
-    public int insert(Object object) {
+    public synchronized int insert(Object object) {
         Result result = (Result) object;
         int counter=0;
         boolean writeHeaderLine = false;

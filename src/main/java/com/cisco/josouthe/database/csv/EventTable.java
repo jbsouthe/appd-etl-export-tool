@@ -33,7 +33,7 @@ public class EventTable extends Table implements com.cisco.josouthe.database.Eve
     }
 
     @Override
-    public int insert(Object object) {
+    public synchronized int insert(Object object) {
         EventData event = (EventData) object;
         int counter=0;
         boolean writeHeaderLine = false;
