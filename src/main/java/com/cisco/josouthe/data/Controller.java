@@ -260,15 +260,18 @@ public class Controller {
         if( application.getAllEvents ) {
             String json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
                     Utility.encode(application.name), startTimestamp, endTimestamp, application.eventTypeList, application.eventSeverities);
-            for (EventData event : gson.fromJson(json, EventData[].class)) {
-                event.controllerHostname = this.hostname;
-                event.applicationName = application.name;
-                event.targetTable = application.defaultEventTableName;
-                events.add(event);
-            }
-            if( dataQueue != null ) {
-                dataQueue.add(events.toArray(new EventData[0]));
-                events.clear();
+            EventData[] eventsReturned = gson.fromJson(json, EventData[].class);
+            if( eventsReturned != null ) {
+                for (EventData event : eventsReturned) {
+                    event.controllerHostname = this.hostname;
+                    event.applicationName = application.name;
+                    event.targetTable = application.defaultEventTableName;
+                    events.add(event);
+                }
+                if (dataQueue != null) {
+                    dataQueue.add(events.toArray(new EventData[0]));
+                    events.clear();
+                }
             }
         }
         controlEntry.timestamp = endTimestamp;
