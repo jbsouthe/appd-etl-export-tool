@@ -2,7 +2,11 @@ package com.cisco.josouthe.util;
 
 import com.appdynamics.apm.appagent.api.DataScope;
 import jdk.internal.net.http.common.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
@@ -15,12 +19,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utility {
+    private static final Logger logger = LogManager.getFormatterLogger();
     private static Pattern patternConnectionString = Pattern.compile("^(?<jdbc>[j|J][d|D][b|B][c|C]:)?(?<vendor>[^:]+):(?<driver>[^:]+):(?<path>.*);?");
     private static Pattern patternAnalyticsDateString = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
     private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     private static Set<DataScope> snapshotDatascope;
 
     public static String encode( String original ){
+        /* this, of course, got rediculous, replacing with a utility external to code base */
+        try {
+            return URLEncoder.encode(original, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            logger.warn("Unsupported Encoding Exception: %s", e.getMessage());
+        }
+        //falling back to the manual, because it is already written..
         return original.replace("%", "%25")
                 .replace("|","%7C")
                 .replace(" ", "%20")
@@ -28,7 +40,13 @@ public class Utility {
                 .replace(".", "%2E")
                 .replace("-", "%2D")
                 .replace("#", "%23")
-                .replace("\"", "%22");
+                .replace("\"", "%22")
+                .replace("/", "%2F")
+                .replace("(", "%28")
+                .replace(")", "%29")
+                .replace("<", "%3C")
+                .replace(">", "%3E")
+                ;
     }
 
     public static String getDateString(long dateTime) { //ISO8601 Date (Extend) https://dencode.com/en/date/iso8601
