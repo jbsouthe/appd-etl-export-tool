@@ -8,11 +8,9 @@ import org.apache.logging.log4j.Logger;
 public class ApplicationMetricRefreshTask implements Runnable{
     private static final Logger logger = LogManager.getFormatterLogger();
 
-    private Controller controller;
     private Application application;
 
-    public ApplicationMetricRefreshTask(Controller controller, Application application ) {
-        this.controller=controller;
+    public ApplicationMetricRefreshTask(Application application ) {
         this.application=application;
     }
 
@@ -30,7 +28,7 @@ public class ApplicationMetricRefreshTask implements Runnable{
     @Override
     public void run() {
         logger.debug("Beginning configuration refresh for application %s",application.name);
-        this.application.refreshAllAvailableMetricsIfEnabled(this.controller);
+        this.application.refreshAllAvailableMetricsIfEnabled();
         logger.debug("Finished configuration refresh for application %s",application.name);
     }
 }

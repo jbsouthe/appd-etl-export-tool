@@ -11,12 +11,10 @@ public class ApplicationEventTask implements Runnable{
     private static final Logger logger = LogManager.getFormatterLogger();
 
     private Application application;
-    private Controller controller;
     private LinkedBlockingQueue<Object[]> dataQueue;
 
-    public ApplicationEventTask(Application application, Controller controller, LinkedBlockingQueue<Object[]> dataQueue) {
+    public ApplicationEventTask(Application application, LinkedBlockingQueue<Object[]> dataQueue) {
         this.application=application;
-        this.controller=controller;
         this.dataQueue=dataQueue;
     }
 
@@ -33,6 +31,6 @@ public class ApplicationEventTask implements Runnable{
      */
     @Override
     public void run() {
-        this.controller.getAllEvents(this.application, dataQueue);
+        this.application.getAllEvents(dataQueue);
     }
 }

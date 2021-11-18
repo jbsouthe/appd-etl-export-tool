@@ -9,4 +9,6 @@ public class Search {
         this.query=query;
         this.limit=limit;
     }
+
+    public String getName() { return name; }
 }

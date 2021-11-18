@@ -7,6 +7,7 @@ import com.cisco.josouthe.data.Controller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.LinkedList;
 import java.util.concurrent.*;
 
 public class MainControlScheduler {
@@ -20,12 +21,12 @@ public class MainControlScheduler {
     public MainControlScheduler(Configuration configuration ) {
         this.configuration = configuration;
         dataToInsertLinkedBlockingQueue = new LinkedBlockingQueue<>();
-        executorFetchData = (ThreadPoolExecutor) Executors.newFixedThreadPool( this.configuration.getProperty("scheduler-NumberOfControllerThreads", 10) );
+        executorFetchData = (ThreadPoolExecutor) Executors.newFixedThreadPool( this.configuration.getProperty("scheduler-NumberOfControllerThreads", 50) );
         executorInsertData = (ThreadPoolExecutor) Executors.newFixedThreadPool( this.configuration.getProperty("scheduler-NumberOfDatabaseThreads", 50) );
-        executorConfigRefresh = (ScheduledThreadPoolExecutor)  Executors.newScheduledThreadPool(this.configuration.getProperty("scheduler-NumberOfControllerThreads", 10));
+        executorConfigRefresh = (ScheduledThreadPoolExecutor)  Executors.newScheduledThreadPool(this.configuration.getProperty("scheduler-NumberOfControllerThreads", 50));
         for( Controller controller : configuration.getControllerList() ) {
             for (Application application : controller.applications) {
-                executorConfigRefresh.scheduleAtFixedRate(new ApplicationMetricRefreshTask(controller, application),this.configuration.getProperty("scheduler-ConfigRefreshHours", 12l), this.configuration.getProperty("scheduler-ConfigRefreshHours", 12l), TimeUnit.HOURS);
+                executorConfigRefresh.scheduleAtFixedRate(new ApplicationMetricRefreshTask(application), 0, this.configuration.getProperty("scheduler-ConfigRefreshHours", 12l), TimeUnit.HOURS);
             }
         }
     }
@@ -41,8 +42,8 @@ public class MainControlScheduler {
             }
             for( Controller controller : configuration.getControllerList() ) {
                 for(Application application : controller.applications ) {
-                    executorFetchData.execute(new ApplicationMetricTask(application, controller, dataToInsertLinkedBlockingQueue));
-                    executorFetchData.execute( new ApplicationEventTask( application, controller, dataToInsertLinkedBlockingQueue));
+                    executorFetchData.execute(new ApplicationMetricTask( application, dataToInsertLinkedBlockingQueue));
+                    executorFetchData.execute( new ApplicationEventTask( application, dataToInsertLinkedBlockingQueue));
                 }
             }
 
@@ -55,6 +56,17 @@ public class MainControlScheduler {
                 logger.info("MainControlScheduler is awakened and running once more");
             } else {
                 sleep(5000);
+                for( Controller controller : configuration.getControllerList() ) {
+                   logger.debug("Waiting for Controller %s to finish initializing all %d applications",controller.hostname, controller.applications.length);
+                   for (Application application : controller.applications) {
+                        logger.debug("Waiting for Application %s to finish initializing",application.getName());
+                        while( ! application.isFinishedInitialization() ) sleep(10000 );
+                        logger.debug("Application %s finished initializing",application.getName());
+                   }
+                   logger.debug("Controller %s finished initializing",controller.hostname);
+                }
+                executorConfigRefresh.shutdownNow();
+                sleep(5000);
                 logger.info("MainControlScheduler is disabled, so exiting when database queue is drained");
                 while(!dataToInsertLinkedBlockingQueue.isEmpty()) {
                     sleep(5000);
@@ -63,7 +75,6 @@ public class MainControlScheduler {
                 sleep(10000); //so database workers can finish up
                 executorInsertData.shutdown();
                 executorFetchData.shutdown();
-                executorConfigRefresh.shutdownNow();
             }
         }
 

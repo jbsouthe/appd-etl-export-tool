@@ -1,15 +1,20 @@
 package com.cisco.josouthe.data;
 
+import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
+import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Application {
     private static final Logger logger = LogManager.getFormatterLogger();
+    private Controller controller;
+    private boolean finishedInitialization = false;
     public boolean getAllAvailableMetrics = true;
     public boolean getAllEvents = false;
     public boolean getAllHealthRuleViolations = false;
@@ -34,6 +39,7 @@ public class Application {
         this.metrics = metrics;
     }
 
+    public boolean isFinishedInitialization() { return finishedInitialization; }
     public void setEventTypeList( String events ) { this.eventTypeList=events; }
 
     public void validateConfiguration(Controller controller) throws InvalidConfigurationException {
@@ -41,10 +47,12 @@ public class Application {
             logger.warn("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
             throw new InvalidConfigurationException("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
         }
-        this.refreshAllAvailableMetricsIfEnabled(controller);
+        this.controller=controller;
+        if( ! getAllAvailableMetrics ) this.finishedInitialization=true;
+        //this.refreshAllAvailableMetricsIfEnabled(); moved to beginning of scheduler, to get some concurrency
     }
 
-    public void refreshAllAvailableMetricsIfEnabled(Controller controller) {
+    public void refreshAllAvailableMetricsIfEnabled() {
         synchronized (this.metricsToAdd) {
             this.metricsToAdd.clear();
             if( getAllAvailableMetrics ) {
@@ -54,6 +62,7 @@ public class Application {
                 this.metrics = metricsToAdd.toArray( new ApplicationMetric[0] );
             }
         }
+        this.finishedInitialization=true; //setting this here because we want to continue, even if partial data
     }
 
     private ArrayList<ApplicationMetric> metricsToAdd = new ArrayList<>();
@@ -70,4 +79,14 @@ public class Application {
             }
         }
     }
+
+    public synchronized ArrayList<MetricData> getAllMetrics(LinkedBlockingQueue<Object[]> dataQueue ) {
+        return this.controller.getAllMetrics(this, dataQueue);
+    }
+
+    public synchronized ArrayList<EventData> getAllEvents(LinkedBlockingQueue<Object[]> dataQueue ) {
+        return this.controller.getAllEvents(this, dataQueue);
+    }
+
+    public String getName() { return this.name; }
 }
