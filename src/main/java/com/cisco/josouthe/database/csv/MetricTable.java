@@ -31,7 +31,7 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
         columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "date", -1, false));
     }
 
-    public int insert(Object object) {
+    public synchronized int insert(Object object) {
         MetricData metric = (MetricData) object;
         int counter=0;
         boolean writeHeaderLine = false;
