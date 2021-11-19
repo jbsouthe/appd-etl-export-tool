@@ -9,7 +9,8 @@ done
 set -x
 if [[ "$2" == "test" ]]; then
 #  java -cp $CP com.cisco.josouthe.data.Controller
-  java -cp $CP com.cisco.josouthe.data.Analytics
+#  java -cp $CP com.cisco.josouthe.data.Analytics
+  java -cp $CP com.cisco.josouthe.data.metric.graph.MetricGraph $3
 else
   java -cp $CP com.cisco.josouthe.ETLTransferMain $2
 fi

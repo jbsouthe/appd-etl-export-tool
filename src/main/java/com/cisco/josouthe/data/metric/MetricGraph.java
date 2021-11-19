@@ -1,0 +1,198 @@
+package com.cisco.josouthe.data.metric;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeMap;
+
+public class MetricGraph {
+    private static final Logger logger = LogManager.getFormatterLogger();
+
+    private ArrayList<Edge> edges;
+    private ArrayList<Vertex> startingVertices;
+    private TreeMap<String, Vertex> vertices;
+    private long originalSize, newSize;
+
+    public MetricGraph() {
+        edges = new ArrayList<>();
+        vertices = new TreeMap<>();
+        startingVertices = new ArrayList<>();
+
+    }
+
+    public ApplicationMetric[] compress( ArrayList<ApplicationMetric> applicationMetrics ) {
+        originalSize=applicationMetrics.size();
+        ArrayList<ApplicationMetric> compressedApplicationMetrics = new ArrayList<>();
+        buildGraph(applicationMetrics);
+        Set<String> newAppMetricsStrings = new HashSet<>();
+        for( Vertex vertex : vertices.values() ) {
+            if( vertex.isFinal() || vertex.isInitial() ) continue;
+            int rCnt=0, lCnt=0;
+            for( Edge edge : edges) {
+                if( edge.lVertex == vertex) lCnt++;
+                if( edge.rVertex == vertex) rCnt++;
+            }
+            if( lCnt == rCnt ) {
+                //System.out.println(String.format("Vertex %s references r: %d l: %d", vertex, rCnt, lCnt));
+                newAppMetricsStrings.add( vertex.printWithWildcard() );
+            }
+            /*
+            if( vertex.isBloomCandidate() ) {
+                System.out.println(String.format("Bloom Candidate: %s",vertex));
+            }
+
+             */
+        }
+        for( String replacement : newAppMetricsStrings )
+            compressedApplicationMetrics.add(new ApplicationMetric(null,replacement));
+        this.newSize = compressedApplicationMetrics.size();
+        logger.debug("old size %d new size %d",originalSize,newSize);
+        return compressedApplicationMetrics.toArray( new ApplicationMetric[0]);
+    }
+
+    private void buildGraph(ArrayList<ApplicationMetric> applicationMetrics) {
+        for( ApplicationMetric applicationMetric : applicationMetrics ) {
+            Vertex leftVertex = null;
+            int position = 0;
+            for( String word : applicationMetric.name.split("\\|") ) {
+                Vertex vertex = vertices.get(word+String.valueOf(position));
+                if( vertex == null ) vertex = new Vertex(word, position, applicationMetric.name);
+                if( leftVertex == null ) {
+                    startingVertices.add(vertex);
+                } else {
+                    edges.add( new Edge(leftVertex,vertex) );
+                    leftVertex.addRightVertex(vertex);
+                    vertex.addLeftVertex(leftVertex);
+                }
+                vertices.put(word+String.valueOf(position),vertex);
+                position++;
+                leftVertex=vertex;
+            }
+        }
+    }
+
+    private class Edge {
+        public Vertex lVertex, rVertex;
+
+        public Edge(Vertex leftVertex, Vertex vertex) {
+            this.lVertex=leftVertex;
+            this.rVertex=vertex;
+        }
+        public boolean isLeftOf( Vertex v ){ return v == rVertex; }
+        public boolean isRightOf( Vertex v ) { return v == lVertex; }
+        public boolean isSource() { return lVertex == null; }
+    }
+
+    private class Vertex implements Comparable{
+        public String value, original;
+        public int position;
+        private ArrayList<Vertex> rEdges, lEdges;
+
+        public Vertex(String word, int position, String original) {
+            this.value=word;
+            this.original=original;
+            this.position=position;
+            rEdges = new ArrayList<>();
+            lEdges = new ArrayList<>();
+        }
+
+        public String toString() { return String.format("'%s' of [%d]'%s'",value, position, original); }
+        public String printWithWildcard() {
+            StringBuilder sb = new StringBuilder();
+            String[] words = original.split("\\|");
+            for( int i=0; i< words.length; i++ ) {
+                if( i == position ) {
+                    sb.append("*");
+                } else {
+                    sb.append(words[i]);
+                }
+                if( i+1 < words.length ) sb.append("|");
+            }
+            return sb.toString();
+        }
+        public void addRightVertex( Vertex v ) { this.rEdges.add(v); }
+        public void addLeftVertex( Vertex v ) { this.lEdges.add(v); }
+        public boolean isFinal() { return rEdges.size() == 0;}
+        public boolean isInitial() { return lEdges.size() == 0;}
+
+        public boolean isBloomCandidate() {
+            if( isFinal() ) return false;
+            if( rEdges.size() > 1 ) {
+                for( Vertex rightVertex : rEdges)
+                    if( rightVertex.isFinal() ) return false;
+            }
+            return true;
+        }
+
+        /**
+         * Compares this object with the specified object for order.  Returns a
+         * negative integer, zero, or a positive integer as this object is less
+         * than, equal to, or greater than the specified object.
+         *
+         * <p>The implementor must ensure
+         * {@code sgn(x.compareTo(y)) == -sgn(y.compareTo(x))}
+         * for all {@code x} and {@code y}.  (This
+         * implies that {@code x.compareTo(y)} must throw an exception iff
+         * {@code y.compareTo(x)} throws an exception.)
+         *
+         * <p>The implementor must also ensure that the relation is transitive:
+         * {@code (x.compareTo(y) > 0 && y.compareTo(z) > 0)} implies
+         * {@code x.compareTo(z) > 0}.
+         *
+         * <p>Finally, the implementor must ensure that {@code x.compareTo(y)==0}
+         * implies that {@code sgn(x.compareTo(z)) == sgn(y.compareTo(z))}, for
+         * all {@code z}.
+         *
+         * <p>It is strongly recommended, but <i>not</i> strictly required that
+         * {@code (x.compareTo(y)==0) == (x.equals(y))}.  Generally speaking, any
+         * class that implements the {@code Comparable} interface and violates
+         * this condition should clearly indicate this fact.  The recommended
+         * language is "Note: this class has a natural ordering that is
+         * inconsistent with equals."
+         *
+         * <p>In the foregoing description, the notation
+         * {@code sgn(}<i>expression</i>{@code )} designates the mathematical
+         * <i>signum</i> function, which is defined to return one of {@code -1},
+         * {@code 0}, or {@code 1} according to whether the value of
+         * <i>expression</i> is negative, zero, or positive, respectively.
+         *
+         * @param other the object to be compared.
+         * @return a negative integer, zero, or a positive integer as this object
+         * is less than, equal to, or greater than the specified object.
+         * @throws NullPointerException if the specified object is null
+         * @throws ClassCastException   if the specified object's type prevents it
+         *                              from being compared to this object.
+         */
+        @Override
+        public int compareTo(Object other) {
+            if( other == null ) return 1;
+            if( other instanceof Vertex ) {
+                Vertex otherV = (Vertex) other;
+                if (this.position == otherV.position && this.value.equals(otherV.value)) return 0;
+                if (this.position < otherV.position) return -1;
+                return 1;
+            }
+            return -1;
+        }
+    }
+
+    public static void main( String ... args ) throws Exception{
+        ArrayList<ApplicationMetric> metrics = new ArrayList<>();
+        BufferedReader in = new BufferedReader( new FileReader( args[0] ));
+        String inLine;
+        while( (inLine = in.readLine()) != null) {
+            metrics.add( new ApplicationMetric("false", inLine));
+        }
+        System.out.println(String.format("Read %d lines from %s",metrics.size(), args[0]));
+        MetricGraph graph = new MetricGraph();
+        ApplicationMetric[] newMetrics = graph.compress(metrics);
+        for( ApplicationMetric applicationMetric : newMetrics) {
+            System.out.println(applicationMetric.name);
+        }
+    }
+}

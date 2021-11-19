@@ -3,11 +3,15 @@ package com.cisco.josouthe.data;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.data.metric.MetricData;
+import com.cisco.josouthe.data.metric.MetricGraph;
 import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -59,7 +63,9 @@ public class Application {
                 TreeNode[] folders = controller.getApplicationMetricFolders(this, "");
                 logger.debug("Found %d folders we can go into", (folders == null ? "0" : folders.length));
                 findMetrics( controller, folders, "");
-                this.metrics = metricsToAdd.toArray( new ApplicationMetric[0] );
+                MetricGraph graph = new MetricGraph();
+                this.metrics = graph.compress(metricsToAdd); //metricsToAdd.toArray( new ApplicationMetric[0] );
+                //if( logger.isDebugEnabled() ) writeMetricListToFile( metricsToAdd.toArray( new ApplicationMetric[0] ) );
             }
         }
         this.finishedInitialization=true; //setting this here because we want to continue, even if partial data
@@ -89,4 +95,18 @@ public class Application {
     }
 
     public String getName() { return this.name; }
+
+    private void writeMetricListToFile( ApplicationMetric[] metrics ) {
+        try {
+            BufferedWriter out = new BufferedWriter( new FileWriter( String.format("Metrics-%s.txt",this.name)));
+            for( ApplicationMetric metric: metrics ){
+                out.write(metric.name);
+                out.newLine();
+            }
+            out.flush();
+            out.close();
+        } catch (IOException ioException) {
+            logger.warn("Exception while trying to write metrics to temp file Metrics-%s.txt for dev, Exception: %s", this.getName(), ioException.getMessage() );
+        }
+    }
 }
