@@ -10,6 +10,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeMap;
 
+/*
+John Southerland: quite proud of this little boy. It reduces 700K metric names to query the controller into 1K metric names with wildcards, on large applications
+We build a graph of the metric name split by | and then count references on edges to teh vertex, if we find a bloom, where
+a vertex has the same number of left and right vertex references, this is a location we can wildcard, and remove all the nodes in between
+
+this most likely isn't fool proof, i didn't do a proof on this, it just seems to work pretty well. will need to confirm data loads are correct
+
+ */
 public class MetricGraph {
     private static final Logger logger = LogManager.getFormatterLogger();
 
@@ -22,7 +30,6 @@ public class MetricGraph {
         edges = new ArrayList<>();
         vertices = new TreeMap<>();
         startingVertices = new ArrayList<>();
-
     }
 
     public ApplicationMetric[] compress( ArrayList<ApplicationMetric> applicationMetrics ) {
@@ -30,7 +37,7 @@ public class MetricGraph {
         ArrayList<ApplicationMetric> compressedApplicationMetrics = new ArrayList<>();
         buildGraph(applicationMetrics);
         Set<String> newAppMetricsStrings = new HashSet<>();
-        for( Vertex vertex : vertices.values() ) {
+        for( Vertex vertex : vertices.values() ) {                          //O(n^2)
             if( vertex.isFinal() || vertex.isInitial() ) continue;
             int rCnt=0, lCnt=0;
             for( Edge edge : edges) {
@@ -38,7 +45,7 @@ public class MetricGraph {
                 if( edge.rVertex == vertex) rCnt++;
             }
             if( lCnt == rCnt ) {
-                //System.out.println(String.format("Vertex %s references r: %d l: %d", vertex, rCnt, lCnt));
+                logger.trace("Found Bloom Vertex %s references r: %d l: %d", vertex, rCnt, lCnt);
                 newAppMetricsStrings.add( vertex.printWithWildcard() );
             }
             /*
@@ -51,7 +58,7 @@ public class MetricGraph {
         for( String replacement : newAppMetricsStrings )
             compressedApplicationMetrics.add(new ApplicationMetric(null,replacement));
         this.newSize = compressedApplicationMetrics.size();
-        logger.debug("old size %d new size %d",originalSize,newSize);
+        logger.debug("Compressed Application Metrics, old size %d new size %d",originalSize,newSize);
         return compressedApplicationMetrics.toArray( new ApplicationMetric[0]);
     }
 
