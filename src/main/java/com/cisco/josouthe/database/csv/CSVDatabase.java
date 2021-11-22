@@ -1,5 +1,6 @@
 package com.cisco.josouthe.database.csv;
 
+import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.MetricData;
@@ -29,8 +30,8 @@ public class CSVDatabase extends Database {
     private File databaseDirectory;
     private char delimeter=',';
 
-    public CSVDatabase( String connectionString, String metricTable, String controlTable, String eventTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
-        super( connectionString, "", "");
+    public CSVDatabase(Configuration configuration, String connectionString, String metricTable, String controlTable, String eventTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
+        super( configuration, connectionString, "", "");
         if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Default Metric Table set to: %s", metricTable);
         if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Default Event Table set to: %s", eventTable);
         if( ! "".equals(controlTable) && isValidDatabaseTableName(controlTable) ) logger.debug("Run Control Table set to: %s", controlTable);

@@ -1,5 +1,6 @@
 package com.cisco.josouthe.database.oracle;
 
+import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.MetricData;
@@ -8,6 +9,8 @@ import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.Table;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,9 +32,21 @@ public class OracleDatabase extends Database {
     public static final String DATE_TYPE = "date";
     public static final int DATE_SIZE = -1;
 
+    private HikariConfig hikariConfig;
+    private HikariDataSource dataSource;
 
-    public OracleDatabase(String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
-        super( connectionString, user, password);
+
+    public OracleDatabase(Configuration configuration, String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
+        super( configuration, connectionString, user, password);
+        this.hikariConfig = new HikariConfig();
+        this.hikariConfig.setJdbcUrl(connectionString);
+        this.hikariConfig.setUsername(user);
+        this.hikariConfig.setPassword(password);
+        this.hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+        this.hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+        this.hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        this.hikariConfig.addDataSourceProperty("maximumPoolSize", this.configuration.getProperty("scheduler-NumberOfDatabaseThreads", "10"));
+        this.dataSource = new HikariDataSource(this.hikariConfig);
         if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Default Metric Table set to: %s", metricTable);
         if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Default Event Table set to: %s", eventTable);
         if( ! "".equals(controlTable) && isValidDatabaseTableName(controlTable) ) logger.debug("Run Control Table set to: %s", controlTable);
@@ -48,7 +63,7 @@ public class OracleDatabase extends Database {
     public boolean isDatabaseAvailable() {
         Connection conn = null;
         try{
-            conn = DriverManager.getConnection( this.connectionString, this.user, this.password);
+            conn = getConnection();
             if( conn != null ) return true;
         } catch (Exception exception) {
             logger.error("Error testing database connection settings, Exception: %s", exception.toString());
@@ -94,7 +109,7 @@ public class OracleDatabase extends Database {
 
     public Connection getConnection() throws SQLException {
         logger.trace("Getting Connection to DB for user %s",this.user);
-        return DriverManager.getConnection( this.connectionString, this.user, this.password);
+        return this.dataSource.getConnection();
     }
 
     @Override
