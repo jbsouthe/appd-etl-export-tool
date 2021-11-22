@@ -58,7 +58,6 @@ public class Application {
 
     public void refreshAllAvailableMetricsIfEnabled() {
         synchronized (this.metricsToAdd) {
-            this.metricsToAdd.clear();
             if( getAllAvailableMetrics ) {
                 TreeNode[] folders = controller.getApplicationMetricFolders(this, "");
                 logger.debug("Found %d folders we can go into", (folders == null ? "0" : folders.length));
@@ -66,6 +65,7 @@ public class Application {
                 MetricGraph graph = new MetricGraph();
                 this.metrics = graph.compress(metricsToAdd); //metricsToAdd.toArray( new ApplicationMetric[0] );
                 //if( logger.isDebugEnabled() ) writeMetricListToFile( metricsToAdd.toArray( new ApplicationMetric[0] ) );
+                this.metricsToAdd.clear(); //possible memory leak, moving to the end of this method instead of beginning
             }
         }
         this.finishedInitialization=true; //setting this here because we want to continue, even if partial data
