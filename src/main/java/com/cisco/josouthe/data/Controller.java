@@ -28,6 +28,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
@@ -56,7 +57,7 @@ public class Controller {
     public Model controllerModel = null;
     private ControlTable controlTable = null;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    HttpClient client = HttpClientBuilder.create().build();
+    HttpClient client = null;
 
     public Controller( String urlString, String clientId, String clientSecret, Application[] applications ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
@@ -65,6 +66,11 @@ public class Controller {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.applications = applications;
+        this.client = HttpClientBuilder
+                .create()
+                .setConnectionManager(new PoolingHttpClientConnectionManager())
+                .setConnectionManagerShared(true)
+                .build();
     }
 
     public void setControlTable( ControlTable table ) { this.controlTable=table; }

@@ -19,6 +19,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,7 +78,7 @@ public class Analytics {
     public URL url;
     public boolean ignoreNullsInFirstColumnOfReturnedData = true;
     ArrayList<Search> searches = new ArrayList<>();
-    HttpClient client = HttpClientBuilder.create().build();
+    HttpClient client = null;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     ControlTable controlTable = null;
 
@@ -88,6 +89,11 @@ public class Analytics {
         this.APIKey = APIKey;
         if( tableNamePrefix != null )
             this.tableNamePrefix=tableNamePrefix;
+        this.client = HttpClientBuilder
+                .create()
+                .setConnectionManager(new PoolingHttpClientConnectionManager())
+                .setConnectionManagerShared(true)
+                .build();
     }
 
     public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, ArrayList<Search> searches) throws MalformedURLException{
