@@ -1,5 +1,6 @@
 package com.cisco.josouthe.database;
 
+import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.MetricData;
@@ -25,11 +26,13 @@ public abstract class Database {
     public static final String DATE_TYPE = "date";
     public static final int DATE_SIZE = -1;
 
+    protected Configuration configuration;
     protected String connectionString, user, password, vendorName;
     protected Table defaultMetricTable, controlTable, defaulEventTable;
     protected Map<String,Table> tablesMap = new HashMap<>();
 
-    public Database( String connectionString, String user, String password ) {
+    public Database( Configuration configuration, String connectionString, String user, String password ) {
+        this.configuration = configuration;
         this.connectionString = connectionString;
         this.user = user;
         this.password = password;

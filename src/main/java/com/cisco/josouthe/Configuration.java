@@ -279,11 +279,11 @@ public class Configuration {
         if( eventTable == null ) eventTable = "AppDynamics_EventTable";
         switch( Utility.parseDatabaseVendor(connectionString).toLowerCase() ) {
             case "oracle": {
-                this.database = new OracleDatabase(connectionString, user, password, metricTable, controlTable, eventTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                this.database = new OracleDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
             case "csv": {
-                this.database = new CSVDatabase( connectionString, metricTable, controlTable, eventTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                this.database = new CSVDatabase(this, connectionString, metricTable, controlTable, eventTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
             default: {
