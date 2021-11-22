@@ -37,11 +37,9 @@ public class MainControlScheduler {
         }
         logger.info("Started %d Database Insert Tasks, all looking for work", executorInsertData.getPoolSize());
         while(configuration.isRunning() ) {
-            if( executorFetchData.getActiveCount() > 0 ) {
-                logger.info("Jobs may still be running from last execution? %d active still",executorFetchData.getActiveCount());
-            }
             for( Controller controller : configuration.getControllerList() ) {
                 for(Application application : controller.applications ) {
+                    logger.info("Running collector for %s@%s", application.getName(), controller.hostname);
                     executorFetchData.execute(new ApplicationMetricTask( application, dataToInsertLinkedBlockingQueue));
                     executorFetchData.execute( new ApplicationEventTask( application, dataToInsertLinkedBlockingQueue));
                 }
