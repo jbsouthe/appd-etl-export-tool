@@ -13,6 +13,7 @@ import com.cisco.josouthe.data.model.Tier;
 import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.ControlTable;
+import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -139,14 +140,28 @@ public class Controller {
     }
 
     public MetricData[] getMetricValue(Application application, ApplicationMetric metric, long startTimestamp, long endTimestamp ) {
-        MetricData[] metrics = getMetricValue( String.format("%scontroller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=%s",
-                this.url, Utility.encode(application.name), Utility.encode(metric.name),startTimestamp, endTimestamp,
-                (metric.disableDataRollup.toLowerCase().equals("true") ?"false":"true")
-        ));
+        MetricData[] metrics = null;
+
+        int tries=0;
+        boolean succeeded = false;
+        while (! succeeded && tries < 3 ) {
+            try {
+                metrics = getMetricValue(String.format("%scontroller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=%s",
+                        this.url, Utility.encode(application.name), Utility.encode(metric.name), startTimestamp, endTimestamp,
+                        (metric.disableDataRollup.toLowerCase().equals("true") ? "false" : "true")
+                ));
+                succeeded=true;
+            } catch (ControllerBadStatusException controllerBadStatusException) {
+                tries++;
+                logger.warn("Attempt number %d failed, status returned: %s for request %s",tries,controllerBadStatusException.getMessage(), controllerBadStatusException.urlRequestString);
+            }
+        }
+        if( !succeeded)
+            logger.warn("Gave up after %d tries, not getting %s back", tries, metric.name);
         return metrics;
     }
 
-    public MetricData[] getMetricValue( String urlString ) {
+    public MetricData[] getMetricValue( String urlString ) throws ControllerBadStatusException {
         MetricData[] metricData = null;
         if( urlString == null ) return null;
         logger.trace("metric url: %s",urlString);
@@ -168,8 +183,8 @@ public class Controller {
             return null;
         }
         if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            logger.warn("Access Key retreival returned bad status: %s", response.getStatusLine());
-            return null;
+            logger.warn("Metric Value retreival returned bad status: %s", response.getStatusLine());
+            throw new ControllerBadStatusException(response.getStatusLine().toString(), null, urlString);
         }
         HttpEntity entity = response.getEntity();
         Header encodingHeader = entity.getContentEncoding();
@@ -189,11 +204,23 @@ public class Controller {
 
     public TreeNode[] getApplicationMetricFolders(Application application, String path) {
         String json = null;
-        if( "".equals(path)) {
-            json = getRequest(String.format("controller/rest/applications/%s/metrics?output=JSON", Utility.encode(application.name)));
-        } else {
-            json = getRequest(String.format("controller/rest/applications/%s/metrics?metric-path=%s&output=JSON", Utility.encode(application.name), Utility.encode(path)));
+
+        int tries=0;
+        boolean succeeded=false;
+        while( !succeeded && tries < 3 ) {
+            try {
+                if ("".equals(path)) {
+                    json = getRequest(String.format("controller/rest/applications/%s/metrics?output=JSON", Utility.encode(application.name)));
+                } else {
+                    json = getRequest(String.format("controller/rest/applications/%s/metrics?metric-path=%s&output=JSON", Utility.encode(application.name), Utility.encode(path)));
+                }
+                succeeded=true;
+            } catch (ControllerBadStatusException controllerBadStatusException) {
+                tries++;
+                logger.warn("Try %d failed for request to get app application metric folders for %s with error: %s",tries,application.name,controllerBadStatusException.getMessage());
+            }
         }
+        if(!succeeded) logger.warn("Failing on get of application metric folder, controller may be down");
 
         TreeNode[] treeNodes = null;
         try {
@@ -265,8 +292,19 @@ public class Controller {
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now();
         if( application.getAllEvents ) {
-            String json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
-                    Utility.encode(application.name), startTimestamp, endTimestamp, application.eventTypeList, application.eventSeverities);
+            int tries=0;
+            boolean succeeded=false;
+            String json = null;
+            while( !succeeded && tries < 3 ) {
+                try {
+                    json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
+                            Utility.encode(application.name), startTimestamp, endTimestamp, application.eventTypeList, application.eventSeverities);
+                    succeeded=true;
+                } catch (ControllerBadStatusException controllerBadStatusException) {
+                    tries++;
+                    logger.warn("Error on try %d while trying to get Events for application %s Error: %s", tries, application.name, controllerBadStatusException.getMessage());
+                }
+            }
             EventData[] eventsReturned = gson.fromJson(json, EventData[].class);
             if( eventsReturned != null ) {
                 for (EventData event : eventsReturned) {
@@ -288,12 +326,12 @@ public class Controller {
         return events;
     }
 
-    private String getRequest( String formatOrURI, Object... args ) {
+    private String getRequest( String formatOrURI, Object... args ) throws ControllerBadStatusException {
         if( args == null || args.length == 0 ) return getRequest(formatOrURI);
         return getRequest( String.format(formatOrURI,args));
     }
 
-    private String getRequest( String uri ) {
+    private String getRequest( String uri ) throws ControllerBadStatusException {
         HttpGet request = new HttpGet(String.format("%s%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.trace("HTTP Method: %s",request);
@@ -318,7 +356,7 @@ public class Controller {
         }
         if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
             logger.warn("request returned bad status: %s message: %s", response.getStatusLine(), json);
-            return null;
+            throw new ControllerBadStatusException(response.getStatusLine().toString(), json, uri);
         }
         return json;
     }
@@ -326,32 +364,38 @@ public class Controller {
     Map<String,Integer> _applicationIdMap = null;
     public int getApplicationId( String name ) {
         if( _applicationIdMap == null ) { //go get em
-            String json = getRequest("controller/rest/applications?output=JSON");
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            Application[] apps = gson.fromJson(json, Application[].class);
-            _applicationIdMap = new HashMap<>();
-            for( Application app : apps )
-                _applicationIdMap.put(app.name, app.id);
+            try {
+                String json = getRequest("controller/rest/applications?output=JSON");
+                Application[] apps = gson.fromJson(json, Application[].class);
+                _applicationIdMap = new HashMap<>();
+                for (Application app : apps)
+                    _applicationIdMap.put(app.name, app.id);
+            } catch (ControllerBadStatusException controllerBadStatusException) {
+                logger.warn("Giving up on getting application id, not even going to retry");
+            }
         }
         return _applicationIdMap.get(name);
     }
 
     public Model getModel() {
         if( this.controllerModel == null ) {
-            String json = getRequest("controller/rest/applications");
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            this.controllerModel = new Model( gson.fromJson(json, com.cisco.josouthe.data.model.Application[].class));
-            for(com.cisco.josouthe.data.model.Application application : this.controllerModel.getApplications() ) {
-                json = getRequest("controller/rest/applications/%d/tiers",application.id);
-                application.tiers = gson.fromJson(json, Tier[].class);
-                json = getRequest("controller/rest/applications/%d/nodes",application.id);
-                application.nodes = gson.fromJson(json, Node[].class);
+            try {
+                String json = getRequest("controller/rest/applications");
+                this.controllerModel = new Model(gson.fromJson(json, com.cisco.josouthe.data.model.Application[].class));
+                for (com.cisco.josouthe.data.model.Application application : this.controllerModel.getApplications()) {
+                    json = getRequest("controller/rest/applications/%d/tiers", application.id);
+                    application.tiers = gson.fromJson(json, Tier[].class);
+                    json = getRequest("controller/rest/applications/%d/nodes", application.id);
+                    application.nodes = gson.fromJson(json, Node[].class);
+                }
+            } catch (ControllerBadStatusException controllerBadStatusException) {
+                logger.warn("Giving up on getting controller model, not even going to retry");
             }
         }
         return this.controllerModel;
     }
 
-    public static void main( String... args ) throws MalformedURLException {
+    public static void main( String... args ) throws Exception {
         Controller controller = new Controller("https://southerland-test.saas.appdynamics.com/", "ETLClient@southerland-test", "869b6e71-230c-4e6f-918d-6713fb73b3ad", null);
         System.out.printf("%s Test 1: %s\n", Controller.class, controller.getBearerToken());
         MetricData[] metricData = controller.getMetricValue("https://southerland-test.saas.appdynamics.com/controller/rest/applications/Agent%20Proxy/metric-data?metric-path=Application%20Infrastructure%20Performance%7C*%7CJVM%7CProcess%20CPU%20Usage%20%25&time-range-type=BEFORE_NOW&duration-in-mins=60");
