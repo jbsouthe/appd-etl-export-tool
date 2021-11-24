@@ -3,6 +3,7 @@ package com.cisco.josouthe.data;
 import com.appdynamics.agent.api.AppdynamicsAgent;
 import com.appdynamics.agent.api.EntryTypes;
 import com.appdynamics.agent.api.Transaction;
+import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.data.auth.AccessToken;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
@@ -41,10 +42,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Controller {
@@ -112,13 +110,27 @@ public class Controller {
         }
 
         HttpResponse response = null;
-        try {
-            response = client.execute(request);
-            logger.trace("Response Status Line: %s",response.getStatusLine());
-        } catch (IOException e) {
-            logger.error("Exception in attempting to get access token, Exception: %s",e.getMessage());
-            return false;
+        int tries=0;
+        boolean succeeded=false;
+        while( !succeeded && tries < 3 ) {
+            try {
+                response = client.execute(request);
+                succeeded=true;
+                logger.trace("Response Status Line: %s", response.getStatusLine());
+            } catch (IOException e) {
+                logger.error("Exception in attempting to get access token, Exception: %s", e.getMessage());
+                tries++;
+            } catch (java.lang.IllegalStateException illegalStateException) {
+                tries++;
+                this.client = HttpClientBuilder
+                        .create()
+                        .setConnectionManager(new PoolingHttpClientConnectionManager())
+                        .setConnectionManagerShared(true)
+                        .build();
+                logger.warn("Caught exception on connection, building a new connection for retry, Exception: %s", illegalStateException.getMessage());
+            }
         }
+        if( !succeeded ) return false;
         HttpEntity entity = response.getEntity();
         Header encodingHeader = entity.getContentEncoding();
         Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 : Charsets.toCharset(encodingHeader.getValue());
@@ -395,13 +407,34 @@ public class Controller {
         return this.controllerModel;
     }
 
+    public Search[] getAllSavedSearchesFromController() { //yup, using an undocumented api of the ui ;)
+        try {
+            String json = getRequest("controller/restui/analyticsSavedSearches/getAllAnalyticsSavedSearches");
+            return gson.fromJson(json, Search[].class);
+        } catch (ControllerBadStatusException controllerBadStatusException) {
+            logger.warn("Error using undocumented api to pull back listing of all saved analytics searches");
+        }
+        return null;
+    }
+
     public static void main( String... args ) throws Exception {
-        Controller controller = new Controller("https://southerland-test.saas.appdynamics.com/", "ETLClient@southerland-test", "869b6e71-230c-4e6f-918d-6713fb73b3ad", null);
+        Controller controller;
+        if( args.length == 0 ) {
+            controller = new Controller("https://southerland-test.saas.appdynamics.com/", "ETLClient@southerland-test", "869b6e71-230c-4e6f-918d-6713fb73b3ad", null);
+        } else {
+            controller = new Controller( args[0], args[1], args[2], null );
+        }
+        /*
         System.out.printf("%s Test 1: %s\n", Controller.class, controller.getBearerToken());
         MetricData[] metricData = controller.getMetricValue("https://southerland-test.saas.appdynamics.com/controller/rest/applications/Agent%20Proxy/metric-data?metric-path=Application%20Infrastructure%20Performance%7C*%7CJVM%7CProcess%20CPU%20Usage%20%25&time-range-type=BEFORE_NOW&duration-in-mins=60");
         System.out.printf("%s Test 2: %d elements\n", Controller.class, metricData.length);
         metricData = controller.getMetricValue("https://southerland-test.saas.appdynamics.com/controller/rest/applications/Agent%20Proxy/metric-data?metric-path=Business%20Transaction%20Performance%7CBusiness%20Transactions%7C*%7C*%7CAverage%20Response%20Time%20%28ms%29&time-range-type=BEFORE_NOW&duration-in-mins=60");
         System.out.printf("%s Test 3: %d elements\n", Controller.class, metricData.length);
+         */
+        Search[] searches = controller.getAllSavedSearchesFromController();
+        for( Search search : searches ) {
+            System.out.println(String.format("<Search name=\"%s\" visualization=\"%s\" >%s</Search>",search.getName(), search.visualization, search.getQuery()));
+        }
     }
 
     public void discardToken() {

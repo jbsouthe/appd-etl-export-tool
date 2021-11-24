@@ -1,14 +1,26 @@
 package com.cisco.josouthe.data.analytic;
 
-public class Search {
-    public String name, query;
-    public int limit = 20000;
+import java.util.ArrayList;
+import java.util.List;
 
-    public Search(String name, String query, int limit) {
-        this.name=name;
-        this.query=query;
+public class Search {
+    public String searchName, searchDescription, searchType, searchMode, viewMode, visualization;
+    public int limit = 20000;
+    public List<String> adqlQueries;
+
+    public Search() {} //for gson conversion
+
+    public Search(String name, String query, int limit, String visualization) {
+        this.searchName =name;
+        this.adqlQueries = new ArrayList<>();
+        this.adqlQueries.add(query);
         this.limit=limit;
+        this.visualization=visualization;
     }
 
-    public String getName() { return name; }
+    public String getName() { return searchName; }
+    public String getQuery() {
+        if( adqlQueries != null && !adqlQueries.isEmpty() ) return adqlQueries.get(0);
+        return "";
+    }
 }
