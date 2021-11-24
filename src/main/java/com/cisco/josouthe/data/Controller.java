@@ -55,22 +55,26 @@ public class Controller {
     public Application[] applications = null;
     public Model controllerModel = null;
     private ControlTable controlTable = null;
+    private boolean getAllAnalyticsSearchesFlag = false;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
 
-    public Controller( String urlString, String clientId, String clientSecret, Application[] applications ) throws MalformedURLException {
+    public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
         this.url = new URL(urlString);
         this.hostname = this.url.getHost();
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.applications = applications;
+        this.getAllAnalyticsSearchesFlag=getAllAnalyticsSearchesFlag;
         this.client = HttpClientBuilder
                 .create()
                 .setConnectionManager(new PoolingHttpClientConnectionManager())
                 .setConnectionManagerShared(true)
                 .build();
     }
+
+    public boolean isGetAllAnalyticsSearchesFlag() { return getAllAnalyticsSearchesFlag; }
 
     public void setControlTable( ControlTable table ) { this.controlTable=table; }
 
@@ -420,9 +424,9 @@ public class Controller {
     public static void main( String... args ) throws Exception {
         Controller controller;
         if( args.length == 0 ) {
-            controller = new Controller("https://southerland-test.saas.appdynamics.com/", "ETLClient@southerland-test", "869b6e71-230c-4e6f-918d-6713fb73b3ad", null);
+            controller = new Controller("https://southerland-test.saas.appdynamics.com/", "ETLClient@southerland-test", "869b6e71-230c-4e6f-918d-6713fb73b3ad", null, false);
         } else {
-            controller = new Controller( args[0], args[1], args[2], null );
+            controller = new Controller( args[0], args[1], args[2], null, false );
         }
         /*
         System.out.printf("%s Test 1: %s\n", Controller.class, controller.getBearerToken());

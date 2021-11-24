@@ -82,10 +82,11 @@ public class Configuration {
 
 
         //controller section, which centralizes authentication config
-        digester.addCallMethod("ETLTool/Controller", "addController", 3);
+        digester.addCallMethod("ETLTool/Controller", "addController", 4);
         digester.addCallParam("ETLTool/Controller/URL", 0);
         digester.addCallParam("ETLTool/Controller/ClientID", 1);
         digester.addCallParam("ETLTool/Controller/ClientSecret", 2);
+        digester.addCallParam("ETLTool/Controller", 3, "getAllAnalyticsSearches");
 
         //application config, within a controller
         digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 10);
@@ -174,7 +175,7 @@ public class Configuration {
             logger.warn("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
             throw new InvalidConfigurationException("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
         }
-        if( this.searches.size() == 0 ) throw new InvalidConfigurationException("We can't add an Analytics section without any Searches!");
+        //if( this.searches.size() == 0 ) throw new InvalidConfigurationException("We can't add an Analytics section without any Searches!");
         try {
             Analytics analytic = new Analytics( urlString, accountName, apiKey, tableNamePrefix, (ArrayList<Search>) this.searches.clone());
             this.searches = new ArrayList<>();
@@ -213,7 +214,7 @@ public class Configuration {
         metrics = new ArrayList<>();
     }
 
-    public void addController( String urlString, String clientID, String clientSecret) throws InvalidConfigurationException {
+    public void addController( String urlString, String clientID, String clientSecret, String getAllAnalyticsSearches) throws InvalidConfigurationException {
         if( urlString == null || clientID == null || clientSecret == null ) {
             logger.warn("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
@@ -222,11 +223,18 @@ public class Configuration {
             logger.warn("Controller configured, but no applications configured, please add at least one application");
             throw new InvalidConfigurationException("Controller configured, but no applications configured, please add at least one application");
         }
+        boolean getAllAnalyticsSearchesFlag=false;
+        if( "true".equals(getAllAnalyticsSearches) )
+            getAllAnalyticsSearchesFlag=true;
         try{
-            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ));
+            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag);
             applications = new ArrayList<>();;
             controllerMap.put( controller.hostname, controller);
             logger.info("Added Controller  to config for host: %s url: %s", controller.hostname, urlString);
+            if( controller.isGetAllAnalyticsSearchesFlag() ) {
+                for( Search search : controller.getAllSavedSearchesFromController() )
+                    addAnalyticsSearch(search.getName(), search.getQuery(), null, search.visualization);
+            }
         } catch (MalformedURLException exception) {
             logger.error("Could not create controller from config file because of a bad URL: %s Exception: %s", urlString, exception.getMessage());
         }
