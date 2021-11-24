@@ -117,11 +117,11 @@ public class Configuration {
         digester.addCallParam("ETLTool/Analytics/TableNamePrefix", paramCounter++);
 
         paramCounter=0;
-        digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 3);
+        digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 4);
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "name");
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
-
+        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
 
         digester.parse( new File(configFileName) );
         if( ! definedScheduler ) {
@@ -158,13 +158,14 @@ public class Configuration {
         }
     }
 
-    public void addAnalyticsSearch( String name, String query, String limit ) throws InvalidConfigurationException {
+    public void addAnalyticsSearch( String name, String query, String limit, String visualization ) throws InvalidConfigurationException {
         if( name == null || query == null ) {
             logger.warn("No valid minimum config parameters for Analytics Search! The name is used for the destination table and the query is the search");
             throw new InvalidConfigurationException("No valid minimum config parameters for Analytics Search! The name is used for the destination table and the query is the search");
         }
+        if( visualization == null ) visualization="TABLE";
         if( limit == null ) limit="20000";
-        searches.add(new Search(name, query, Integer.parseInt(limit)));
+        searches.add(new Search(name, query, Integer.parseInt(limit), visualization));
         logger.info("Added Search %s: '%s' to list for collection",name, query);
     }
 

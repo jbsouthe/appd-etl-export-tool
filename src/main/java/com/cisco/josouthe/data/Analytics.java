@@ -1,8 +1,5 @@
 package com.cisco.josouthe.data;
 
-import com.appdynamics.agent.api.AppdynamicsAgent;
-import com.appdynamics.agent.api.EntryTypes;
-import com.appdynamics.agent.api.Transaction;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.database.ControlEntry;
@@ -31,6 +28,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /*
@@ -117,8 +115,12 @@ public class Analytics {
         for( Search search : searches ) {
             //Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Analytics Search", null, "Analytics Search "+ search.name, EntryTypes.POJO, false);
             //serviceEndPoint.collectData("Search Query", search.query, Utility.getSnapshotDatascope());
-            for( Result result : runAnalyticsQuery(search, startTimestamp, endTimestamp))
-                results.add(result);
+            logger.info("Running Analytics Search %s query: '%s'", search.getName(), search.getQuery());
+            Result[] searchResults = runAnalyticsQuery(search, startTimestamp, endTimestamp);
+            if( searchResults != null ) {
+                for (Result result : searchResults)
+                    if (result != null) results.add(result);
+            }
             //serviceEndPoint.end();
         }
         if( dataToInsertLinkedBlockingQueue != null ) {
@@ -131,11 +133,11 @@ public class Analytics {
     }
 
     public Result[] runAnalyticsQuery(Search search) {
-        return runAnalyticsQuery(search.name, search.query,(Utility.now())-3600000, Utility.now(), search.limit);
+        return runAnalyticsQuery(search.getName(), search.getQuery(),(Utility.now())-3600000, Utility.now(), search.limit);
     }
 
     public Result[] runAnalyticsQuery(Search search, long startTimestamp, long endTimestamp) {
-        return runAnalyticsQuery(search.name, search.query, startTimestamp, endTimestamp, search.limit);
+        return runAnalyticsQuery(search.getName(), search.getQuery(), startTimestamp, endTimestamp, search.limit);
     }
 
     public Result[] runAnalyticsQuery(String name, String query) {
@@ -164,7 +166,7 @@ public class Analytics {
             return null;
         }
         if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            logger.warn("request returned bad status: %s", response.getStatusLine());
+            logger.warn("request '%s' returned bad status: %s",request.toString(), response.getStatusLine());
             return null;
         }
         HttpEntity entity = response.getEntity();
