@@ -5,10 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 /*
 John Southerland: quite proud of this little boy. It reduces 700K metric names to query the controller into 1K metric names with wildcards, on large applications
@@ -32,7 +29,7 @@ public class MetricGraph {
         startingVertices = new ArrayList<>();
     }
 
-    public ApplicationMetric[] compress( ArrayList<ApplicationMetric> applicationMetrics ) {
+    public List<ApplicationMetric> compress(ArrayList<ApplicationMetric> applicationMetrics ) {
         originalSize=applicationMetrics.size();
         ArrayList<ApplicationMetric> compressedApplicationMetrics = new ArrayList<>();
         buildGraph(applicationMetrics);
@@ -59,7 +56,7 @@ public class MetricGraph {
             compressedApplicationMetrics.add(new ApplicationMetric(null,replacement));
         this.newSize = compressedApplicationMetrics.size();
         logger.debug("Compressed Application Metrics, old size %d new size %d",originalSize,newSize);
-        return compressedApplicationMetrics.toArray( new ApplicationMetric[0]);
+        return compressedApplicationMetrics;
     }
 
     private void buildGraph(ArrayList<ApplicationMetric> applicationMetrics) {
@@ -197,7 +194,7 @@ public class MetricGraph {
         }
         System.out.println(String.format("Read %d lines from %s",metrics.size(), args[0]));
         MetricGraph graph = new MetricGraph();
-        ApplicationMetric[] newMetrics = graph.compress(metrics);
+        List<ApplicationMetric> newMetrics = graph.compress(metrics);
         for( ApplicationMetric applicationMetric : newMetrics) {
             System.out.println(applicationMetric.name);
         }
