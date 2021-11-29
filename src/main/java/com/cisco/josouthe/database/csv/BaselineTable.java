@@ -15,7 +15,7 @@ import java.io.*;
 import java.util.Date;
 
 
-public class BaselineTable extends Table implements com.cisco.josouthe.database.MetricTable {
+public class BaselineTable extends Table implements com.cisco.josouthe.database.BaselineTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
     private File baseDir;
 
