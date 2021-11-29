@@ -7,6 +7,7 @@ import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.data.auth.AccessToken;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
+import com.cisco.josouthe.data.metric.Baseline;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.model.Model;
 import com.cisco.josouthe.data.model.Node;
@@ -413,8 +414,8 @@ public class Controller {
         return json;
     }
 
-    Map<String,Integer> _applicationIdMap = null;
-    public int getApplicationId( String name ) {
+    Map<String,Long> _applicationIdMap = null;
+    public long getApplicationId( String name ) {
         if( _applicationIdMap == null ) { //go get em
             try {
                 String json = getRequest("controller/rest/applications?output=JSON");
@@ -453,6 +454,20 @@ public class Controller {
             return gson.fromJson(json, Search[].class);
         } catch (ControllerBadStatusException controllerBadStatusException) {
             logger.warn("Error using undocumented api to pull back listing of all saved analytics searches");
+        }
+        return null;
+    }
+
+    public Baseline[] getAllBaselines(Application application ) {
+        if( application == null ) return null;
+        if( application.id == -1 ) application.id = getApplicationId(application.getName());
+        try {
+            String json = getRequest("controller/restui/baselines/getAllBaselines/%d", application.id);
+            Baseline[] baselines = gson.fromJson(json, Baseline[].class);
+            application.setBaselines(baselines);
+            return baselines;
+        } catch (ControllerBadStatusException controllerBadStatusException) {
+            logger.warn("Error using undocumented api to pull back listing of all application baselines, application '%s'", application.getName());
         }
         return null;
     }
