@@ -21,6 +21,7 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
         super(tableName,"Metric Table",database);
         columns.put("controller", new ColumnFeatures("controller", "varchar2", 50, false));
         columns.put("application", new ColumnFeatures("application", "varchar2", 50, false));
+        columns.put("metricid", new ColumnFeatures("metricId", "number", 22, false));
         columns.put("metricname", new ColumnFeatures("metricName", "varchar2", 200, false));
         columns.put("metricpath", new ColumnFeatures("metricPath", "varchar2", 200, false));
         columns.put("frequency", new ColumnFeatures("frequency", "varchar2", 50, false));
@@ -35,32 +36,34 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
         MetricData metric = (MetricData) object;
         int counter=0;
         StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
-        insertSQL.append("controller, application, metricname, metricpath, frequency, metricid, userange, ");
+        insertSQL.append("controller, application, metricid, metricname, metricpath, frequency, metricid, userange, ");
         insertSQL.append("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
-        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
+        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
         logger.trace("insertMetric SQL: %s",insertSQL);
         Connection conn = null;
         try{
             conn = database.getConnection();
             PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());
             for(MetricValue metricValue : metric.metricValues ) {
-                preparedStatement.setString(1, metric.controllerHostname);
-                preparedStatement.setString(2, metric.applicationName);
-                preparedStatement.setString(3, fitToSize(metric.metricName, "metricname"));
-                preparedStatement.setString(4, fitToSize(metric.metricPath, "metricpath"));
-                preparedStatement.setString(5, metric.frequency);
-                preparedStatement.setLong(6, metric.metricId);
-                preparedStatement.setInt(7, (metricValue.useRange ? 1: 0 ));
-                preparedStatement.setLong(8, metricValue.startTimeInMillis);
-                preparedStatement.setLong(9, metricValue.occurrences);
-                preparedStatement.setLong(10, metricValue.current);
-                preparedStatement.setLong(11, metricValue.min);
-                preparedStatement.setLong(12, metricValue.max);
-                preparedStatement.setLong(13, metricValue.count);
-                preparedStatement.setLong(14, metricValue.sum);
-                preparedStatement.setLong(15, metricValue.value);
-                preparedStatement.setDouble(16, metricValue.standardDeviation);
-                preparedStatement.setLong(17, metricValue.startTimeInMillis);
+                int parameterIndex=1;
+                preparedStatement.setString(parameterIndex++, metric.controllerHostname);
+                preparedStatement.setString(parameterIndex++, metric.applicationName);
+                preparedStatement.setLong(parameterIndex++, metric.metricId);
+                preparedStatement.setString(parameterIndex++, fitToSize(metric.metricName, "metricname"));
+                preparedStatement.setString(parameterIndex++, fitToSize(metric.metricPath, "metricpath"));
+                preparedStatement.setString(parameterIndex++, metric.frequency);
+                preparedStatement.setLong(parameterIndex++, metric.metricId);
+                preparedStatement.setInt(parameterIndex++, (metricValue.useRange ? 1: 0 ));
+                preparedStatement.setLong(parameterIndex++, metricValue.startTimeInMillis);
+                preparedStatement.setLong(parameterIndex++, metricValue.occurrences);
+                preparedStatement.setLong(parameterIndex++, metricValue.current);
+                preparedStatement.setLong(parameterIndex++, metricValue.min);
+                preparedStatement.setLong(parameterIndex++, metricValue.max);
+                preparedStatement.setLong(parameterIndex++, metricValue.count);
+                preparedStatement.setLong(parameterIndex++, metricValue.sum);
+                preparedStatement.setLong(parameterIndex++, metricValue.value);
+                preparedStatement.setDouble(parameterIndex++, metricValue.standardDeviation);
+                preparedStatement.setLong(parameterIndex++, metricValue.startTimeInMillis);
                 counter += preparedStatement.executeUpdate();
             }
         } catch (Exception exception) {
