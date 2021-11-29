@@ -2,6 +2,7 @@ package com.cisco.josouthe.data;
 
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
+import com.cisco.josouthe.data.metric.Baseline;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.metric.MetricGraph;
 import com.cisco.josouthe.data.model.TreeNode;
@@ -13,6 +14,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Application {
@@ -23,13 +25,15 @@ public class Application {
     public boolean getAllEvents = false;
     public boolean getAllHealthRuleViolations = false;
     public String name;
-    public int id;
+    public long id = -1;
     public String defaultDisableDataRollup = "false";
     public String defaultMetricTableName = null;
     public String defaultEventTableName = null;
     public String eventTypeList = null;
     public String eventSeverities = "INFO,WARN,ERROR";
     public ApplicationMetric[] metrics = null;
+    public List<Baseline> baselines = null;
+    public Baseline defaultBaseline = null;
 
 
     public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String getAllEvents, String getAllHealthRuleViolations, ApplicationMetric[] metrics) {
@@ -41,6 +45,7 @@ public class Application {
         if( defaultMetricTableName != null ) this.defaultMetricTableName = defaultMetricTableName;
         if( defaultEventTableName != null ) this.defaultEventTableName = defaultEventTableName;
         this.metrics = metrics;
+        this.baselines = new ArrayList<>();
     }
 
     public boolean isFinishedInitialization() { return finishedInitialization; }
@@ -107,6 +112,15 @@ public class Application {
             out.close();
         } catch (IOException ioException) {
             logger.warn("Exception while trying to write metrics to temp file Metrics-%s.txt for dev, Exception: %s", this.getName(), ioException.getMessage() );
+        }
+    }
+
+    public void setBaselines(Baseline[] baselines) {
+        if( baselines == null ) return;
+        this.baselines.clear();
+        for( Baseline baseline : baselines ) {
+            this.baselines.add(baseline);
+            if( baseline.defaultBaseline ) this.defaultBaseline=baseline;
         }
     }
 }
