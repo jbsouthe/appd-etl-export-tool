@@ -72,14 +72,14 @@ public class Configuration {
         digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5 );
 
         //database configuration section
-        digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 6);
+        digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 7);
         digester.addCallParam("ETLTool/TargetDB/ConnectionString", 0);
         digester.addCallParam("ETLTool/TargetDB/User", 1);
         digester.addCallParam("ETLTool/TargetDB/Password", 2);
         digester.addCallParam("ETLTool/TargetDB/DefaultMetricTable", 3);
         digester.addCallParam("ETLTool/TargetDB/ControlTable", 4);
         digester.addCallParam("ETLTool/TargetDB/DefaultEventTable", 5);
-
+        digester.addCallParam("ETLTool/TargetDB/DefaultBaselineTable", 65);
 
         //controller section, which centralizes authentication config
         digester.addCallMethod("ETLTool/Controller", "addController", 4);
@@ -89,17 +89,18 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller", 3, "getAllAnalyticsSearches");
 
         //application config, within a controller
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 10);
+        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 11);
         digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
         digester.addCallParam("ETLTool/Controller/Application/Name", 1);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 2);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", 3);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", 4);
-        digester.addCallParam("ETLTool/Controller/Application", 5, "getAllEvents");
-        digester.addCallParam("ETLTool/Controller/Application", 6, "getAllHealthRuleViolations");
-        digester.addCallParam("ETLTool/Controller/Application/Events/Include", 7);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 8);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 9);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/BaselineTable", 5);
+        digester.addCallParam("ETLTool/Controller/Application", 6, "getAllEvents");
+        digester.addCallParam("ETLTool/Controller/Application", 7, "getAllHealthRuleViolations");
+        digester.addCallParam("ETLTool/Controller/Application/Events/Include", 8);
+        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 9);
+        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 10);
 
 
 
@@ -203,7 +204,7 @@ public class Configuration {
     }
 
     public void addApplication( String getAllAvailableMetrics, String name , String defaultDisableAutoRollup,
-                                String metricTable, String eventTable,
+                                String metricTable, String eventTable, String baselineTable,
                                 String getAllEvents, String getAllHealthRuleViolations,
                                 String includeEventList, String excludeEventList, String eventSeverities
                                 ) throws InvalidConfigurationException {
@@ -213,7 +214,8 @@ public class Configuration {
         }
         if( metricTable != null && database.isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
         if( eventTable != null && database.isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
-        Application application = new Application( getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, getAllEvents, getAllHealthRuleViolations, metrics);
+        if( baselineTable != null && database.isValidDatabaseTableName(baselineTable) ) logger.debug("Application %s Baseline Table set to: %s", name, baselineTable);
+        Application application = new Application( getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, baselineTable, getAllEvents, getAllHealthRuleViolations, metrics);
         application.setEventTypeList( getEventListForApplication(includeEventList, excludeEventList));
         if( eventSeverities != null ) application.eventSeverities = eventSeverities;
         applications.add(application);
@@ -278,7 +280,7 @@ public class Configuration {
         this.properties.setProperty("scheduler-ConfigRefreshHours", numberConfigRefreshHours);
     }
 
-    public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable ) throws InvalidConfigurationException {
+    public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable ) throws InvalidConfigurationException {
         if( connectionString == null ) {
             logger.warn("No valid minimum config parameters for ETL Database! Ensure Connection String is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for ETL Database! Ensure Connection String is configured");
@@ -288,13 +290,14 @@ public class Configuration {
         if( metricTable == null ) metricTable = "AppDynamics_MetricTable";
         if( controlTable == null ) controlTable = "AppDynamics_SchedulerControl";
         if( eventTable == null ) eventTable = "AppDynamics_EventTable";
+        if( baselineTable == null ) baselineTable = "AppDynamics_BaselineTable";
         switch( Utility.parseDatabaseVendor(connectionString).toLowerCase() ) {
             case "oracle": {
-                this.database = new OracleDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                this.database = new OracleDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
             case "csv": {
-                this.database = new CSVDatabase(this, connectionString, metricTable, controlTable, eventTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                this.database = new CSVDatabase(this, connectionString, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
             default: {

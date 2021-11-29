@@ -3,6 +3,7 @@ package com.cisco.josouthe.database;
 import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
+import com.cisco.josouthe.data.metric.BaselineData;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
@@ -28,7 +29,7 @@ public abstract class Database {
 
     protected Configuration configuration;
     protected String connectionString, user, password, vendorName;
-    protected Table defaultMetricTable, controlTable, defaulEventTable;
+    protected Table defaultMetricTable, controlTable, defaulEventTable, defaultBaselineTable;
     protected Map<String,Table> tablesMap = new HashMap<>();
 
     public Database( Configuration configuration, String connectionString, String user, String password ) {
@@ -44,6 +45,7 @@ public abstract class Database {
     protected abstract AnalyticTable getAnalyticTable(Result result );
     protected abstract EventTable getEventTable(String name );
     protected abstract MetricTable getMetricTable(String name );
+    protected abstract BaselineTable getBaselineTable(String name );
 
     public abstract boolean isDatabaseAvailable();
 
@@ -55,6 +57,8 @@ public abstract class Database {
             importEventData((EventData[]) someData);
         } else if( someData instanceof Result[] ) {
             importAnalyticData((Result[]) someData);
+        } else if( someData instanceof BaselineData[] ) {
+            importBaselineData((BaselineData[]) someData);
         } else {
             logger.warn("Could not determine the datatype for %s %d records",someData,someData.length);
         }
@@ -87,6 +91,35 @@ public abstract class Database {
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
         if( cntStarted > 0 )
             logger.info("Attempted to load %d metrics, succeeded in loading %d metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
+
+    }
+
+    public void importBaselineData(BaselineData[] baselineData) {
+        logger.trace("Beginning of import metric data method");
+        if( baselineData == null || baselineData.length == 0 ) {
+            logger.debug("Nothing to import, leaving quickly");
+            return;
+        }
+        int cntStarted = 0;
+        int cntFinished = 0;
+        int cntAverageCalc = 0;
+        long startTimeOverall = Utility.now();
+        long maxDurationTime = -1;
+        long minDurationTime = Long.MAX_VALUE;
+        for( BaselineData baseline : baselineData ) {
+            cntStarted+=baseline.dataTimeslices.size();
+            BaselineTable table = (BaselineTable) getBaselineTable(baseline.targetTable);
+            long startTimeTransaction = Utility.now();
+            cntFinished += table.insert(baseline);
+            cntAverageCalc++;
+            long durationTimeTransaction = Utility.now() - startTimeTransaction;
+            if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
+            if( durationTimeTransaction < minDurationTime ) minDurationTime = durationTimeTransaction;
+            logger.debug("Loaded %d baseline metrics into the database in time %d(ms)", baseline.dataTimeslices.size(), durationTimeTransaction);
+        }
+        long durationTimeOverallMS = Utility.now() - startTimeOverall;
+        if( cntStarted > 0 )
+            logger.info("Attempted to load %d baseline metrics, succeeded in loading %d baseline metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
 
     }
 

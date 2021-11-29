@@ -1,5 +1,7 @@
 package com.cisco.josouthe.database.csv;
 
+import com.cisco.josouthe.data.metric.BaselineData;
+import com.cisco.josouthe.data.metric.BaselineTimeslice;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.metric.MetricValue;
 import com.cisco.josouthe.database.ColumnFeatures;
@@ -13,17 +15,17 @@ import java.io.*;
 import java.util.Date;
 
 
-public class MetricTable extends Table implements com.cisco.josouthe.database.MetricTable {
+public class BaselineTable extends Table implements com.cisco.josouthe.database.MetricTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
     private File baseDir;
 
-    public MetricTable( String tableName, Database database, File baseDir ) {
+    public BaselineTable(String tableName, Database database, File baseDir ) {
         super(tableName,"Metric Table",database);
         this.baseDir=baseDir;
         columns.put("controller", new ColumnFeatures("controller", "string", -1, false));
         columns.put("application", new ColumnFeatures("application", "string", -1, false));
+        columns.put("metricid", new ColumnFeatures("metricId", "number", -1, false));
         columns.put("metricname", new ColumnFeatures("metricName", "string", -1, false));
-        columns.put("metricpath", new ColumnFeatures("metricPath", "string", -1, false));
         columns.put("frequency", new ColumnFeatures("frequency", "string", -1, false));
         columns.put("userange", new ColumnFeatures("userange", "boolean", -1, false));
         for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value", "standardDeviation"})
@@ -32,7 +34,7 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
     }
 
     public synchronized int insert(Object object) {
-        MetricData metric = (MetricData) object;
+        BaselineData baseline = (BaselineData) object;
         int counter=0;
         boolean writeHeaderLine = false;
         File dataFile = new File(baseDir.getAbsolutePath()+ File.separator + Utility.cleanFileName(this.name) +".csv");
@@ -57,18 +59,18 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
                 }
                 printStream.println();
                 */
-                printStream.print("controller, application, metricname, metricpath, frequency, metricid, userange, ");
+                printStream.print("controller, application, metricname, frequency, metricid, userange, ");
                 printStream.println("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
             }
-            for( MetricValue metricValue : metric.metricValues ) {
-                printStream.printf("\"%s\", ", metric.controllerHostname);
-                printStream.printf("\"%s\", ", metric.applicationName);
-                printStream.printf("\"%s\", ", metric.metricName);
-                printStream.printf("\"%s\", ", metric.metricPath);
-                printStream.printf("\"%s\", ", metric.frequency);
-                printStream.printf("%s, ", metric.metricId);
+            for( BaselineTimeslice baselineTimeslice : baseline.dataTimeslices ) {
+                MetricValue metricValue = baselineTimeslice.metricValue;
+                printStream.printf("\"%s\", ", baseline.controllerHostname);
+                printStream.printf("\"%s\", ", baseline.applicationName);
+                printStream.printf("\"%s\", ", baseline.metricName);
+                printStream.printf("\"%s\", ", baseline.frequency);
+                printStream.printf("%s, ", baseline.metricId);
                 printStream.printf("%s, ", String.valueOf(metricValue.useRange));
-                printStream.printf("%d, ", metricValue.startTimeInMillis);
+                printStream.printf("%d, ", baselineTimeslice.startTime);
                 printStream.printf("%d, ", metricValue.occurrences);
                 printStream.printf("%d, ", metricValue.current);
                 printStream.printf("%d, ", metricValue.min);
@@ -77,7 +79,7 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
                 printStream.printf("%d, ", metricValue.sum);
                 printStream.printf("%d, ", metricValue.value);
                 printStream.printf("%f, ", metricValue.standardDeviation);
-                printStream.printf("\"%s\"\n", new Date(metricValue.startTimeInMillis).toString());
+                printStream.printf("\"%s\"\n", new Date(baselineTimeslice.startTime).toString());
                 printStream.flush();
                 counter++;
             }

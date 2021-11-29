@@ -29,6 +29,7 @@ public class Application {
     public String defaultDisableDataRollup = "false";
     public String defaultMetricTableName = null;
     public String defaultEventTableName = null;
+    public String defaultBaselineTableName = null;
     public String eventTypeList = null;
     public String eventSeverities = "INFO,WARN,ERROR";
     public List<ApplicationMetric> metrics = null;
@@ -36,7 +37,7 @@ public class Application {
     public Baseline defaultBaseline = null;
 
 
-    public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String getAllEvents, String getAllHealthRuleViolations, List<ApplicationMetric> metrics) {
+    public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String defaultBaselineTableName, String getAllEvents, String getAllHealthRuleViolations, List<ApplicationMetric> metrics) {
         if( getAllAvailableMetrics != null ) this.getAllAvailableMetrics= Boolean.parseBoolean(getAllAvailableMetrics);
         if( getAllEvents != null ) this.getAllEvents= Boolean.parseBoolean(getAllEvents);
         if( getAllHealthRuleViolations != null ) this.getAllHealthRuleViolations= Boolean.parseBoolean(getAllHealthRuleViolations);
@@ -44,6 +45,7 @@ public class Application {
         if( defaultDisableDataRollup != null ) this.defaultDisableDataRollup = defaultDisableDataRollup;
         if( defaultMetricTableName != null ) this.defaultMetricTableName = defaultMetricTableName;
         if( defaultEventTableName != null ) this.defaultEventTableName = defaultEventTableName;
+        if( defaultBaselineTableName != null ) this.defaultBaselineTableName = defaultBaselineTableName;
         this.metrics = new ArrayList<>();
         this.metrics.addAll(metrics);
         this.baselines = new ArrayList<>();
@@ -58,6 +60,7 @@ public class Application {
             throw new InvalidConfigurationException("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
         }
         this.controller=controller;
+        setBaselines( controller.getAllBaselines(this) );
         if( ! getAllAvailableMetrics ) this.finishedInitialization=true;
         //this.refreshAllAvailableMetricsIfEnabled(); moved to beginning of scheduler, to get some concurrency
     }
@@ -124,4 +127,13 @@ public class Application {
             if( baseline.defaultBaseline ) this.defaultBaseline=baseline;
         }
     }
+
+    public Baseline getBaseline( String name ) {
+        if( name == null ) return this.defaultBaseline;
+        for( Baseline baseline : baselines )
+            if( name.equals(baseline.name) )
+                return baseline;
+        return null;
+    }
+    public Baseline getBaseline() { return getBaseline(null); }
 }
