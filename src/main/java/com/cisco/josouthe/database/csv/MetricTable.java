@@ -22,6 +22,7 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
         this.baseDir=baseDir;
         columns.put("controller", new ColumnFeatures("controller", "string", -1, false));
         columns.put("application", new ColumnFeatures("application", "string", -1, false));
+        columns.put("metricid", new ColumnFeatures("metricId", "number", -1, false));
         columns.put("metricname", new ColumnFeatures("metricName", "string", -1, false));
         columns.put("metricpath", new ColumnFeatures("metricPath", "string", -1, false));
         columns.put("frequency", new ColumnFeatures("frequency", "string", -1, false));
@@ -63,6 +64,7 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
             for( MetricValue metricValue : metric.metricValues ) {
                 printStream.printf("\"%s\", ", metric.controllerHostname);
                 printStream.printf("\"%s\", ", metric.applicationName);
+                printStream.printf("%d, ", metric.metricId);
                 printStream.printf("\"%s\", ", metric.metricName);
                 printStream.printf("\"%s\", ", metric.metricPath);
                 printStream.printf("\"%s\", ", metric.frequency);
