@@ -7,4 +7,7 @@ public class BaselineData {
     public String metricName, frequency;
     public int granularityMinutes;
     public List<BaselineTimeslice> dataTimeslices;
+    public String targetTable = null;
+    public String controllerHostname;
+    public String applicationName;
 }

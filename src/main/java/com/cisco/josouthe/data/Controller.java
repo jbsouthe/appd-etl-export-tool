@@ -8,6 +8,7 @@ import com.cisco.josouthe.data.auth.AccessToken;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.data.metric.Baseline;
+import com.cisco.josouthe.data.metric.BaselineData;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.model.Model;
 import com.cisco.josouthe.data.model.Node;
@@ -32,6 +33,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.BufferedHttpEntity;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -279,6 +281,7 @@ public class Controller {
                 metricData.applicationName = application.name;
                 metricData.targetTable = application.defaultMetricTableName;
                 metrics.add(metricData);
+                getBaselineValue( metricData, application, startTimestamp, endTimestamp, dataQueue);
             }
             if( dataQueue != null ) {
                 dataQueue.add(metrics.toArray(new MetricData[0]));
@@ -290,6 +293,41 @@ public class Controller {
         //serviceEndPoint.end();
         this.controlTable.setLastRunTimestamp(controlEntry);
         return metrics;
+    }
+
+    public List<BaselineData> getBaselineValue( MetricData metricData, Application application, long startTimestamp, long endTimestamp, LinkedBlockingQueue<Object[]> dataQueue ) {
+        ArrayList<BaselineData> baselines = new ArrayList<>();
+        boolean succeeded=false;
+        int tries=0;
+        String json = "";
+        while( !succeeded && tries < 3 ) {
+            tries++;
+            try {
+                json = postRequest(
+                        "controller/restui/metricBrowser/getMetricBaselineData?granularityMinutes=1",
+                        String.format("'{\"metricDataQueries\":[{\"metricId\":%d,\"entityId\":%d,\"entityType\":\"APPLICATION\"}],\"timeRangeSpecifier\":{\"type\":\"BETWEEN_TIMES\",\"durationInMinutes\":null,\"endTime\":%d,\"startTime\":%d,\"timeRange\":null,\"timeRangeAdjusted\":false},\"metricBaseline\":%d,\"maxSize\":1440}'",
+                                metricData.metricId, application.id, endTimestamp, startTimestamp, application.getBaseline().id));
+                succeeded=true;
+            } catch (ControllerBadStatusException controllerBadStatusException) {
+                logger.warn("Error in request to pull baseline metrics using an undocumented, internal, api. This is retriable, attempt %d Error: %s", tries, controllerBadStatusException.getMessage());
+            }
+        }
+        if( !succeeded ) {
+            logger.error("Giving up on attempt to get Baseline metrics, the controller isn't responding properly");
+            return null;
+        }
+        for( BaselineData baselineData : gson.fromJson(json, BaselineData[].class)) {
+            baselineData.metricName = metricData.metricName; //this is blank on my test data, not sure why it isn't set
+            baselineData.controllerHostname = this.hostname;
+            baselineData.applicationName = application.name;
+            baselineData.targetTable = application.defaultBaselineTableName;
+            baselines.add(baselineData);
+        }
+        if( dataQueue != null ) {
+            dataQueue.add( baselines.toArray( new BaselineData[0]));
+            baselines.clear();
+        }
+        return baselines;
     }
 
     public EventData[] getAllEventsForAllApplications() {
@@ -351,6 +389,26 @@ public class Controller {
         return events;
     }
 
+    private String postRequest( String requestUri, String body ) throws ControllerBadStatusException {
+        HttpPost request = new HttpPost(String.format("%s%s", this.url.toString(), requestUri));
+        request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
+        logger.trace("HTTP Method: %s",request);
+        String json = null;
+        try {
+            request.setEntity( new StringEntity(body));
+            request.setHeader("Accept", "application/json");
+            request.setHeader("Content-Type", "application/json");
+            json = client.execute( request, this.responseHandler);
+            logger.trace("Data Returned: '%s'", json);
+        } catch (ControllerBadStatusException controllerBadStatusException) {
+            controllerBadStatusException.setURL(request.getURI().toString());
+            throw controllerBadStatusException;
+        } catch (IOException e) {
+            logger.warn("Exception: %s",e.getMessage());
+        }
+        return json;
+    }
+
     private String getRequest( String formatOrURI, Object... args ) throws ControllerBadStatusException {
         if( args == null || args.length == 0 ) return getRequest(formatOrURI);
         return getRequest( String.format(formatOrURI,args));
@@ -365,7 +423,7 @@ public class Controller {
             json = client.execute(request, this.responseHandler);
             logger.trace("Data Returned: '%s'",json);
         } catch (ControllerBadStatusException controllerBadStatusException) {
-            controllerBadStatusException.setURL(uri);
+            controllerBadStatusException.setURL(request.getURI().toString());
             throw controllerBadStatusException;
         } catch (IOException e) {
             logger.warn("Exception: %s",e.getMessage());
@@ -464,7 +522,6 @@ public class Controller {
         try {
             String json = getRequest("controller/restui/baselines/getAllBaselines/%d", application.id);
             Baseline[] baselines = gson.fromJson(json, Baseline[].class);
-            application.setBaselines(baselines);
             return baselines;
         } catch (ControllerBadStatusException controllerBadStatusException) {
             logger.warn("Error using undocumented api to pull back listing of all application baselines, application '%s'", application.getName());

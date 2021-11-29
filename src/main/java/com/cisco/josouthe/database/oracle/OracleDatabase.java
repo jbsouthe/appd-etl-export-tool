@@ -36,7 +36,7 @@ public class OracleDatabase extends Database {
     private HikariDataSource dataSource;
 
 
-    public OracleDatabase(Configuration configuration, String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
+    public OracleDatabase(Configuration configuration, String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
         super( configuration, connectionString, user, password);
         this.hikariConfig = new HikariConfig();
         this.hikariConfig.setJdbcUrl(connectionString);
@@ -47,13 +47,23 @@ public class OracleDatabase extends Database {
         this.hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         this.hikariConfig.addDataSourceProperty("maximumPoolSize", this.configuration.getProperty("scheduler-NumberOfDatabaseThreads", "10"));
         this.dataSource = new HikariDataSource(this.hikariConfig);
-        if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Default Metric Table set to: %s", metricTable);
-        if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Default Event Table set to: %s", eventTable);
-        if( ! "".equals(controlTable) && isValidDatabaseTableName(controlTable) ) logger.debug("Run Control Table set to: %s", controlTable);
-        this.defaultMetricTable = new MetricTable(metricTable, this);
-        this.controlTable = new ControlTable(controlTable, this);
+        if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) {
+            logger.debug("Default Metric Table set to: %s", metricTable);
+            this.defaultMetricTable = new MetricTable(metricTable, this);
+        }
+        if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) {
+            logger.debug("Default Event Table set to: %s", eventTable);
+            this.defaulEventTable = new EventTable(eventTable, this);
+        }
+        if( ! "".equals(baselineTable) && isValidDatabaseTableName(baselineTable) ) {
+            logger.debug("Default Baseline Table set to: %s", baselineTable);
+            this.defaultBaselineTable = new BaselineTable(baselineTable, this);
+        }
+        if( ! "".equals(controlTable) && isValidDatabaseTableName(controlTable) ) {
+            logger.debug("Run Control Table set to: %s", controlTable);
+            this.controlTable = new ControlTable(controlTable, this);
+        }
         if( firstRunHistoricNumberOfHours != null ) ((ControlTable)this.controlTable).setDefaultLoadNumberOfHoursIfControlRowMissing(firstRunHistoricNumberOfHours.intValue());
-        this.defaulEventTable = new EventTable(eventTable, this);
         this.tablesMap = new HashMap<>();
         logger.info("Testing Database connection returned: "+ isDatabaseAvailable());
     }
@@ -86,6 +96,17 @@ public class OracleDatabase extends Database {
             return (com.cisco.josouthe.database.MetricTable) this.tablesMap.get(name);
         }
         return (com.cisco.josouthe.database.MetricTable) this.defaultMetricTable;
+    }
+
+    protected com.cisco.josouthe.database.BaselineTable getBaselineTable(String name ) {
+        if( name != null ) {
+            if( ! this.tablesMap.containsKey(name) ) {
+                Table table = new BaselineTable(name, this);
+                this.tablesMap.put(name,table);
+            }
+            return (com.cisco.josouthe.database.BaselineTable) this.tablesMap.get(name);
+        }
+        return (com.cisco.josouthe.database.BaselineTable) this.defaultBaselineTable;
     }
 
     protected com.cisco.josouthe.database.EventTable getEventTable(String name ) {

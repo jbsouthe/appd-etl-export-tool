@@ -2,8 +2,6 @@ package com.cisco.josouthe.database.csv;
 
 import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.data.analytic.Result;
-import com.cisco.josouthe.data.event.EventData;
-import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.Table;
@@ -30,16 +28,18 @@ public class CSVDatabase extends Database {
     private File databaseDirectory;
     private char delimeter=',';
 
-    public CSVDatabase(Configuration configuration, String connectionString, String metricTable, String controlTable, String eventTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
+    public CSVDatabase(Configuration configuration, String connectionString, String metricTable, String controlTable, String eventTable, String baselineTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
         super( configuration, connectionString, "", "");
         if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) logger.debug("Default Metric Table set to: %s", metricTable);
         if( ! "".equals(eventTable) && isValidDatabaseTableName(eventTable) ) logger.debug("Default Event Table set to: %s", eventTable);
+        if( ! "".equals(baselineTable) && isValidDatabaseTableName(baselineTable) ) logger.debug("Default Baseline Table set to: %s", baselineTable);
         if( ! "".equals(controlTable) && isValidDatabaseTableName(controlTable) ) logger.debug("Run Control Table set to: %s", controlTable);
         this.databaseDirectory = new File(Utility.parseDatabasePath(connectionString));
         this.defaultMetricTable = new MetricTable(metricTable, this, this.databaseDirectory);
         this.controlTable = new ControlTable(controlTable, this, this.databaseDirectory);
         if( firstRunHistoricNumberOfHours != null ) ((ControlTable)this.controlTable).setDefaultLoadNumberOfHoursIfControlRowMissing(firstRunHistoricNumberOfHours.intValue());
         this.defaulEventTable = new EventTable(eventTable, this, this.databaseDirectory);
+        this.defaultBaselineTable = new BaselineTable(baselineTable, this, this.databaseDirectory);
         logger.info("Testing Database connection returned: "+ isDatabaseAvailable());
     }
 
@@ -64,6 +64,17 @@ public class CSVDatabase extends Database {
             return (com.cisco.josouthe.database.MetricTable) this.tablesMap.get(name);
         }
         return (com.cisco.josouthe.database.MetricTable) this.defaultMetricTable;
+    }
+
+    protected com.cisco.josouthe.database.BaselineTable getBaselineTable(String name ) {
+        if( name != null ) {
+            if( ! this.tablesMap.containsKey(name) ) {
+                Table table = new com.cisco.josouthe.database.csv.BaselineTable(name, this, this.databaseDirectory);
+                this.tablesMap.put(name,table);
+            }
+            return (com.cisco.josouthe.database.BaselineTable) this.tablesMap.get(name);
+        }
+        return (com.cisco.josouthe.database.BaselineTable) this.defaultBaselineTable;
     }
 
     protected com.cisco.josouthe.database.EventTable getEventTable(String name ) {
