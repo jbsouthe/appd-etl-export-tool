@@ -305,7 +305,7 @@ public class Controller {
             try {
                 json = postRequest(
                         "controller/restui/metricBrowser/getMetricBaselineData?granularityMinutes=1",
-                        String.format("'{\"metricDataQueries\":[{\"metricId\":%d,\"entityId\":%d,\"entityType\":\"APPLICATION\"}],\"timeRangeSpecifier\":{\"type\":\"BETWEEN_TIMES\",\"durationInMinutes\":null,\"endTime\":%d,\"startTime\":%d,\"timeRange\":null,\"timeRangeAdjusted\":false},\"metricBaseline\":%d,\"maxSize\":1440}'",
+                        String.format("{\"metricDataQueries\":[{\"metricId\":%d,\"entityId\":%d,\"entityType\":\"APPLICATION\"}],\"timeRangeSpecifier\":{\"type\":\"BETWEEN_TIMES\",\"durationInMinutes\":null,\"endTime\":%d,\"startTime\":%d,\"timeRange\":null,\"timeRangeAdjusted\":false},\"metricBaseline\":%d,\"maxSize\":1440}",
                                 metricData.metricId, application.id, endTimestamp, startTimestamp, application.getBaseline().id));
                 succeeded=true;
             } catch (ControllerBadStatusException controllerBadStatusException) {
@@ -392,7 +392,7 @@ public class Controller {
     private String postRequest( String requestUri, String body ) throws ControllerBadStatusException {
         HttpPost request = new HttpPost(String.format("%s%s", this.url.toString(), requestUri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
-        logger.trace("HTTP Method: %s",request);
+        logger.trace("HTTP Method: %s with body: '%s'",request, body);
         String json = null;
         try {
             request.setEntity( new StringEntity(body));
