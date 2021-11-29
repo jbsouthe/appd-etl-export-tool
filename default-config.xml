@@ -35,7 +35,8 @@
         <DefaultEventTable>AppDynamics_EventTable</DefaultEventTable>
     </TargetDB>
     <!--multiple controller sections can be defined, and at least one controller and application or analytics section must be configured, or the app will exit-->
-    <Controller>
+    <Controller getAllAnalyticsSearches="false" > <!-- if getAllAnalyticsSearches is true, then the URL hostname is used to map analytics with this controller,
+                                                       and all the controller analytics saved searches are added to the analytics list -->
         <URL>https://southerland-test.saas.appdynamics.com/</URL>
         <ClientID>ETLClient@southerland-test</ClientID>
         <ClientSecret>the generated client secret</ClientSecret>
@@ -63,6 +64,7 @@
     <Analytics>
         <URL>https://analytics.api.appdynamics.com/</URL> <!-- north america Saas -->
         <GlobalAccountName>southerland-test_65322e21-efed-4126-8827-920141a9ac21</GlobalAccountName>
+        <LinkToControllerHostname>southerland-test.saas.appdynamics.com</LinkToControllerHostname>
         <APIKey>generate your own key</APIKey> <!-- API Key is created in analytics configuration settings -->
         <TableNamePrefix>AppDynamics_Analytics_</TableNamePrefix> <!-- this is the prefix table name for data extracted, final table is <PrefixTableName><Search name> -->
         <Search name="UniqueTransactionCount" limit="20000">SELECT transactionName, count(*) FROM transactions</Search> <!--limit is optional and defaults to 20000, name must be unique for this section -->

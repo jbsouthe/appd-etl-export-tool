@@ -111,11 +111,12 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/Application/Metric", 3);
 
         paramCounter=0;
-        digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 4);
+        digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 5);
         digester.addCallParam("ETLTool/Analytics/URL", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/GlobalAccountName", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/APIKey", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/TableNamePrefix", paramCounter++);
+        digester.addCallParam("ETLTool/Analytics/LinkToControllerHostname", paramCounter++);
 
         paramCounter=0;
         digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 4);
@@ -170,10 +171,15 @@ public class Configuration {
         logger.info("Added Search %s: '%s' to list for collection",name, query);
     }
 
-    public void addAnalytics( String urlString, String accountName, String apiKey, String tableNamePrefix ) throws InvalidConfigurationException {
+    public void addAnalytics( String urlString, String accountName, String apiKey, String tableNamePrefix, String linkedControllerHostname ) throws InvalidConfigurationException {
         if( urlString == null || accountName == null || apiKey == null ) {
             logger.warn("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
             throw new InvalidConfigurationException("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
+        }
+        Controller controller = getController( linkedControllerHostname);
+        if( controller != null && controller.isGetAllAnalyticsSearchesFlag() ) {
+            for( Search search : controller.getAllSavedSearchesFromController() )
+                addAnalyticsSearch(search.getName(), search.getQuery(), null, search.visualization);
         }
         //if( this.searches.size() == 0 ) throw new InvalidConfigurationException("We can't add an Analytics section without any Searches!");
         try {
@@ -231,10 +237,6 @@ public class Configuration {
             applications = new ArrayList<>();;
             controllerMap.put( controller.hostname, controller);
             logger.info("Added Controller  to config for host: %s url: %s", controller.hostname, urlString);
-            if( controller.isGetAllAnalyticsSearchesFlag() ) {
-                for( Search search : controller.getAllSavedSearchesFromController() )
-                    addAnalyticsSearch(search.getName(), search.getQuery(), null, search.visualization);
-            }
         } catch (MalformedURLException exception) {
             logger.error("Could not create controller from config file because of a bad URL: %s Exception: %s", urlString, exception.getMessage());
         }
