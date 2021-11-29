@@ -213,7 +213,7 @@ public class Configuration {
         }
         if( metricTable != null && database.isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
         if( eventTable != null && database.isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
-        Application application = new Application( getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, getAllEvents, getAllHealthRuleViolations, metrics.toArray( new ApplicationMetric[0] ));
+        Application application = new Application( getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, getAllEvents, getAllHealthRuleViolations, metrics);
         application.setEventTypeList( getEventListForApplication(includeEventList, excludeEventList));
         if( eventSeverities != null ) application.eventSeverities = eventSeverities;
         applications.add(application);
