@@ -23,11 +23,14 @@ import org.apache.commons.codec.Charsets;
 import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -58,6 +61,26 @@ public class Controller {
     private boolean getAllAnalyticsSearchesFlag = false;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
+    final ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
+        private String uri = "Unset";
+        public void setUri( String uri ) { this.uri=uri; }
+
+        @Override
+        public String handleResponse( final HttpResponse response) throws IOException {
+            final int status = response.getStatusLine().getStatusCode();
+            if (status >= HttpStatus.SC_OK && status < HttpStatus.SC_TEMPORARY_REDIRECT) {
+                final HttpEntity entity = response.getEntity();
+                try {
+                    return entity != null ? EntityUtils.toString(entity) : null;
+                } catch (final ParseException ex) {
+                    throw new ClientProtocolException(ex);
+                }
+            } else {
+                throw new ControllerBadStatusException(response.getStatusLine().toString(), EntityUtils.toString(response.getEntity()), uri);
+            }
+        }
+
+    };
 
     public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
@@ -185,35 +208,16 @@ public class Controller {
         HttpGet request = new HttpGet(urlString);
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.trace("HTTP Method: %s",request);
-        /*
-        HttpClient client = HttpClientBuilder.create()
-                .build();
-
-         */
-        HttpResponse response = null;
-        try {
-            response = client.execute(request);
-            logger.trace("Response Status Line: %s",response.getStatusLine());
-        } catch (IOException e) {
-            logger.error("Exception in attempting to get access token, Exception: %s",e.getMessage());
-            return null;
-        }
-        if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            logger.warn("Metric Value retreival returned bad status: %s", response.getStatusLine());
-            throw new ControllerBadStatusException(response.getStatusLine().toString(), null, urlString);
-        }
-        HttpEntity entity = response.getEntity();
-        Header encodingHeader = entity.getContentEncoding();
-        Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 : Charsets.toCharset(encodingHeader.getValue());
         String json = null;
         try {
-            json = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-            logger.trace("JSON returned: %s",json);
+            json = client.execute(request, this.responseHandler);
+        } catch (ControllerBadStatusException controllerBadStatusException) {
+            controllerBadStatusException.setURL(urlString);
+            throw controllerBadStatusException;
         } catch (IOException e) {
-            logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
+            logger.error("Exception in attempting to get url, Exception: %s", e.getMessage());
             return null;
         }
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         metricData = gson.fromJson(json, MetricData[].class);
         return metricData;
     }
@@ -321,6 +325,10 @@ public class Controller {
                     logger.warn("Error on try %d while trying to get Events for application %s Error: %s", tries, application.name, controllerBadStatusException.getMessage());
                 }
             }
+            if( !succeeded ) {
+                logger.error("Too many errors trying to get events from the controller, giving up for this scheduled run!");
+                return null;
+            }
             EventData[] eventsReturned = gson.fromJson(json, EventData[].class);
             if( eventsReturned != null ) {
                 for (EventData event : eventsReturned) {
@@ -351,29 +359,57 @@ public class Controller {
         HttpGet request = new HttpGet(String.format("%s%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.trace("HTTP Method: %s",request);
+        String json = null;
+        try {
+            json = client.execute(request, this.responseHandler);
+            logger.trace("Data Returned: '%s'",json);
+        } catch (ControllerBadStatusException controllerBadStatusException) {
+            controllerBadStatusException.setURL(uri);
+            throw controllerBadStatusException;
+        } catch (IOException e) {
+            logger.warn("Exception: %s",e.getMessage());
+        }
+        /*
         HttpResponse response = null;
         try {
             response = client.execute(request);
-            logger.trace("Response Status Line: %s",response.getStatusLine());
+            if( logger.isDebugEnabled() ) {
+                logger.debug("Response Status Line: %s",response.getStatusLine());
+                for( Header header : response.getAllHeaders())
+                    logger.debug("Response Header: %s",header.toString());
+            }
         } catch (IOException e) {
             logger.error("Exception in attempting to get controller data, Exception: %s",e.getMessage());
+            request.releaseConnection();
             return null;
         }
         HttpEntity entity = response.getEntity();
+        if (entity != null) {
+            try {
+                entity = new BufferedHttpEntity(entity);
+            } catch (IOException e) {
+                logger.warn("Error wrapping entity returned in a BufferedHttpEntity, exception: %s", e.getMessage());
+            }
+        }
         Header encodingHeader = entity.getContentEncoding();
         Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 : Charsets.toCharset(encodingHeader.getValue());
         String json = null;
         try {
             json = EntityUtils.toString(entity, StandardCharsets.UTF_8);
+            EntityUtils.consume(entity);
+            logger.debug("Response Content Type '%s' Length returned: %d JSON Body Length: %d", entity.getContentType().toString(), entity.getContentLength(), json.length());
             logger.trace("JSON returned: %s",json);
         } catch (IOException e) {
             logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
+            request.releaseConnection();
             return null;
         }
+        request.releaseConnection();
         if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
             logger.warn("request returned bad status: %s message: %s", response.getStatusLine(), json);
             throw new ControllerBadStatusException(response.getStatusLine().toString(), json, uri);
         }
+        */
         return json;
     }
 
