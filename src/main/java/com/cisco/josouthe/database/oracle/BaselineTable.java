@@ -15,7 +15,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 
-public class BaselineTable extends Table implements com.cisco.josouthe.database.MetricTable {
+public class BaselineTable extends Table implements com.cisco.josouthe.database.BaselineTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
 
     public BaselineTable(String tableName, Database database ) {
