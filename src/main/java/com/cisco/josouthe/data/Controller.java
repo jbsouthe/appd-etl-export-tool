@@ -297,6 +297,10 @@ public class Controller {
 
     public List<BaselineData> getBaselineValue( MetricData metricData, Application application, long startTimestamp, long endTimestamp, LinkedBlockingQueue<Object[]> dataQueue ) {
         ArrayList<BaselineData> baselines = new ArrayList<>();
+        if( application.baselines == null || application.baselines.size() == 0 ) {
+            logger.warn("No baselines found for app %s(%d)", application.getName(), application.id);
+            return baselines;
+        }
         boolean succeeded=false;
         int tries=0;
         String json = "";
@@ -474,17 +478,19 @@ public class Controller {
 
     Map<String,Long> _applicationIdMap = null;
     public long getApplicationId( String name ) {
+        logger.trace("Get Application id for %s",name);
         if( _applicationIdMap == null ) { //go get em
             try {
-                String json = getRequest("controller/rest/applications?output=JSON");
-                Application[] apps = gson.fromJson(json, Application[].class);
+                String json = getRequest("controller/restui/applicationManagerUiBean/getApplicationsAllTypes");
+                com.cisco.josouthe.data.model.ApplicationListing applicationListing = gson.fromJson(json, com.cisco.josouthe.data.model.ApplicationListing.class);
                 _applicationIdMap = new HashMap<>();
-                for (Application app : apps)
-                    _applicationIdMap.put(app.name, app.id);
+                for (com.cisco.josouthe.data.model.Application app : applicationListing.getApplications() )
+                    if( app.active ) _applicationIdMap.put(app.name, app.id);
             } catch (ControllerBadStatusException controllerBadStatusException) {
                 logger.warn("Giving up on getting application id, not even going to retry");
             }
         }
+        if( !_applicationIdMap.containsKey(name) ) return -1;
         return _applicationIdMap.get(name);
     }
 
@@ -519,6 +525,7 @@ public class Controller {
     public Baseline[] getAllBaselines(Application application ) {
         if( application == null ) return null;
         if( application.id == -1 ) application.id = getApplicationId(application.getName());
+        if( application.id == -1 ) return null;
         try {
             String json = getRequest("controller/restui/baselines/getAllBaselines/%d", application.id);
             Baseline[] baselines = gson.fromJson(json, Baseline[].class);

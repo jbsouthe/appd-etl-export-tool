@@ -4,7 +4,8 @@ import java.util.List;
 
 public class Application {
     public String name;
-    public int id;
+    public long id;
+    public boolean active;
     public Tier[] tiers;
     public Node[] nodes;
 }
