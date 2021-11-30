@@ -32,12 +32,16 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
     }
 
     public int insert(Object object) {
+        if( object == null ) {
+            logger.warn("Can not insert a null Baseline Data Object!");
+            return 0;
+        }
         BaselineData baselineData = (BaselineData) object;
         int counter=0;
         StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
         insertSQL.append("controller, application, metricname, frequency, metricid, userange, ");
         insertSQL.append("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
-        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
+        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
         logger.trace("insertMetric SQL: %s",insertSQL);
         Connection conn = null;
         try{
@@ -45,11 +49,15 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
             PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());
             for(BaselineTimeslice baselineTimeslice : baselineData.dataTimeslices ) {
                 MetricValue metricValue = baselineTimeslice.metricValue;
+                if( metricValue == null ) {
+                    logger.warn("Metric Value in Baseline Timeslice is null! for metric %s timeslice %d", baselineData.metricName, baselineTimeslice.startTime);
+                    continue;
+                }
                 int parameterIndex=1;
-                preparedStatement.setString(parameterIndex++, baselineData.controllerHostname);
-                preparedStatement.setString(parameterIndex++, baselineData.applicationName);
+                preparedStatement.setString(parameterIndex++, fitToSize(baselineData.controllerHostname, "controller"));
+                preparedStatement.setString(parameterIndex++, fitToSize(baselineData.applicationName, "application"));
                 preparedStatement.setString(parameterIndex++, fitToSize(baselineData.metricName, "metricname"));
-                preparedStatement.setString(parameterIndex++, baselineData.frequency);
+                preparedStatement.setString(parameterIndex++, fitToSize(baselineData.frequency, "frequency"));
                 preparedStatement.setLong(parameterIndex++, baselineData.metricId);
                 preparedStatement.setInt(parameterIndex++, (metricValue.useRange ? 1: 0 ));
                 preparedStatement.setLong(parameterIndex++, baselineTimeslice.startTime);
