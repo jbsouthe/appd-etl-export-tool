@@ -69,6 +69,15 @@ The execution of this utility requires a Java VM v1.8 or greater, and the follow
 * simplefan-19.3.0.0.jar
 * ucp-19.3.0.0.jar
 
+###Hikaru Connection Pooling Library - for database connection pools
+
+    <dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>4.0.3</version>
+    </dependency>
+*HikariCP-4.0.3.jar
+
 ##Executing the utility requires:
 The libraries above are expected in the <current directory>/lib directory and the jar file has this classpath as a default, if a library is upgraded then the classpath will need to be updated as well or overridden.
 
@@ -148,6 +157,7 @@ An example config is shown with some default options specified:
         <ControlTable>AppDynamics_SchedulerControl</ControlTable>
         <DefaultMetricTable>AppDynamics_DefaultTable</DefaultMetricTable>
         <DefaultEventTable>AppDynamics_EventTable</DefaultEventTable>
+        <DefaultBaselineTable>AppDynamics_BaselineTable</DefaulBaselineTable>
     </TargetDB>
 
 * ConnectionString is the JDBC connection string, or a string like the following for CSV file creation: "csv:none:\<data directory to create files in>"
@@ -155,6 +165,7 @@ An example config is shown with some default options specified:
 * ControlTable is the table name to use for tracking last run timestamp for the different data being extracted
 * DefaultMetricTable is used when the Metric section below doesn't specify another more specific table for that data or application
 * DefaultEventTable is used for events when no other table is specified, similar to the DefaultMetricTable above
+* DefaultBaselineTable is used when the Application has not specified a table for baseline data
 
 #Controller Section
 Multiple Controller Sections can be defined, but the url must be unique.
@@ -169,6 +180,7 @@ Multiple Controller Sections can be defined, but the url must be unique.
                 <DisableDataRollup>true</DisableDataRollup>
                 <MetricTable>ProxyAppMetrics</MetricTable>
                 <EventTable>ProxyAppEvents</EventTable>
+                <BaselineTable>ProxyBaseLines</BaselineTable>
             </Defaults>
             <!-- if so desired, the events can be filtered by including or excluding events from the internal event list,
             and by limitting the severity. The default is shown here, to just get all event types and severities, leave these blank or missing
@@ -192,5 +204,6 @@ Multiple Analytics Sections can be defined, but the Global Account Name must be 
         <GlobalAccountName>southerland-test_65322e21-efed-4126-8827-920141a9ac21</GlobalAccountName>
         <APIKey>generate your own key</APIKey> <!-- API Key is created in analytics configuration settings -->
         <TableNamePrefix>AppDynamics_Analytics_</TableNamePrefix> <!-- this is the prefix table name for data extracted, final table is <PrefixTableName><Search name> -->
+        <LinkToControllerHostname>southerland-test.saas.appdynamics.com</LinkToControllerHostname>
         <Search name="UniqueTransactionCount" limit="20000">SELECT transactionName, count(*) FROM transactions</Search> <!--limit is optional and defaults to 20000, name must be unique for this section -->
     </Analytics>
