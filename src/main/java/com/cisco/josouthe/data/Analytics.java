@@ -4,15 +4,15 @@ import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.ControlTable;
+import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.codec.Charsets;
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
+import org.apache.http.*;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -79,6 +79,26 @@ public class Analytics {
     HttpClient client = null;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     ControlTable controlTable = null;
+    final ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
+        private String uri = "Unset";
+        public void setUri( String uri ) { this.uri=uri; }
+
+        @Override
+        public String handleResponse( final HttpResponse response) throws IOException {
+            final int status = response.getStatusLine().getStatusCode();
+            if (status >= HttpStatus.SC_OK && status < HttpStatus.SC_TEMPORARY_REDIRECT) {
+                final HttpEntity entity = response.getEntity();
+                try {
+                    return entity != null ? EntityUtils.toString(entity) : null;
+                } catch (final ParseException ex) {
+                    throw new ClientProtocolException(ex);
+                }
+            } else {
+                throw new ControllerBadStatusException(response.getStatusLine().toString(), EntityUtils.toString(response.getEntity()), uri);
+            }
+        }
+
+    };
 
     public Analytics( String urlString, String APIAccountName, String APIKey, String tableNamePrefix ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/";
@@ -157,6 +177,7 @@ public class Analytics {
             return null;
         }
         logger.trace("Request: %s with query: %s", request.toString(), query);
+        /*
         HttpResponse response = null;
         try {
             response = this.client.execute(request);
@@ -179,6 +200,22 @@ public class Analytics {
         } catch (IOException e) {
             logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
             return null;
+        }
+         */
+        int tries=0;
+        boolean succeeded=false;
+        String json = "";
+        while (!succeeded && tries < 3) {
+            try{
+                json = this.client.execute(request, this.responseHandler);
+                succeeded=true;
+            } catch (ControllerBadStatusException controllerBadStatusException) {
+                tries++;
+                logger.warn("Error on try %d while trying to get Analytics Query Results for %s Error: %s", tries, query, controllerBadStatusException.getMessage());
+            } catch (IOException ioException) {
+                tries++;
+                logger.warn("IOException: %s",ioException.getMessage());
+            }
         }
         Result[] results =  gson.fromJson(json, Result[].class);
         for( Result result : results ) {
