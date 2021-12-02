@@ -79,7 +79,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/TargetDB/DefaultMetricTable", 3);
         digester.addCallParam("ETLTool/TargetDB/ControlTable", 4);
         digester.addCallParam("ETLTool/TargetDB/DefaultEventTable", 5);
-        digester.addCallParam("ETLTool/TargetDB/DefaultBaselineTable", 65);
+        digester.addCallParam("ETLTool/TargetDB/DefaultBaselineTable", 6);
 
         //controller section, which centralizes authentication config
         digester.addCallMethod("ETLTool/Controller", "addController", 4);
