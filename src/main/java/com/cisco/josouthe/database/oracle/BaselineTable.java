@@ -72,8 +72,10 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
                 preparedStatement.setLong(parameterIndex++, metricValue.value);
                 preparedStatement.setDouble(parameterIndex++, metricValue.standardDeviation);
                 preparedStatement.setLong(parameterIndex++, baselineTimeslice.startTime);
-                counter += preparedStatement.executeUpdate();
+                preparedStatement.addBatch();
+                preparedStatement.clearParameters();
             }
+            counter += preparedStatement.executeBatch().length;
         } catch (Exception exception) {
             logger.error("Error inserting baseline into %s, Exception: %s", name, exception.toString());
         } finally {
