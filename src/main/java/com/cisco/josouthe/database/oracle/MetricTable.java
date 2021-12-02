@@ -62,8 +62,10 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
                 preparedStatement.setLong(parameterIndex++, metricValue.value);
                 preparedStatement.setDouble(parameterIndex++, metricValue.standardDeviation);
                 preparedStatement.setLong(parameterIndex++, metricValue.startTimeInMillis);
-                counter += preparedStatement.executeUpdate();
+                preparedStatement.addBatch();
+                preparedStatement.clearParameters();
             }
+            counter += preparedStatement.executeBatch().length;
         } catch (Exception exception) {
             logger.error("Error inserting metrics into %s, Exception: %s", name, exception.toString());
         } finally {
