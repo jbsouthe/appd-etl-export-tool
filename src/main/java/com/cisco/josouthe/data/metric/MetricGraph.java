@@ -13,7 +13,8 @@ We build a graph of the metric name split by | and then count references on edge
 a vertex has the same number of left and right vertex references, this is a location we can wildcard, and remove all the nodes in between
 
 this most likely isn't fool proof, i didn't do a proof on this, it just seems to work pretty well. will need to confirm data loads are correct
-
+https://en.wikipedia.org/wiki/Deterministic_acyclic_finite_state_automaton
+will most likely migrate to this as my primary data structure, since the ArrayList of ApplicationMetrics is blowing up my limited heap 1GB
  */
 public class MetricGraph {
     private static final Logger logger = LogManager.getFormatterLogger();
@@ -21,21 +22,26 @@ public class MetricGraph {
     private ArrayList<Edge> edges;
     private ArrayList<Vertex> startingVertices;
     private TreeMap<String, Vertex> vertices;
-    private long originalSize, newSize;
+    private long originalSize, newSize, countOfMetricsAdded;
+    private Set<String> newAppMetricsStrings = null;
 
-    public MetricGraph() {
+    public MetricGraph(List<String> metrics) {
         edges = new ArrayList<>();
         vertices = new TreeMap<>();
         startingVertices = new ArrayList<>();
+        countOfMetricsAdded=0;
+        if( metrics != null )
+            for( String metricName : metrics)
+                addMetricName(metricName);
     }
 
-    public List<ApplicationMetric> compress(ArrayList<ApplicationMetric> applicationMetrics ) {
-        originalSize=applicationMetrics.size();
-        ArrayList<ApplicationMetric> compressedApplicationMetrics = new ArrayList<>();
-        buildGraph(applicationMetrics);
-        Set<String> newAppMetricsStrings = new HashSet<>();
-        for( Vertex vertex : vertices.values() ) {                          //O(n^2)
-            if( vertex.isFinal() || vertex.isInitial() ) continue;
+    public long size() { return countOfMetricsAdded; }
+
+    public Set<String> getUniqueCompressedMetricNames() {
+        if( newAppMetricsStrings != null ) return newAppMetricsStrings;
+        newAppMetricsStrings = new HashSet<>();
+        for( Vertex vertex : vertices.values() ) {                          //O(n^2) or O(n!) lol?!?!
+            if( vertex.isFinal() || vertex.isInitial() || vertex.value.contains("*") ) continue;
             int rCnt=0, lCnt=0;
             for( Edge edge : edges) {
                 if( edge.lVertex == vertex) lCnt++;
@@ -45,39 +51,29 @@ public class MetricGraph {
                 logger.trace("Found Bloom Vertex %s references r: %d l: %d", vertex, rCnt, lCnt);
                 newAppMetricsStrings.add( vertex.printWithWildcard() );
             }
-            /*
-            if( vertex.isBloomCandidate() ) {
-                System.out.println(String.format("Bloom Candidate: %s",vertex));
-            }
-
-             */
         }
-        for( String replacement : newAppMetricsStrings )
-            compressedApplicationMetrics.add(new ApplicationMetric(null,replacement));
-        this.newSize = compressedApplicationMetrics.size();
-        logger.debug("Compressed Application Metrics, old size %d new size %d",originalSize,newSize);
-        return compressedApplicationMetrics;
+        return newAppMetricsStrings;
     }
 
-    private void buildGraph(ArrayList<ApplicationMetric> applicationMetrics) {
-        for( ApplicationMetric applicationMetric : applicationMetrics ) {
-            Vertex leftVertex = null;
-            int position = 0;
-            for( String word : applicationMetric.name.split("\\|") ) {
-                Vertex vertex = vertices.get(word+String.valueOf(position));
-                if( vertex == null ) vertex = new Vertex(word, position, applicationMetric.name);
-                if( leftVertex == null ) {
-                    startingVertices.add(vertex);
-                } else {
-                    edges.add( new Edge(leftVertex,vertex) );
-                    leftVertex.addRightVertex(vertex);
-                    vertex.addLeftVertex(leftVertex);
-                }
-                vertices.put(word+String.valueOf(position),vertex);
-                position++;
-                leftVertex=vertex;
+    public void addMetricName(String metricName) {
+        Vertex leftVertex = null;
+        int position = 0;
+        for( String word : metricName.split("\\|") ) {
+            Vertex vertex = vertices.get(word+String.valueOf(position));
+            if( vertex == null ) vertex = new Vertex(word, position, metricName);
+            if( leftVertex == null ) {
+                startingVertices.add(vertex);
+            } else {
+                edges.add( new Edge(leftVertex,vertex) );
+                leftVertex.addRightVertex(vertex);
+                vertex.addLeftVertex(leftVertex);
             }
+            vertices.put(word+String.valueOf(position),vertex);
+            position++;
+            leftVertex=vertex;
         }
+        countOfMetricsAdded++;
+        this.newAppMetricsStrings=null;
     }
 
     private class Edge {
@@ -186,17 +182,16 @@ public class MetricGraph {
     }
 
     public static void main( String ... args ) throws Exception{
-        ArrayList<ApplicationMetric> metrics = new ArrayList<>();
+        ArrayList<String> metrics = new ArrayList<>();
         BufferedReader in = new BufferedReader( new FileReader( args[0] ));
         String inLine;
         while( (inLine = in.readLine()) != null) {
-            metrics.add( new ApplicationMetric("false", inLine));
+            metrics.add( inLine );
         }
         System.out.println(String.format("Read %d lines from %s",metrics.size(), args[0]));
-        MetricGraph graph = new MetricGraph();
-        List<ApplicationMetric> newMetrics = graph.compress(metrics);
-        for( ApplicationMetric applicationMetric : newMetrics) {
-            System.out.println(applicationMetric.name);
+        MetricGraph graph = new MetricGraph(metrics);
+        for( String metricName : graph.getUniqueCompressedMetricNames()) {
+            System.out.println(metricName);
         }
     }
 }
