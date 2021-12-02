@@ -26,6 +26,7 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
         columns.put("application", new ColumnFeatures("application", "string", -1, false));
         columns.put("metricid", new ColumnFeatures("metricId", "number", -1, false));
         columns.put("metricname", new ColumnFeatures("metricName", "string", -1, false));
+        columns.put("baseline", new ColumnFeatures("baseline", "string", -1, false));
         columns.put("frequency", new ColumnFeatures("frequency", "string", -1, false));
         columns.put("userange", new ColumnFeatures("userange", "boolean", -1, false));
         for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value", "standardDeviation"})
@@ -59,7 +60,7 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
                 }
                 printStream.println();
                 */
-                printStream.print("controller, application, metricname, frequency, metricid, userange, ");
+                printStream.print("controller, application, metricname, baseline, frequency, metricid, userange, ");
                 printStream.println("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
             }
             for( BaselineTimeslice baselineTimeslice : baseline.dataTimeslices ) {
@@ -67,6 +68,7 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
                 printStream.printf("\"%s\", ", baseline.controllerHostname);
                 printStream.printf("\"%s\", ", baseline.applicationName);
                 printStream.printf("\"%s\", ", baseline.metricName);
+                printStream.printf("\"%s\", ", baseline.baseline.name);
                 printStream.printf("\"%s\", ", baseline.frequency);
                 printStream.printf("%s, ", baseline.metricId);
                 printStream.printf("%s, ", String.valueOf(metricValue.useRange));
