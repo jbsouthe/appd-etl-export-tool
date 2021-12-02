@@ -2,7 +2,6 @@ package com.cisco.josouthe;
 
 import com.cisco.josouthe.data.*;
 import com.cisco.josouthe.data.analytic.Search;
-import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.csv.CSVDatabase;
 import com.cisco.josouthe.database.oracle.OracleDatabase;

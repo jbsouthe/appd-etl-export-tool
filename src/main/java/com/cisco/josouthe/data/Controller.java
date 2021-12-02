@@ -1,12 +1,8 @@
 package com.cisco.josouthe.data;
 
-import com.appdynamics.agent.api.AppdynamicsAgent;
-import com.appdynamics.agent.api.EntryTypes;
-import com.appdynamics.agent.api.Transaction;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.data.auth.AccessToken;
 import com.cisco.josouthe.data.event.EventData;
-import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.data.metric.Baseline;
 import com.cisco.josouthe.data.metric.BaselineData;
 import com.cisco.josouthe.data.metric.MetricData;

@@ -1,7 +1,6 @@
 package com.cisco.josouthe.data;
 
 import com.cisco.josouthe.data.event.EventData;
-import com.cisco.josouthe.data.metric.ApplicationMetric;
 import com.cisco.josouthe.data.metric.Baseline;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.metric.MetricGraph;
@@ -102,11 +101,11 @@ public class Application {
 
     public String getName() { return this.name; }
 
-    private void writeMetricListToFile( ApplicationMetric[] metrics ) {
+    private void writeMetricListToFile( String[] metrics ) {
         try {
             BufferedWriter out = new BufferedWriter( new FileWriter( String.format("Metrics-%s.txt",this.name)));
-            for( ApplicationMetric metric: metrics ){
-                out.write(metric.name);
+            for( String metric: metrics ){
+                out.write(metric);
                 out.newLine();
             }
             out.flush();
