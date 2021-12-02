@@ -22,7 +22,7 @@ public class Configuration {
     private Database database = null;
     private HashMap<String, Controller> controllerMap = null;
     private ArrayList<Application> applications = new ArrayList<>();;
-    private ArrayList<ApplicationMetric> metrics = new ArrayList<>();;
+    private ArrayList<String> metrics = new ArrayList<>();;
     private ArrayList<Analytics> analytics = new ArrayList<>();
     private ArrayList<Search> searches = new ArrayList<>();
     private boolean definedScheduler = false;
@@ -105,11 +105,10 @@ public class Configuration {
 
 
         //metric config, within an application
-        digester.addCallMethod( "ETLTool/Controller/Application/Metric", "addMetric", 4);
+        digester.addCallMethod( "ETLTool/Controller/Application/Metric", "addMetric", 3);
         digester.addCallParam("ETLTool/Controller/Application/Metric", 0, "time-range-type");
         digester.addCallParam("ETLTool/Controller/Application/Metric", 1, "duration-in-mins");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 2, "disable-data-rollup");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 3);
+        digester.addCallParam("ETLTool/Controller/Application/Metric", 2);
 
         paramCounter=0;
         digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 5);
@@ -193,13 +192,12 @@ public class Configuration {
         }
     }
 
-    public void addMetric( String timeRangeType, String durationInMins, String disableDataRollup, String name ) throws InvalidConfigurationException {
+    public void addMetric( String timeRangeType, String durationInMins, String name ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
             throw new InvalidConfigurationException("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
         }
-        ApplicationMetric metric = new ApplicationMetric( disableDataRollup, name);
-        metrics.add(metric);
+        metrics.add(name);
         logger.info("Added metric to list for collection: %s", name);
     }
 

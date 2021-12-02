@@ -181,17 +181,16 @@ public class Controller {
         return true;
     }
 
-    public MetricData[] getMetricValue(Application application, ApplicationMetric metric, long startTimestamp, long endTimestamp ) {
+    public MetricData[] getMetricValue(Application application, String metricName, long startTimestamp, long endTimestamp ) {
         MetricData[] metrics = null;
 
         int tries=0;
         boolean succeeded = false;
         while (! succeeded && tries < 3 ) {
             try {
-                metrics = getMetricValue(String.format("%scontroller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=%s",
-                        this.url, Utility.encode(application.name), Utility.encode(metric.name), startTimestamp, endTimestamp,
-                        (metric.disableDataRollup ? "false" : "true")
-                ));
+                metrics = getMetricValue(String.format("%scontroller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=false",
+                        this.url, Utility.encode(application.name), Utility.encode(metricName), startTimestamp, endTimestamp)
+                );
                 succeeded=true;
             } catch (ControllerBadStatusException controllerBadStatusException) {
                 tries++;
@@ -199,7 +198,7 @@ public class Controller {
             }
         }
         if( !succeeded)
-            logger.warn("Gave up after %d tries, not getting %s back", tries, metric.name);
+            logger.warn("Gave up after %d tries, not getting %s back", tries, metricName);
         return metrics;
     }
 
@@ -274,8 +273,8 @@ public class Controller {
              */
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now();
-        for( ApplicationMetric applicationMetric : application.metrics ) {
-            for( MetricData metricData : getMetricValue( application, applicationMetric, startTimestamp, endTimestamp )) {
+        for( String applicationMetricName : application.metricGraph.getUniqueCompressedMetricNames() ) {
+            for( MetricData metricData : getMetricValue( application, applicationMetricName, startTimestamp, endTimestamp )) {
                 if( "METRIC DATA NOT FOUND".equals(metricData.metricName) ) continue;
                 metricData.controllerHostname = this.hostname;
                 metricData.applicationName = application.name;

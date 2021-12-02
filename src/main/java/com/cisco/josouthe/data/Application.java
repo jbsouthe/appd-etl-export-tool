@@ -32,12 +32,12 @@ public class Application {
     public String defaultBaselineTableName = null;
     public String eventTypeList = null;
     public String eventSeverities = "INFO,WARN,ERROR";
-    public List<ApplicationMetric> metrics = null;
+    public MetricGraph metricGraph = null;
     public List<Baseline> baselines = null;
     public Baseline defaultBaseline = null;
 
 
-    public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String defaultBaselineTableName, String getAllEvents, String getAllHealthRuleViolations, List<ApplicationMetric> metrics) {
+    public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String defaultBaselineTableName, String getAllEvents, String getAllHealthRuleViolations, List<String> metrics) {
         if( getAllAvailableMetrics != null ) this.getAllAvailableMetrics= Boolean.parseBoolean(getAllAvailableMetrics);
         if( getAllEvents != null ) this.getAllEvents= Boolean.parseBoolean(getAllEvents);
         if( getAllHealthRuleViolations != null ) this.getAllHealthRuleViolations= Boolean.parseBoolean(getAllHealthRuleViolations);
@@ -46,8 +46,7 @@ public class Application {
         if( defaultMetricTableName != null ) this.defaultMetricTableName = defaultMetricTableName;
         if( defaultEventTableName != null ) this.defaultEventTableName = defaultEventTableName;
         if( defaultBaselineTableName != null ) this.defaultBaselineTableName = defaultBaselineTableName;
-        this.metrics = new ArrayList<>();
-        this.metrics.addAll(metrics);
+        this.metricGraph = new MetricGraph(metrics);
         this.baselines = new ArrayList<>();
     }
 
@@ -55,7 +54,7 @@ public class Application {
     public void setEventTypeList( String events ) { this.eventTypeList=events; }
 
     public void validateConfiguration(Controller controller) throws InvalidConfigurationException {
-        if( !getAllAvailableMetrics && (metrics == null || metrics.size() == 0) && !getAllEvents && !getAllHealthRuleViolations) {
+        if( !getAllAvailableMetrics && metricGraph.size() == 0 && !getAllEvents && !getAllHealthRuleViolations) {
             logger.warn("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
             throw new InvalidConfigurationException("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
         }
@@ -71,16 +70,14 @@ public class Application {
                 TreeNode[] folders = controller.getApplicationMetricFolders(this, "");
                 logger.debug("Found %d folders we can go into", (folders == null ? "0" : folders.length));
                 findMetrics( controller, folders, "");
-                MetricGraph graph = new MetricGraph();
-                this.metrics = graph.compress(metricsToAdd); //metricsToAdd.toArray( new ApplicationMetric[0] );
-                //if( logger.isDebugEnabled() ) writeMetricListToFile( metricsToAdd.toArray( new ApplicationMetric[0] ) );
+                this.metricGraph = new MetricGraph(metricsToAdd);
                 this.metricsToAdd.clear(); //possible memory leak, moving to the end of this method instead of beginning
             }
         }
         this.finishedInitialization=true; //setting this here because we want to continue, even if partial data
     }
 
-    private ArrayList<ApplicationMetric> metricsToAdd = new ArrayList<>();
+    private ArrayList<String> metricsToAdd = new ArrayList<>();
     private void findMetrics(Controller controller, TreeNode[] somethings, String path) {
         if( somethings == null || somethings.length == 0 ) return;
         if( !"".equals(path) ) path += "|";
@@ -90,7 +87,7 @@ public class Application {
                 findMetrics( controller, controller.getApplicationMetricFolders(this, path+something.name), path+something.name);
             } else {
                 logger.debug("Adding metric: %s%s",path,something.name);
-                metricsToAdd.add(new ApplicationMetric(defaultDisableDataRollup, path+something.name));
+                metricsToAdd.add(path+something.name);
             }
         }
     }
