@@ -23,6 +23,7 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
         columns.put("controller", new ColumnFeatures("controller", "varchar2", 50, false));
         columns.put("application", new ColumnFeatures("application", "varchar2", 50, false));
         columns.put("metricname", new ColumnFeatures("metricName", "varchar2", 200, false));
+        columns.put("baseline", new ColumnFeatures("baseline", "varchar2", 200, false));
         columns.put("frequency", new ColumnFeatures("frequency", "varchar2", 50, false));
         columns.put("userange", new ColumnFeatures("userange", "number", 22, false));
         for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value", "standardDeviation"})
@@ -39,9 +40,9 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
         BaselineData baselineData = (BaselineData) object;
         int counter=0;
         StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
-        insertSQL.append("controller, application, metricname, frequency, metricid, userange, ");
+        insertSQL.append("controller, application, metricname, baseline, frequency, metricid, userange, ");
         insertSQL.append("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
-        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
+        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
         logger.trace("insertMetric SQL: %s",insertSQL);
         Connection conn = null;
         try{
@@ -57,6 +58,7 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
                 preparedStatement.setString(parameterIndex++, fitToSize(baselineData.controllerHostname, "controller"));
                 preparedStatement.setString(parameterIndex++, fitToSize(baselineData.applicationName, "application"));
                 preparedStatement.setString(parameterIndex++, fitToSize(baselineData.metricName, "metricname"));
+                preparedStatement.setString(parameterIndex++, fitToSize(baselineData.baseline.name, "baseline"));
                 preparedStatement.setString(parameterIndex++, fitToSize(baselineData.frequency, "frequency"));
                 preparedStatement.setLong(parameterIndex++, baselineData.metricId);
                 preparedStatement.setInt(parameterIndex++, (metricValue.useRange ? 1: 0 ));

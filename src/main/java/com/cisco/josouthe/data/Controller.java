@@ -190,7 +190,7 @@ public class Controller {
             try {
                 metrics = getMetricValue(String.format("%scontroller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=%s",
                         this.url, Utility.encode(application.name), Utility.encode(metric.name), startTimestamp, endTimestamp,
-                        (metric.disableDataRollup.toLowerCase().equals("true") ? "false" : "true")
+                        (metric.disableDataRollup ? "false" : "true")
                 ));
                 succeeded=true;
             } catch (ControllerBadStatusException controllerBadStatusException) {
@@ -325,9 +325,12 @@ public class Controller {
             baselineData.controllerHostname = this.hostname;
             baselineData.applicationName = application.name;
             baselineData.targetTable = application.defaultBaselineTableName;
-            baselines.add(baselineData);
+            baselineData.baseline = application.getBaseline();
+            baselineData.purgeNullBaselineTimeslices();
+            if( baselineData.hasData() )
+                baselines.add(baselineData);
         }
-        if( dataQueue != null ) {
+        if( dataQueue != null && !baselines.isEmpty() ) {
             dataQueue.add( baselines.toArray( new BaselineData[0]));
             baselines.clear();
         }
