@@ -320,16 +320,20 @@ public class Controller {
             logger.error("Giving up on attempt to get Baseline metrics, the controller isn't responding properly");
             return null;
         }
+        long totalPurgeCount=0;
         for( BaselineData baselineData : gson.fromJson(json, BaselineData[].class)) {
             baselineData.metricName = metricData.metricName; //this is blank on my test data, not sure why it isn't set
             baselineData.controllerHostname = this.hostname;
             baselineData.applicationName = application.name;
             baselineData.targetTable = application.defaultBaselineTableName;
             baselineData.baseline = application.getBaseline();
-            baselineData.purgeNullBaselineTimeslices();
+            long purgeCount = baselineData.purgeNullBaselineTimeslices();
+            if( purgeCount > 0) logger.trace("Purged %d Baselines that contained no data",purgeCount);
+            totalPurgeCount += purgeCount;
             if( baselineData.hasData() )
                 baselines.add(baselineData);
         }
+        logger.debug("Purged a total of %d baseline datasets that were empty");
         if( dataQueue != null && !baselines.isEmpty() ) {
             dataQueue.add( baselines.toArray( new BaselineData[0]));
             baselines.clear();

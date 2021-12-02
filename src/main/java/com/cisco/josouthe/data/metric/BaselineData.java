@@ -1,5 +1,7 @@
 package com.cisco.josouthe.data.metric;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class BaselineData {
@@ -12,10 +14,24 @@ public class BaselineData {
     public String applicationName;
     public Baseline baseline;
 
-    public void purgeNullBaselineTimeslices() {
-        if( dataTimeslices == null || dataTimeslices.isEmpty() ) return;
-        for( BaselineTimeslice baselineTimeslice : dataTimeslices )
-            if( baselineTimeslice.metricValue == null ) dataTimeslices.remove(baselineTimeslice);
+    public long purgeNullBaselineTimeslices() {
+        if( dataTimeslices == null || dataTimeslices.isEmpty() ) return 0;
+        long counter=0;
+        synchronized (this.dataTimeslices) {
+            List<BaselineTimeslice> newDataTimeslices = new ArrayList<>();
+            Iterator<BaselineTimeslice> it = dataTimeslices.iterator();
+            while(it.hasNext()) {
+                BaselineTimeslice baselineTimeslice = it.next();
+                if( baselineTimeslice.metricValue != null ) {
+                    newDataTimeslices.add(baselineTimeslice);
+                } else {
+                    counter++;
+                }
+            }
+            this.dataTimeslices.clear();
+            this.dataTimeslices.addAll(newDataTimeslices);
+        }
+        return counter;
     }
 
     public boolean hasData() {
