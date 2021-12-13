@@ -28,7 +28,6 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -434,47 +433,6 @@ public class Controller {
         } catch (IOException e) {
             logger.warn("Exception: %s",e.getMessage());
         }
-        /*
-        HttpResponse response = null;
-        try {
-            response = client.execute(request);
-            if( logger.isDebugEnabled() ) {
-                logger.debug("Response Status Line: %s",response.getStatusLine());
-                for( Header header : response.getAllHeaders())
-                    logger.debug("Response Header: %s",header.toString());
-            }
-        } catch (IOException e) {
-            logger.error("Exception in attempting to get controller data, Exception: %s",e.getMessage());
-            request.releaseConnection();
-            return null;
-        }
-        HttpEntity entity = response.getEntity();
-        if (entity != null) {
-            try {
-                entity = new BufferedHttpEntity(entity);
-            } catch (IOException e) {
-                logger.warn("Error wrapping entity returned in a BufferedHttpEntity, exception: %s", e.getMessage());
-            }
-        }
-        Header encodingHeader = entity.getContentEncoding();
-        Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 : Charsets.toCharset(encodingHeader.getValue());
-        String json = null;
-        try {
-            json = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-            EntityUtils.consume(entity);
-            logger.debug("Response Content Type '%s' Length returned: %d JSON Body Length: %d", entity.getContentType().toString(), entity.getContentLength(), json.length());
-            logger.trace("JSON returned: %s",json);
-        } catch (IOException e) {
-            logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
-            request.releaseConnection();
-            return null;
-        }
-        request.releaseConnection();
-        if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            logger.warn("request returned bad status: %s message: %s", response.getStatusLine(), json);
-            throw new ControllerBadStatusException(response.getStatusLine().toString(), json, uri);
-        }
-        */
         return json;
     }
 

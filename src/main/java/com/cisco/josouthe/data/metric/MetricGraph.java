@@ -55,6 +55,15 @@ public class MetricGraph {
         return newAppMetricsStrings;
     }
 
+    public int addMetricNames( String ... metricNames ) {
+        int counter=0;
+        for( String metricName : metricNames ) {
+            addMetricName(metricName);
+            counter++;
+        }
+        return counter;
+    }
+
     public void addMetricName(String metricName) {
         Vertex leftVertex = null;
         int position = 0;
