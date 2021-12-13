@@ -85,6 +85,10 @@ public class MetricGraph {
         this.newAppMetricsStrings=null;
     }
 
+    public int addMetricNames(List<String> metricPaths) {
+        return addMetricNames( metricPaths.toArray(new String[0]));
+    }
+
     private class Edge {
         public Vertex lVertex, rVertex;
 
