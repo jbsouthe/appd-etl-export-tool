@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.Baseline;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.metric.MetricGraph;
+import com.cisco.josouthe.data.metric.MetricPaths;
 import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +35,7 @@ public class Application {
     public MetricGraph metricGraph = null;
     public List<Baseline> baselines = null;
     public Baseline defaultBaseline = null;
-
+    private MetricPaths metricPaths = null;
 
     public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String defaultBaselineTableName, String getAllEvents, String getAllHealthRuleViolations, List<String> metrics) {
         if( getAllAvailableMetrics != null ) this.getAllAvailableMetrics= Boolean.parseBoolean(getAllAvailableMetrics);
@@ -47,6 +48,7 @@ public class Application {
         if( defaultBaselineTableName != null ) this.defaultBaselineTableName = defaultBaselineTableName;
         this.metricGraph = new MetricGraph(metrics);
         this.baselines = new ArrayList<>();
+        this.metricPaths = new MetricPaths();
     }
 
     public boolean isFinishedInitialization() { return finishedInitialization; }
@@ -66,10 +68,11 @@ public class Application {
     public void refreshAllAvailableMetricsIfEnabled() {
         synchronized (this.metricsToAdd) {
             if( getAllAvailableMetrics ) {
-                TreeNode[] folders = controller.getApplicationMetricFolders(this, "");
+                TreeNode[] folders = controller.getApplicationMetricFolders(this, "Application Infrastructure Performance");
                 logger.debug("Found %d folders we can go into", (folders == null ? "0" : folders.length));
                 findMetrics( controller, folders, "");
                 this.metricGraph = new MetricGraph(metricsToAdd);
+                this.metricGraph.addMetricNames( this.metricPaths.getMetricPaths() );
                 this.metricsToAdd.clear(); //possible memory leak, moving to the end of this method instead of beginning
             }
         }
@@ -84,7 +87,7 @@ public class Application {
         for( TreeNode something : somethings ) {
             if( something.isFolder() ) {
                 findMetrics( controller, controller.getApplicationMetricFolders(this, path+something.name), path+something.name);
-            } else {
+            } else if( "Custom Metrics".contains(path + something.name)){
                 logger.debug("Adding metric: %s%s",path,something.name);
                 metricsToAdd.add(path+something.name);
             }
