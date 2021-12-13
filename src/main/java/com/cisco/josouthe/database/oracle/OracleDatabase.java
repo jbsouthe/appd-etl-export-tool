@@ -2,13 +2,10 @@ package com.cisco.josouthe.database.oracle;
 
 import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.data.analytic.Result;
-import com.cisco.josouthe.data.event.EventData;
-import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.Table;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
-import com.cisco.josouthe.util.Utility;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.logging.log4j.LogManager;
@@ -18,9 +15,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 
 public class OracleDatabase extends Database {
     private static final Logger logger = LogManager.getFormatterLogger();
@@ -46,6 +45,8 @@ public class OracleDatabase extends Database {
         this.hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         this.hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         this.hikariConfig.addDataSourceProperty("maximumPoolSize", this.configuration.getProperty("scheduler-NumberOfDatabaseThreads", "10"));
+        this.hikariConfig.addDataSourceProperty("connectionTimeout", "60000");
+        this.hikariConfig.addDataSourceProperty("leakDetectionThreshold", "35000");
         this.dataSource = new HikariDataSource(this.hikariConfig);
         if( ! "".equals(metricTable) && isValidDatabaseTableName(metricTable) ) {
             logger.debug("Default Metric Table set to: %s", metricTable);
@@ -130,7 +131,22 @@ public class OracleDatabase extends Database {
 
     public Connection getConnection() throws SQLException {
         logger.trace("Getting Connection to DB for user %s",this.user);
-        return this.dataSource.getConnection();
+        int tries=0;
+        boolean succeeded = false;
+        Connection connection = null;
+        while( !succeeded && tries < 3 ) {
+            try {
+                tries++;
+                connection = this.dataSource.getConnection();
+                succeeded=true;
+            } catch (SQLException sqlException) {
+                logger.warn("Error getting a connection: %s",sqlException.toString());
+            }
+        }
+        if(!succeeded) {
+            throw new SQLException(String.format("Could not get a database connection! in %d tries", tries));
+        }
+        return connection;
     }
 
     @Override
