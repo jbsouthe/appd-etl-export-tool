@@ -72,18 +72,10 @@ public class OracleDatabase extends Database {
     public ControlTable getControlTable() { return (ControlTable) controlTable; }
 
     public boolean isDatabaseAvailable() {
-        Connection conn = null;
-        try{
-            conn = getConnection();
+        try (Connection conn = getConnection(); ){
             if( conn != null ) return true;
         } catch (Exception exception) {
             logger.error("Error testing database connection settings, Exception: %s", exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
         }
         return false;
     }
@@ -134,13 +126,13 @@ public class OracleDatabase extends Database {
         int tries=0;
         boolean succeeded = false;
         Connection connection = null;
-        while( !succeeded && tries < 3 ) {
+        while( !succeeded && tries < 30 ) {
             try {
                 tries++;
                 connection = this.dataSource.getConnection();
                 succeeded=true;
             } catch (SQLException sqlException) {
-                logger.warn("Error getting a connection: %s",sqlException.toString());
+                logger.warn("Error getting a connection try %d: %s", tries ,sqlException.toString());
             }
         }
         if(!succeeded) {

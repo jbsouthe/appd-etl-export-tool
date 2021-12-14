@@ -4,7 +4,6 @@ import com.cisco.josouthe.data.analytic.Field;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
-import com.cisco.josouthe.database.Table;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,7 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.ParseException;
 
-public class AnalyticTable extends Table implements com.cisco.josouthe.database.AnalyticTable {
+public class AnalyticTable extends OracleTable implements com.cisco.josouthe.database.AnalyticTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
 
     public AnalyticTable(Result result, Database database ) {
@@ -76,10 +75,7 @@ public class AnalyticTable extends Table implements com.cisco.josouthe.database.
         insertSQL.append(")");
         logger.trace("Data to inser: %s", result.toString());
         logger.trace("insertAnalytics SQL: %s", insertSQL);
-        Connection conn = null;
-        try{
-            conn = database.getConnection();
-            PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());
+        try ( Connection conn = database.getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());){
             for( int dataIndex=0; dataIndex<result.results.length; dataIndex++) {
                 int parameterIndex = 1;
                 for (String key : columns.keySet()) {
@@ -129,15 +125,10 @@ public class AnalyticTable extends Table implements com.cisco.josouthe.database.
                     }
                 }
                 counter += preparedStatement.executeUpdate();
+                preparedStatement.close();
             }
         } catch (Exception exception) {
             logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
         }
         return counter;
     }
