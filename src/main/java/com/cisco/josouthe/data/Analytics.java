@@ -8,8 +8,10 @@ import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.commons.codec.Charsets;
-import org.apache.http.*;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
@@ -25,10 +27,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /*
@@ -177,31 +176,6 @@ public class Analytics {
             return null;
         }
         logger.trace("Request: %s with query: %s", request.toString(), query);
-        /*
-        HttpResponse response = null;
-        try {
-            response = this.client.execute(request);
-            logger.trace("Response Status Line: %s",response.getStatusLine());
-        } catch (IOException e) {
-            logger.error("Exception in attempting to get analytics data, Exception: %s",e.getMessage());
-            return null;
-        }
-        if( response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-            logger.warn("request '%s' returned bad status: %s",request.toString(), response.getStatusLine());
-            return null;
-        }
-        HttpEntity entity = response.getEntity();
-        Header encodingHeader = entity.getContentEncoding();
-        Charset encoding = encodingHeader == null ? StandardCharsets.UTF_8 : Charsets.toCharset(encodingHeader.getValue());
-        String json = null;
-        try {
-            json = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-            logger.trace("JSON returned: %s",json);
-        } catch (IOException e) {
-            logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
-            return null;
-        }
-         */
         int tries=0;
         boolean succeeded=false;
         String json = "";
@@ -217,14 +191,19 @@ public class Analytics {
                 logger.warn("IOException: %s",ioException.getMessage());
             }
         }
-        Result[] results =  gson.fromJson(json, Result[].class);
-        for( Result result : results ) {
-            result.name = name;
-            result.query = query;
-            result.targetTable = this.tableNamePrefix+name;
-            result.startTimestamp = startTimestamp;
-            result.endTimestamp = endTimestamp;
+        if( !succeeded ) {
+            logger.error("Could not retrieve Analytic Search Results for '%s' Query: '%s' Message: '%s'", name, query, json);
+            return null;
         }
+        Result[] results =  gson.fromJson(json, Result[].class);
+        if( results != null )
+            for( Result result : results ) {
+                result.name = name;
+                result.query = query;
+                result.targetTable = this.tableNamePrefix+name;
+                result.startTimestamp = startTimestamp;
+                result.endTimestamp = endTimestamp;
+            }
         return results;
     }
 
