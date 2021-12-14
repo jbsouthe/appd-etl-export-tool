@@ -125,7 +125,6 @@ public class AnalyticTable extends OracleTable implements com.cisco.josouthe.dat
                     }
                 }
                 counter += preparedStatement.executeUpdate();
-                preparedStatement.close();
             }
         } catch (Exception exception) {
             logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString());
