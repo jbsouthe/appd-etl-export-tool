@@ -2,20 +2,17 @@ package com.cisco.josouthe.database.oracle;
 
 import com.cisco.josouthe.data.metric.BaselineData;
 import com.cisco.josouthe.data.metric.BaselineTimeslice;
-import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.metric.MetricValue;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
-import com.cisco.josouthe.database.Table;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 
-public class BaselineTable extends Table implements com.cisco.josouthe.database.BaselineTable {
+public class BaselineTable extends OracleTable implements com.cisco.josouthe.database.BaselineTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
 
     public BaselineTable(String tableName, Database database ) {
@@ -44,10 +41,7 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
         insertSQL.append("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
         insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
         logger.trace("insertMetric SQL: %s",insertSQL);
-        Connection conn = null;
-        try{
-            conn = database.getConnection();
-            PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());
+        try ( Connection conn = database.getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());){
             for(BaselineTimeslice baselineTimeslice : baselineData.dataTimeslices ) {
                 MetricValue metricValue = baselineTimeslice.metricValue;
                 if( metricValue == null ) {
@@ -76,14 +70,9 @@ public class BaselineTable extends Table implements com.cisco.josouthe.database.
                 preparedStatement.clearParameters();
             }
             counter += preparedStatement.executeBatch().length;
+            preparedStatement.close();
         } catch (Exception exception) {
             logger.error("Error inserting baseline into %s, Exception: %s", name, exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
         }
         return counter;
     }

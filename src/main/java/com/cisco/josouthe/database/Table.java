@@ -3,9 +3,6 @@ package com.cisco.josouthe.database;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.sql.*;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -61,38 +58,16 @@ public abstract class Table {
         return text.substring(0,maxSize);
     }
 
+    //each table has a specific method for the insert
     public abstract int insert(Object object);
 
-    private void createTable() {
-        Connection conn = null;
-        String objectTypeName="UNKNOWN";
-        //StringBuilder query = new StringBuilder(String.format("create table %s ( id serial NOT NULL, ",tableName));
-        StringBuilder query = new StringBuilder(String.format("create table %s ( ",this.getName()));
-        Iterator<ColumnFeatures> iterator = getColumns().values().iterator();
-        while( iterator.hasNext() ) {
-            ColumnFeatures column = iterator.next();
-            query.append(String.format("%s %s",column.name, column.printConstraints()));
-            if(iterator.hasNext()) query.append(", ");
-        }
-        query.append(")");
-        //query.append(String.format(", constraint pk_%s primary key (id) )", tableName));
-        logger.debug("create table query string: %s",query.toString());
-
-
-        try{
-            conn = database.getConnection();
-            Statement statement = conn.createStatement();
-            statement.executeUpdate(query.toString());
-        } catch (SQLException exception) {
-            logger.error("Error creating new %s for %s data, SQL State: %s Exception: %s", getName(), getType(), exception.getSQLState(), exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
-        }
-    }
+    //each database vendor has their own specific SQL for these methods
+    protected abstract void createTable();
+    protected abstract void alterTableToIncreaseColumnSize(ColumnFeatures column, int size);
+    protected abstract void alterTableToAddColumn(ColumnFeatures column);
+    protected abstract Map<String, ColumnFeatures> getTableColumns();
+    protected abstract boolean doesTableExist();
+    ///////
 
     private void addMissingColumns() {
         Map<String,ColumnFeatures> missingColumns = getMissingColumns();
@@ -119,46 +94,6 @@ public abstract class Table {
                 return column;
         }
         return null;
-    }
-
-    private void alterTableToIncreaseColumnSize(ColumnFeatures column, int size) {
-        if( column == null ) return;
-        Connection conn = null;
-        try{
-            conn = database.getConnection();
-            column.size = size;
-            String query = String.format("alter table %s modify %s %s )", getName(), column.name, column.printConstraints());
-            logger.debug("alterTableToIncreaseColumnSize query: %s",query);
-            Statement statement = conn.createStatement();
-            statement.executeUpdate(query);
-        } catch (Exception exception) {
-            logger.error("Error altering table to add column %s.%s, Exception: %s", getName(), column.name, exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
-        }
-    }
-
-    private void alterTableToAddColumn(ColumnFeatures column) {
-        Connection conn = null;
-        try{
-            conn = database.getConnection();
-            String query = String.format("alter table %s add ( %s %s )", getName(), column.name, column.printConstraints());
-            logger.debug("alterTableToAddColumn query: %s",query);
-            Statement statement = conn.createStatement();
-            statement.executeUpdate(query);
-        } catch (Exception exception) {
-            logger.error("Error altering table to add column %s.%s, Exception: %s", getName(), column.name, exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
-        }
     }
 
     private Map<String, ColumnFeatures> getMissingColumns() {
@@ -190,71 +125,4 @@ public abstract class Table {
         return null;
     }
 
-    private Map<String, ColumnFeatures> getTableColumns() {
-        Map<String,ColumnFeatures> tableColumns = new HashMap<>();
-        Connection conn = null;
-        try{
-            conn = database.getConnection();
-            String query = String.format("select sys.all_tab_columns.column_name, sys.all_tab_columns.data_type, sys.all_tab_columns.data_length, sys.all_tab_columns.nullable\n" +
-                    "from sys.all_tab_columns\n" +
-                    "         left join sys.all_ind_columns\n" +
-                    "                   on sys.all_ind_columns.index_owner = sys.all_tab_columns.owner\n" +
-                    "                       and sys.all_ind_columns.table_name = sys.all_tab_columns.table_name\n" +
-                    "                       and sys.all_ind_columns.column_name = sys.all_tab_columns.column_name\n" +
-                    "         left join sys.all_indexes\n" +
-                    "                   on sys.all_indexes.owner = sys.all_tab_columns.owner\n" +
-                    "                       and sys.all_indexes.table_name = sys.all_tab_columns.table_name\n" +
-                    "                       and sys.all_indexes.index_name = sys.all_ind_columns.index_name\n" +
-                    "                       and sys.all_indexes.index_type = 'NORMAL'\n" +
-                    "                       and sys.all_indexes.status = 'VALID'\n" +
-                    "where lower(sys.all_tab_columns.table_name) like lower('%s')\n" +
-                    "order by sys.all_tab_columns.column_id", getName());
-            Statement statement = conn.createStatement();
-            ResultSet resultSet = statement.executeQuery(query);
-            while( resultSet.next() ) {
-                String columnName = resultSet.getString(1);
-                String columnType = resultSet.getString(2);
-                int columnSize = resultSet.getInt(3);
-                String columnNullable = resultSet.getString(4);
-                ColumnFeatures columnFeatures = new ColumnFeatures(columnName, columnType, columnSize, ("N".equals(columnNullable) ? false : true));
-                tableColumns.put(columnFeatures.name,columnFeatures);
-            }
-        } catch (Exception exception) {
-            logger.error("Error describing table %s, Exception: %s", getName(), exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
-        }
-        return tableColumns;
-    }
-
-    private boolean doesTableExist() {
-        Connection conn = null;
-        try{
-            conn = database.getConnection();
-            String query = String.format("select table_name from all_tables where lower(table_name) like lower('%s')", getName());
-            Statement statement = conn.createStatement();
-            ResultSet resultSet = statement.executeQuery(query);
-            if( resultSet.next() ) {
-                String table_name = resultSet.getString(1);
-                logger.debug("doesTableExist(%s): Yes",getName());
-                return true;
-            } else {
-                logger.debug("doesTableExist(%s): No it does not",getName());
-                return false;
-            }
-        } catch (Exception exception) {
-            logger.error("Error checking for database table existence, Exception: %s", exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
-        }
-        return false;
-    }
 }

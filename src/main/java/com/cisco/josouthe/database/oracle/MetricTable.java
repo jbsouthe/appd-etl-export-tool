@@ -4,17 +4,14 @@ import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.metric.MetricValue;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
-import com.cisco.josouthe.database.Table;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 
-public class MetricTable extends Table implements com.cisco.josouthe.database.MetricTable {
+public class MetricTable extends OracleTable implements com.cisco.josouthe.database.MetricTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
 
     public MetricTable( String tableName, Database database ) {
@@ -39,10 +36,7 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
         insertSQL.append("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
         insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
         logger.trace("insertMetric SQL: %s",insertSQL);
-        Connection conn = null;
-        try{
-            conn = database.getConnection();
-            PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());
+        try ( Connection conn = database.getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());){
             for(MetricValue metricValue : metric.metricValues ) {
                 int parameterIndex=1;
                 preparedStatement.setString(parameterIndex++, metric.controllerHostname);
@@ -66,14 +60,9 @@ public class MetricTable extends Table implements com.cisco.josouthe.database.Me
                 preparedStatement.clearParameters();
             }
             counter += preparedStatement.executeBatch().length;
+            preparedStatement.close();
         } catch (Exception exception) {
             logger.error("Error inserting metrics into %s, Exception: %s", name, exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
         }
         return counter;
     }

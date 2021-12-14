@@ -3,16 +3,13 @@ package com.cisco.josouthe.database.oracle;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
-import com.cisco.josouthe.database.Table;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
-public class EventTable extends Table implements com.cisco.josouthe.database.EventTable {
+public class EventTable extends OracleTable implements com.cisco.josouthe.database.EventTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
 
     public EventTable( String tableName, Database database ) {
@@ -40,10 +37,7 @@ public class EventTable extends Table implements com.cisco.josouthe.database.Eve
         insertSQL.append("controller, application, id, eventTime, type, subtype, severity, summary, triggeredEntityId, triggeredEntityName, triggeredEntityType, eventTimestamp");
         insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
         logger.trace("insertMetric SQL: %s",insertSQL);
-        Connection conn = null;
-        try{
-            conn = database.getConnection();
-            PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());
+        try ( Connection conn = database.getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());){
             int parameterIndex = 1;
             preparedStatement.setString(parameterIndex++, fitToSize(event.controllerHostname, "controller"));
             preparedStatement.setString(parameterIndex++, fitToSize(event.applicationName, "application"));
@@ -68,14 +62,9 @@ public class EventTable extends Table implements com.cisco.josouthe.database.Eve
             }
             preparedStatement.setLong(parameterIndex++, event.eventTime);
             counter += preparedStatement.executeUpdate();
+            preparedStatement.close();
         } catch (Exception exception) {
             logger.error("Error inserting events into %s, Exception: %s", name, exception.toString());
-        } finally {
-            if( conn != null ) {
-                try {
-                    conn.close();
-                } catch (SQLException ignored) {}
-            }
         }
         return counter;
     }
