@@ -37,7 +37,9 @@ public class MetricTable extends OracleTable implements com.cisco.josouthe.datab
         insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
         logger.trace("insertMetric SQL: %s",insertSQL);
         try ( Connection conn = database.getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());){
-            for(MetricValue metricValue : metric.metricValues ) {
+            //for(MetricValue metricValue : metric.metricValues ) {
+            while( !metric.metricValues.isEmpty() ) {
+                MetricValue metricValue = metric.metricValues.remove(0);
                 int parameterIndex=1;
                 preparedStatement.setString(parameterIndex++, metric.controllerHostname);
                 preparedStatement.setString(parameterIndex++, metric.applicationName);
@@ -60,7 +62,6 @@ public class MetricTable extends OracleTable implements com.cisco.josouthe.datab
                 preparedStatement.clearParameters();
             }
             counter += preparedStatement.executeBatch().length;
-            preparedStatement.close();
         } catch (Exception exception) {
             logger.error("Error inserting metrics into %s, Exception: %s", name, exception.toString());
         }

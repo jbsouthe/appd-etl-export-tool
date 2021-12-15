@@ -42,7 +42,9 @@ public class BaselineTable extends OracleTable implements com.cisco.josouthe.dat
         insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
         logger.trace("insertMetric SQL: %s",insertSQL);
         try ( Connection conn = database.getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());){
-            for(BaselineTimeslice baselineTimeslice : baselineData.dataTimeslices ) {
+            //for(BaselineTimeslice baselineTimeslice : baselineData.dataTimeslices ) {
+            while( !baselineData.dataTimeslices.isEmpty() ) {
+                BaselineTimeslice baselineTimeslice = baselineData.dataTimeslices.remove(0);
                 MetricValue metricValue = baselineTimeslice.metricValue;
                 if( metricValue == null ) {
                     logger.warn("Metric Value in Baseline Timeslice is null! for metric %s timeslice %d", baselineData.metricName, baselineTimeslice.startTime);
@@ -70,7 +72,6 @@ public class BaselineTable extends OracleTable implements com.cisco.josouthe.dat
                 preparedStatement.clearParameters();
             }
             counter += preparedStatement.executeBatch().length;
-            preparedStatement.close();
         } catch (Exception exception) {
             logger.error("Error inserting baseline into %s, Exception: %s", name, exception.toString());
         }

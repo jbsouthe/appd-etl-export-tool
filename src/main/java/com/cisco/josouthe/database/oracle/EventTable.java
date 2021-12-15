@@ -62,7 +62,6 @@ public class EventTable extends OracleTable implements com.cisco.josouthe.databa
             }
             preparedStatement.setLong(parameterIndex++, event.eventTime);
             counter += preparedStatement.executeUpdate();
-            preparedStatement.close();
         } catch (Exception exception) {
             logger.error("Error inserting events into %s, Exception: %s", name, exception.toString());
         }
