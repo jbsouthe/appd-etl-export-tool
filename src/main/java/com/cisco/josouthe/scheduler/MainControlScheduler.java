@@ -7,7 +7,6 @@ import com.cisco.josouthe.data.Controller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.LinkedList;
 import java.util.concurrent.*;
 
 public class MainControlScheduler {
@@ -21,9 +20,9 @@ public class MainControlScheduler {
     public MainControlScheduler(Configuration configuration ) {
         this.configuration = configuration;
         dataToInsertLinkedBlockingQueue = new LinkedBlockingQueue<>();
-        executorFetchData = (ThreadPoolExecutor) Executors.newFixedThreadPool( this.configuration.getProperty("scheduler-NumberOfControllerThreads", 50) );
-        executorInsertData = (ThreadPoolExecutor) Executors.newFixedThreadPool( this.configuration.getProperty("scheduler-NumberOfDatabaseThreads", 50) );
-        executorConfigRefresh = (ScheduledThreadPoolExecutor)  Executors.newScheduledThreadPool(this.configuration.getProperty("scheduler-NumberOfControllerThreads", 50));
+        executorFetchData = (ThreadPoolExecutor) Executors.newFixedThreadPool( this.configuration.getProperty("scheduler-NumberOfControllerThreads", 50), new NamedThreadFactory("ControllerAPI") );
+        executorInsertData = (ThreadPoolExecutor) Executors.newFixedThreadPool( this.configuration.getProperty("scheduler-NumberOfDatabaseThreads", 50), new NamedThreadFactory("Database") );
+        executorConfigRefresh = (ScheduledThreadPoolExecutor)  Executors.newScheduledThreadPool(this.configuration.getProperty("scheduler-NumberOfControllerThreads", 50), new NamedThreadFactory("ConfigRefresh"));
         for( Controller controller : configuration.getControllerList() ) {
             for (Application application : controller.applications) {
                 executorConfigRefresh.scheduleAtFixedRate(new ApplicationMetricRefreshTask(application), 0, this.configuration.getProperty("scheduler-ConfigRefreshHours", 12l), TimeUnit.HOURS);
