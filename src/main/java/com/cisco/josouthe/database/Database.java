@@ -11,7 +11,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -24,8 +23,12 @@ public abstract class Database {
     public static final int STRING_SIZE = 120;
     public static final String INTEGER_TYPE = "number";
     public static final int INTEGER_SIZE = 22;
+    public static final String FLOAT_TYPE = "number";
+    public static final int FLOAT_SIZE = 22;
     public static final String DATE_TYPE = "date";
     public static final int DATE_SIZE = -1;
+    public static final String BOOLEAN_TYPE = "number";
+    public static final int BOOLEAN_SIZE = 1;
 
     protected Configuration configuration;
     protected String connectionString, user, password, vendorName;

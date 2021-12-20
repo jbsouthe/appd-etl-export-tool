@@ -22,8 +22,12 @@ public class CSVDatabase extends Database {
     public static final int STRING_SIZE = -1;
     public static final String INTEGER_TYPE = "number";
     public static final int INTEGER_SIZE = -1;
+    public static final String FLOAT_TYPE = "number";
+    public static final int FLOAT_SIZE = -1;
     public static final String DATE_TYPE = "date";
     public static final int DATE_SIZE = -1;
+    public static final String BOOLEAN_TYPE = "varchar2";
+    public static final int BOOLEAN_SIZE = 1;
 
     private File databaseDirectory;
     private char delimeter=',';

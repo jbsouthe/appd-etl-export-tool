@@ -41,6 +41,8 @@ public class AnalyticTable extends CSVTable implements com.cisco.josouthe.databa
         switch(type) {
             case "string": return database.STRING_SIZE;
             case "integer": return database.INTEGER_SIZE;
+            case "float": return database.FLOAT_SIZE;
+            case "boolean": return database.BOOLEAN_SIZE;
             case "date": return database.DATE_SIZE;
             default: {
                 logger.warn("Unknown data type: %s setting table column size to %s", type, database.STRING_SIZE);
@@ -53,6 +55,8 @@ public class AnalyticTable extends CSVTable implements com.cisco.josouthe.databa
         switch(type) {
             case "string": return database.STRING_TYPE;
             case "integer": return database.INTEGER_TYPE;
+            case "float": return database.FLOAT_TYPE;
+            case "boolean": return database.BOOLEAN_TYPE;
             case "date": return database.DATE_TYPE;
             default: {
                 logger.warn("Unknown data type: %s setting table column type to %s", type, database.STRING_TYPE);
