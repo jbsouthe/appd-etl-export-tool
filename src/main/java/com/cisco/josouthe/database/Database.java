@@ -183,4 +183,5 @@ public abstract class Database {
 
     public abstract boolean isValidDatabaseTableName( String tableName ) throws InvalidConfigurationException;
 
+    public abstract String convertToAcceptableTableName(String tableName );
 }

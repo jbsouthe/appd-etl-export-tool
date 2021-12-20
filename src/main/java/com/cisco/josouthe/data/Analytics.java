@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.ControlTable;
+import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
@@ -74,6 +75,7 @@ public class Analytics {
     public String APIAccountName, APIKey, tableNamePrefix="AppDynamics_Analytics_";
     public URL url;
     public boolean ignoreNullsInFirstColumnOfReturnedData = true;
+    private Database database;
     ArrayList<Search> searches = new ArrayList<>();
     HttpClient client = null;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -99,13 +101,14 @@ public class Analytics {
 
     };
 
-    public Analytics( String urlString, String APIAccountName, String APIKey, String tableNamePrefix ) throws MalformedURLException {
+    public Analytics( String urlString, String APIAccountName, String APIKey, String tableNamePrefix, Database database ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/";
         this.url = new URL(urlString);
         this.APIAccountName = APIAccountName;
         this.APIKey = APIKey;
         if( tableNamePrefix != null )
             this.tableNamePrefix=tableNamePrefix;
+        this.database = database;
         this.client = HttpClientBuilder
                 .create()
                 .setConnectionManager(new PoolingHttpClientConnectionManager())
@@ -113,8 +116,8 @@ public class Analytics {
                 .build();
     }
 
-    public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, ArrayList<Search> searches) throws MalformedURLException{
-        this(urlString, accountName, apiKey, tableNamePrefix);
+    public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searches) throws MalformedURLException{
+        this(urlString, accountName, apiKey, tableNamePrefix, database);
         this.searches=searches;
     }
 
@@ -200,7 +203,11 @@ public class Analytics {
             for( Result result : results ) {
                 result.name = name;
                 result.query = query;
-                result.targetTable = this.tableNamePrefix+name;
+                if( database == null ) {
+                    result.targetTable = this.tableNamePrefix + name;
+                } else {
+                    result.targetTable = database.convertToAcceptableTableName(this.tableNamePrefix + name);
+                }
                 result.startTimestamp = startTimestamp;
                 result.endTimestamp = endTimestamp;
             }
@@ -208,7 +215,7 @@ public class Analytics {
     }
 
     public static void main( String... args ) throws MalformedURLException {
-        Analytics analytics = new Analytics("https://analytics.api.appdynamics.com/", "southerland-test_65322e21-efed-4126-8827-920141a9ac21", "ae7a6973-dd00-4ebb-8bff-b9404d21bb74", null);
+        Analytics analytics = new Analytics("https://analytics.api.appdynamics.com/", "southerland-test_65322e21-efed-4126-8827-920141a9ac21", "ae7a6973-dd00-4ebb-8bff-b9404d21bb74", null, null);
         Result[] results = analytics.runAnalyticsQuery("UniqueTransactionCount","SELECT transactionName, count(*) FROM transactions");
         for( Result result : results)
             logger.info(result);

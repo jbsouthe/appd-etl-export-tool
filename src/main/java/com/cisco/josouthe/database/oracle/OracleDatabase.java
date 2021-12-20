@@ -192,6 +192,24 @@ public class OracleDatabase extends Database {
         return true; //if we made it this far without an exception, we are good to go
     }
 
+    @Override
+    public String convertToAcceptableTableName(String tableName) {
+        tableName = tableName.replace('.', '_');
+        if(! Character.isAlphabetic(tableName.charAt(0))) tableName = "a"+tableName;
+        StringBuilder result = new StringBuilder();
+        tableName.chars().filter( ch -> ch == '_' || Character.isAlphabetic(ch) || Character.isDigit(ch)).forEach( ch -> result.append((char) ch));
+        try {
+            if (_tableNameForbiddenWords == null) loadTableNameInvalidWords();
+            if (_tableNameForbiddenWords.contains(result.toString().toLowerCase())) result.append("_c");
+        } catch (InvalidConfigurationException e) {
+            logger.warn("Was not able to load list of table name forbidden words: %s", e.getMessage());
+        }
+        tableName = result.toString();
+        if( tableName.length() > 30 )
+            tableName = tableName.substring(0,30);
+        return tableName;
+    }
+
     private void loadTableNameInvalidWords() throws InvalidConfigurationException {
         String filename = this.vendorName.toLowerCase() + "-forbidden-words.txt";
         logger.debug("Loading file: %s",filename);
