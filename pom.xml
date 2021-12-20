@@ -133,6 +133,7 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>3.2.0</version>
                 <executions>
@@ -202,15 +203,4 @@
         </plugins>
     </build>
 
-    <!-- TODO if we can figure out how to list classes in a directory
-    <archive>
-        <manifestSections>
-          <manifestSection>
-              <name>Plugin-Classes</name>
-              <manifestEntries>
-              </manifestEntries>
-          </manifestSection>
-        </manifestSections>
-    </archive>
-    -->
 </project>
