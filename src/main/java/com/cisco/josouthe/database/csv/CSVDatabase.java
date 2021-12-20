@@ -112,4 +112,9 @@ public class CSVDatabase extends Database {
             throw new InvalidConfigurationException(String.format("Database File Name '%s' invalid!", tableName) );
         return true;
     }
+
+    @Override
+    public String convertToAcceptableTableName(String tableName) {
+        return tableName.replaceAll("[\\.\\/\\s]+", "_").replaceAll("_+","_");
+    }
 }

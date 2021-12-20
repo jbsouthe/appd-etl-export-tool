@@ -182,7 +182,7 @@ public class Configuration {
         }
         //if( this.searches.size() == 0 ) throw new InvalidConfigurationException("We can't add an Analytics section without any Searches!");
         try {
-            Analytics analytic = new Analytics( urlString, accountName, apiKey, tableNamePrefix, (ArrayList<Search>) this.searches.clone());
+            Analytics analytic = new Analytics( urlString, accountName, apiKey, tableNamePrefix, getDatabase(), (ArrayList<Search>) this.searches.clone());
             this.searches = new ArrayList<>();
             this.analytics.add(analytic);
             this.definedAnalytics=true;
@@ -224,13 +224,13 @@ public class Configuration {
             logger.warn("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
         }
-        if( applications == null || applications.isEmpty() ) {
-            logger.warn("Controller configured, but no applications configured, please add at least one application");
-            throw new InvalidConfigurationException("Controller configured, but no applications configured, please add at least one application");
-        }
         boolean getAllAnalyticsSearchesFlag=false;
         if( "true".equals(getAllAnalyticsSearches) )
             getAllAnalyticsSearchesFlag=true;
+        if( (applications == null || applications.isEmpty()) && !getAllAnalyticsSearchesFlag ) {
+            logger.warn("Controller configured, but no applications configured, please add at least one application, or set getAllAnalyticsSearches Flag to true");
+            throw new InvalidConfigurationException("Controller configured, but no applications configured, please add at least one application, or set getAllAnalyticsSearches Flag to true");
+        }
         try{
             Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag);
             applications = new ArrayList<>();;
