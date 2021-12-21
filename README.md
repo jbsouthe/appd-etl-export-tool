@@ -3,18 +3,18 @@
 The purpose of this utility is to run an export of AppDynamics Metrics, Events, and Analytics Searches and insert that data into either a database or Comma Separated Value file.
 One of the benefits of this utility is that it doesn't require any database schema creation, and will automatically create tables and columns as needed, dynamically during execution.
 
-The execution of this utility requires a Java VM v1.8 or greater, and the following external libraries:
+The execution of this utility requires a Java VM v1.11 or greater, and the following external libraries:
 
 ###Google GSON - for JSON conversion to java classes
 
     <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.8.8</version>
+        <version>2.8.9</version>
     </dependency>
 * asm-3.3.1.jar
 * cglib-2.2.2.jar
-* gson-2.8.8.jar
+* gson-2.8.9.jar
 
 ###Apache HTTP Client - for restful API requests to the AppDynamics Controller
 
@@ -44,39 +44,34 @@ The execution of this utility requires a Java VM v1.8 or greater, and the follow
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
-        <version>2.14.1</version>
+        <version>2.17.0</version>
     </dependency>
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
-        <version>2.14.1</version>
+        <version>2.17.0</version>
     </dependency>
-* log4j-api-2.14.1.jar
-* log4j-core-2.14.1.jar
+* log4j-api-2.17.0.jar
+* log4j-core-2.17.0.jar
 
 ###Oracle JDBC Driver (needed if connecting to an Oracle DB)
 
     <dependency>
         <groupId>com.oracle.database.jdbc</groupId>
         <artifactId>ojdbc8</artifactId>
-        <version>19.3.0.0</version>
+        <version>21.3.0.0</version>
     </dependency>
-* ojdbc8-19.3.0.0.jar
-* ons-19.3.0.0.jar
-* oraclepki-19.3.0.0.jar
-* osdt_cert-19.3.0.0.jar
-* osdt_core-19.3.0.0.jar
-* simplefan-19.3.0.0.jar
-* ucp-19.3.0.0.jar
+* ojdbc8-21.3.0.0.jar
+
 
 ###Hikaru Connection Pooling Library - for database connection pools
 
     <dependency>
         <groupId>com.zaxxer</groupId>
         <artifactId>HikariCP</artifactId>
-        <version>4.0.3</version>
+        <version>5.0.0</version>
     </dependency>
-*HikariCP-4.0.3.jar
+* HikariCP-5.0.0.jar
 
 ##Executing the utility requires:
 The libraries above are expected in the <current directory>/lib directory and the jar file has this classpath as a default, if a library is upgraded then the classpath will need to be updated as well or overridden.
@@ -170,7 +165,7 @@ An example config is shown with some default options specified:
 #Controller Section
 Multiple Controller Sections can be defined, but the url must be unique.
 
-    <Controller>
+    <Controller getAllAnalyticsSearches="false">
         <URL>https://southerland-test.saas.appdynamics.com/</URL>
         <ClientID>ETLClient@southerland-test</ClientID>
         <ClientSecret>the generated client secret</ClientSecret>
