@@ -90,6 +90,7 @@ public class Controller {
         this.getAllAnalyticsSearchesFlag=getAllAnalyticsSearchesFlag;
         this.client = HttpClientBuilder
                 .create()
+                .useSystemProperties()
                 .setConnectionManager(new PoolingHttpClientConnectionManager())
                 .setConnectionManagerShared(true)
                 .build();
@@ -149,6 +150,7 @@ public class Controller {
                 tries++;
                 this.client = HttpClientBuilder
                         .create()
+                        .useSystemProperties()
                         .setConnectionManager(new PoolingHttpClientConnectionManager())
                         .setConnectionManagerShared(true)
                         .build();

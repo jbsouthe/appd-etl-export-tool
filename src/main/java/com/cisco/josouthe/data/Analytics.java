@@ -111,6 +111,7 @@ public class Analytics {
         this.database = database;
         this.client = HttpClientBuilder
                 .create()
+                .useSystemProperties()
                 .setConnectionManager(new PoolingHttpClientConnectionManager())
                 .setConnectionManagerShared(true)
                 .build();
