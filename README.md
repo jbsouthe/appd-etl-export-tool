@@ -44,15 +44,15 @@ The execution of this utility requires a Java VM v1.11 or greater, and the follo
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
-        <version>2.17.0</version>
+        <version>2.17.1</version>
     </dependency>
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
-        <version>2.17.0</version>
+        <version>2.17.1</version>
     </dependency>
-* log4j-api-2.17.0.jar
-* log4j-core-2.17.0.jar
+* log4j-api-2.17.1.jar
+* log4j-core-2.17.1.jar
 
 ###Oracle JDBC Driver (needed if connecting to an Oracle DB)
 
