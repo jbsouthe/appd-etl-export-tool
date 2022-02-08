@@ -1,7 +1,7 @@
 package com.cisco.josouthe.util;
 
 import com.appdynamics.apm.appagent.api.DataScope;
-import jdk.internal.net.http.common.Pair;
+import com.cisco.josouthe.database.TypeAndSize;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,11 +56,11 @@ public class Utility {
         return encode(getDateString(dateTime));
     }
 
-    public static Pair<String,Integer> parseTypeAndSizeString( String typeAndSize ) {
+    public static TypeAndSize parseTypeAndSizeString( String typeAndSize ) {
         Pattern pattern = Pattern.compile("(\\S)\\((\\d+).*\\)");
         Matcher matcher = pattern.matcher(typeAndSize);
         if(matcher.find()) {
-            return new Pair<>(matcher.group(0), Integer.parseInt(matcher.group(1)) );
+            return new TypeAndSize(matcher.group(0), Integer.parseInt(matcher.group(1)) );
         }
         return null;
     }

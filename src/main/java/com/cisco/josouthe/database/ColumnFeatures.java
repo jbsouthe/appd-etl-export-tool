@@ -1,7 +1,6 @@
 package com.cisco.josouthe.database;
 
 import com.cisco.josouthe.util.Utility;
-import jdk.internal.net.http.common.Pair;
 
 public class ColumnFeatures implements Cloneable, Comparable {
     public ColumnFeatures() {}
@@ -15,9 +14,9 @@ public class ColumnFeatures implements Cloneable, Comparable {
         this.name = name.toLowerCase();
         if( isNullable != null && isNullable.toLowerCase().equals("not null") ) this.isNull=false;
         if( typeAndSizeString.contains("(") ) { //has a size
-            Pair<String,Integer> typeAndSize = Utility.parseTypeAndSizeString(typeAndSizeString);
-            this.type = typeAndSize.first.toLowerCase();
-            this.size = typeAndSize.second;
+            TypeAndSize typeAndSize = Utility.parseTypeAndSizeString(typeAndSizeString);
+            this.type = typeAndSize.type.toLowerCase();
+            this.size = typeAndSize.size;
         } else { //just a type
             this.type = typeAndSizeString.toLowerCase();
             this.size = -1;
