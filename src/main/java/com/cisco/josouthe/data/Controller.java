@@ -13,6 +13,7 @@ import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.ControlTable;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
+import com.cisco.josouthe.util.HttpClientFactory;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -30,8 +31,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
@@ -88,12 +87,7 @@ public class Controller {
         this.clientSecret = clientSecret;
         this.applications = applications;
         this.getAllAnalyticsSearchesFlag=getAllAnalyticsSearchesFlag;
-        this.client = HttpClientBuilder
-                .create()
-                .useSystemProperties()
-                .setConnectionManager(new PoolingHttpClientConnectionManager())
-                .setConnectionManagerShared(true)
-                .build();
+        this.client = HttpClientFactory.getHttpClient();
     }
 
     public boolean isGetAllAnalyticsSearchesFlag() { return getAllAnalyticsSearchesFlag; }
@@ -148,12 +142,7 @@ public class Controller {
                 tries++;
             } catch (java.lang.IllegalStateException illegalStateException) {
                 tries++;
-                this.client = HttpClientBuilder
-                        .create()
-                        .useSystemProperties()
-                        .setConnectionManager(new PoolingHttpClientConnectionManager())
-                        .setConnectionManagerShared(true)
-                        .build();
+                this.client = HttpClientFactory.getHttpClient(true);
                 logger.warn("Caught exception on connection, building a new connection for retry, Exception: %s", illegalStateException.getMessage());
             }
         }

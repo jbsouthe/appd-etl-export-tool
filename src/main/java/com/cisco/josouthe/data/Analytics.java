@@ -6,6 +6,7 @@ import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.ControlTable;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
+import com.cisco.josouthe.util.HttpClientFactory;
 import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -18,8 +19,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,12 +108,7 @@ public class Analytics {
         if( tableNamePrefix != null )
             this.tableNamePrefix=tableNamePrefix;
         this.database = database;
-        this.client = HttpClientBuilder
-                .create()
-                .useSystemProperties()
-                .setConnectionManager(new PoolingHttpClientConnectionManager())
-                .setConnectionManagerShared(true)
-                .build();
+        this.client = HttpClientFactory.getHttpClient();
     }
 
     public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searches) throws MalformedURLException{

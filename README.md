@@ -82,16 +82,31 @@ The command line to execute is:
 
 It is assumed the XML config file is the first and only argument. Also expected that a log4j2.xml is in the current working directory
 
+###Proxy Configuration
 If proxy support is required, set the following arguments before the -jar arguement:
     
      -Djava.net.useSystemProxies=true
 
-or:
+or, to manually specify the host and port:
      
+     -Dhttp.proxyHost=PROXY_HOST
+     -Dhttp.proxyPort=PROXY_PORT
+
+or, to manually specify the host, port, and basic user and password:
+
      -Dhttp.proxyHost=PROXY_HOST
      -Dhttp.proxyPort=PROXY_PORT
      -Dhttp.proxyUser=USERNAME
      -Dhttp.proxyPassword=PASSWORD
+
+or, to manually specify the host, port, and NTLM authentication:
+
+     -Dhttp.proxyHost=PROXY_HOST
+     -Dhttp.proxyPort=PROXY_PORT
+     -Dhttp.proxyUser=USERNAME
+     -Dhttp.proxyPassword=PASSWORD
+     -Dhttp.proxyWorkstation=HOSTNAME
+     -Dhttp.proxyDomain=NT_DOMAIN
 
 ## Configure Logging
 Here is an example, simple log4j2.xml file as a starting point:
