@@ -69,7 +69,7 @@ public abstract class Table {
     protected abstract boolean doesTableExist();
     ///////
 
-    private void addMissingColumns() {
+    protected void addMissingColumns() {
         Map<String,ColumnFeatures> missingColumns = getMissingColumns();
         if( missingColumns == null ) return;
         for( ColumnFeatures column : missingColumns.values() ) {
@@ -86,7 +86,7 @@ public abstract class Table {
         }
     }
 
-    private ColumnFeatures getColumnDefinition(String name) {
+    protected ColumnFeatures getColumnDefinition(String name) {
         ColumnFeatures columnFeatures = getColumns().get(name);
         if( columnFeatures != null ) return columnFeatures;
         for( ColumnFeatures column : getColumns().values() ) {
@@ -96,33 +96,37 @@ public abstract class Table {
         return null;
     }
 
-    private Map<String, ColumnFeatures> getMissingColumns() {
+    protected Map<String, ColumnFeatures> getMissingColumns() {
         Map<String,ColumnFeatures> tableColumns = getTableColumns();
         for( ColumnFeatures masterColumn : getColumns().values() ) {
             ColumnFeatures existingColumn = tableColumns.get(masterColumn.name);
+            logger.debug("Checking data column '%s' for matching database column '%s'", masterColumn, existingColumn);
             if( existingColumn != null ) { //column exists, check all features
                 boolean foundADifference=false;
                 if( ! existingColumn.type.equals(masterColumn.type) ) {
                     existingColumn.isWrongType=true;
                     foundADifference=true;
+                    logger.trace("Column %s is of wrong type %s, should be %s", existingColumn.name, existingColumn.type, masterColumn.type);
                 }
                 if( existingColumn.size != masterColumn.size ) {
                     existingColumn.isWrongSize=true;
                     foundADifference=true;
+                    logger.trace("Column %s is of wrong size %d, should be %d", existingColumn.name, existingColumn.size, masterColumn.size);
                 }
                 if( existingColumn.isNull != masterColumn.isNull ) {
                     existingColumn.isWrongNullable=true;
                     foundADifference=true;
+                    logger.trace("Column %s is of wrong null allowed %s, should be %s", existingColumn.name, existingColumn.isNull, masterColumn.isNull);
                 }
                 if( !foundADifference ) tableColumns.remove(existingColumn.name);
             } else { //column is missing entirely, mark for creation
                 ColumnFeatures newColumn = masterColumn.clone();
                 newColumn.isMissing=true;
                 tableColumns.put(newColumn.name, newColumn);
+                logger.debug("Column %s of type %s is missing entirely!", newColumn.name, newColumn.printConstraints());
             }
-            return tableColumns;
         }
-        return null;
+        return tableColumns;
     }
 
 }
