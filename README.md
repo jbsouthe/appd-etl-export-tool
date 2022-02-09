@@ -74,6 +74,7 @@ The execution of this utility requires a Java VM v1.11 or greater, and the follo
 * HikariCP-5.0.0.jar
 
 ##Executing the utility requires:
+
 The libraries above are expected in the <current directory>/lib directory and the jar file has this classpath as a default, if a library is upgraded then the classpath will need to be updated as well or overridden.
 
 The command line to execute is:
@@ -83,6 +84,7 @@ The command line to execute is:
 It is assumed the XML config file is the first and only argument. Also expected that a log4j2.xml is in the current working directory
 
 ###Proxy Configuration
+
 If proxy support is required, set the following arguments before the -jar arguement:
     
      -Djava.net.useSystemProxies=true
