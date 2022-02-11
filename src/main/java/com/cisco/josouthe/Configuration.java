@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.*;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.csv.CSVDatabase;
+import com.cisco.josouthe.database.microsoft.MicrosoftDatabase;
 import com.cisco.josouthe.database.oracle.OracleDatabase;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
@@ -295,6 +296,10 @@ public class Configuration {
             }
             case "csv": {
                 this.database = new CSVDatabase(this, connectionString, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                break;
+            }
+            case "sqlserver": {
+                this.database = new MicrosoftDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
             default: {
