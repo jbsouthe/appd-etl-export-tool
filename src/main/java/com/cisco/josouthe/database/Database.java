@@ -29,6 +29,7 @@ public abstract class Database {
     public static final int DATE_SIZE = -1;
     public static final String BOOLEAN_TYPE = "number";
     public static final int BOOLEAN_SIZE = 1;
+    public static final int MAX_CONNECTION_RETRY = 5;
 
     protected Configuration configuration;
     protected String connectionString, user, password, vendorName;
