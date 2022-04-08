@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.text.ParseException;
 
 public class AnalyticTable extends MySQLTable implements com.cisco.josouthe.database.AnalyticTable {
@@ -18,8 +19,8 @@ public class AnalyticTable extends MySQLTable implements com.cisco.josouthe.data
 
     public AnalyticTable(Result result, Database database ) {
         super(result.targetTable, "Analytic Table", database);
-        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "date", -1, false));
-        columns.put("endTimestamp", new ColumnFeatures("endTimestamp", "date", -1, false));
+        columns.put("starttimestamp", new ColumnFeatures("starttimestamp", MySQLDatabase.DATE_TYPE, -1, false));
+        columns.put("endtimestamp", new ColumnFeatures("endtimestamp", MySQLDatabase.DATE_TYPE, -1, false));
         for(Field field: result.fields) {
             columns.put( field.label,
                     new ColumnFeatures(database.convertToAcceptableColumnName(field.label, columns.values()),
@@ -34,30 +35,30 @@ public class AnalyticTable extends MySQLTable implements com.cisco.josouthe.data
 
     private int getColumnSizeForName(String type) {
         switch(type) {
-            case "string": return database.STRING_SIZE;
-            case "integer": return database.INTEGER_SIZE;
-            case "float": return database.FLOAT_SIZE;
-            case "boolean": return database.BOOLEAN_SIZE;
-            case "date": return database.DATE_SIZE;
+            case "string": return MySQLDatabase.STRING_SIZE;
+            case "integer": return MySQLDatabase.INTEGER_SIZE;
+            case "float": return MySQLDatabase.FLOAT_SIZE;
+            case "boolean": return MySQLDatabase.BOOLEAN_SIZE;
+            case "date": return MySQLDatabase.DATE_SIZE;
             default: {
-                logger.warn("Unknown data type: %s setting table column size to %s", type, database.STRING_SIZE);
+                logger.warn("Unknown data type: %s setting table column size to %s", type, MySQLDatabase.STRING_SIZE);
             }
         }
-        return database.STRING_SIZE;
+        return MySQLDatabase.STRING_SIZE;
     }
 
     private String getColumnTypeForName(String type) {
         switch(type) {
-            case "string": return database.STRING_TYPE;
-            case "integer": return database.INTEGER_TYPE;
-            case "float": return database.FLOAT_TYPE;
-            case "boolean": return database.BOOLEAN_TYPE;
-            case "date": return database.DATE_TYPE;
+            case "string": return MySQLDatabase.STRING_TYPE;
+            case "integer": return MySQLDatabase.INTEGER_TYPE;
+            case "float": return MySQLDatabase.FLOAT_TYPE;
+            case "boolean": return MySQLDatabase.BOOLEAN_TYPE;
+            case "date": return MySQLDatabase.DATE_TYPE;
             default: {
-                logger.warn("Unknown data type: %s setting table column type to %s", type, database.STRING_TYPE);
+                logger.warn("Unknown data type: %s setting table column type to %s", type, MySQLDatabase.STRING_TYPE);
             }
         }
-        return database.STRING_TYPE;
+        return MySQLDatabase.STRING_TYPE;
     }
 
     @Override
@@ -67,12 +68,8 @@ public class AnalyticTable extends MySQLTable implements com.cisco.josouthe.data
         StringBuilder sqlBeginning = new StringBuilder(String.format("insert into %s (",name));
         StringBuilder sqlEnding = new StringBuilder(") VALUES (");
         for( String key : columns.keySet()) {
-            sqlBeginning.append(" ").append( getColumns().get(key).name ).append(",");
-            if( columns.get(key).type.equals("date") ) {
-                sqlEnding.append("FROM_UNIXTIME(?),");
-            } else {
-                sqlEnding.append("?,");
-            }
+            sqlBeginning.append(" ").append( getColumns().get(key).name.toLowerCase() ).append(",");
+            sqlEnding.append("?,");
         }
         StringBuilder insertSQL = new StringBuilder(sqlBeginning.substring(0, sqlBeginning.length()-1));
         insertSQL.append( sqlEnding.substring(0, sqlEnding.length()-1) );
@@ -85,8 +82,8 @@ public class AnalyticTable extends MySQLTable implements com.cisco.josouthe.data
                 int parameterIndex = 1;
                 for (String key : columns.keySet()) {
                     switch (key) {
-                        case "startTimestamp": { preparedStatement.setLong(parameterIndex++, result.startTimestamp); break; }
-                        case "endTimestamp": { preparedStatement.setLong(parameterIndex++, result.endTimestamp); break; }
+                        case "starttimestamp": { preparedStatement.setTimestamp(parameterIndex++, new Timestamp(result.startTimestamp)); break; }
+                        case "endtimestamp": { preparedStatement.setTimestamp(parameterIndex++, new Timestamp(result.endTimestamp)); break; }
                         default: {
                             int fieldIndex=0;
                             for (Field field : result.fields) {
@@ -108,7 +105,7 @@ public class AnalyticTable extends MySQLTable implements com.cisco.josouthe.data
                                         } else if( data instanceof String && Utility.isThisStringADate((String)data) ) {
                                             //logger.trace("This String is a date: %s",data);
                                             try {
-                                                preparedStatement.setLong(parameterIndex++, Utility.parseDateString((String) data));
+                                                preparedStatement.setTimestamp(parameterIndex++, new Timestamp(Utility.parseDateString((String) data)));
                                             } catch (SQLException exception) {
                                                 throw exception;
                                             } catch (ParseException e) {
@@ -136,7 +133,8 @@ public class AnalyticTable extends MySQLTable implements com.cisco.josouthe.data
                 counter += preparedStatement.executeUpdate();
             }
         } catch (Exception exception) {
-            logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString());
+            logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString(), exception);
+            logger.warn("Bad SQL: %s",insertSQL.toString());
         }
         return counter;
     }

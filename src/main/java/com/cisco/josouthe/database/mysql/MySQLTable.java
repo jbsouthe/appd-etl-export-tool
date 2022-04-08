@@ -8,9 +8,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public abstract class MySQLTable extends Table {
     public MySQLTable(String tableName, String tableType, Database database) {
@@ -21,10 +19,22 @@ public abstract class MySQLTable extends Table {
         String objectTypeName="UNKNOWN";
         StringBuilder query = new StringBuilder(String.format("create table %s ( ",this.getName()));
         Iterator<ColumnFeatures> iterator = getColumns().values().iterator();
+        List<String> primaryKeys = new ArrayList<>();
         while( iterator.hasNext() ) {
             ColumnFeatures column = iterator.next();
+            if( column.isPrimary ) primaryKeys.add(column.name);
             query.append(String.format("%s %s",column.name, column.printConstraints()));
             if(iterator.hasNext()) query.append(", ");
+        }
+        if( primaryKeys.size() > 0 ) {
+            query.append(", primary key(");
+            Iterator<String> keysIt = primaryKeys.iterator();
+            while (keysIt.hasNext()) {
+                String pKeyName= keysIt.next();
+                query.append(pKeyName);
+                if(keysIt.hasNext()) query.append(", ");
+            }
+            query.append(") ");
         }
         query.append(")");
         logger.debug("create table query string: %s",query.toString());
@@ -66,14 +76,14 @@ public abstract class MySQLTable extends Table {
             String query = String.format("select information_schema.columns.column_name, information_schema.columns.data_type, information_schema.columns.character_maximum_length, information_schema.columns.is_nullable\n" +
                     "from information_schema.columns\n" +
                     "where lower(information_schema.columns.table_name) like lower('%s')\n" +
-                    "order by information_schema.ordinal_position", getName());
+                    "order by information_schema.columns.ordinal_position", getName());
             ResultSet resultSet = statement.executeQuery(query);
             while( resultSet.next() ) {
                 String columnName = resultSet.getString(1);
                 String columnType = resultSet.getString(2);
                 int columnSize = resultSet.getInt(3);
                 String columnNullable = resultSet.getString(4);
-                ColumnFeatures columnFeatures = new ColumnFeatures(columnName, columnType, columnSize, ("N".equals(columnNullable) ? false : true));
+                ColumnFeatures columnFeatures = new ColumnFeatures(columnName, columnType, columnSize, ("NO".equals(columnNullable) ? false : true));
                 tableColumns.put(columnFeatures.name,columnFeatures);
             }
             resultSet.close();

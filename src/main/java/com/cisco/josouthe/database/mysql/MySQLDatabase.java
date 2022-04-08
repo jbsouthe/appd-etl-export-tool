@@ -28,7 +28,7 @@ public class MySQLDatabase extends Database {
     public static final int STRING_SIZE = 120;
     public static final String INTEGER_TYPE = "bigint";
     public static final int INTEGER_SIZE = 20;
-    public static final String DATE_TYPE = "datetime";
+    public static final String DATE_TYPE = "timestamp";
     public static final int DATE_SIZE = -1;
     public static final String FLOAT_TYPE = "decimal";
     public static final int FLOAT_SIZE = 20;
