@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 
 
 public class BaselineTable extends MySQLTable implements com.cisco.josouthe.database.BaselineTable {
@@ -19,14 +20,14 @@ public class BaselineTable extends MySQLTable implements com.cisco.josouthe.data
         super(tableName,"Metric Table",database);
         columns.put("controller", new ColumnFeatures("controller", "varchar", 50, false));
         columns.put("application", new ColumnFeatures("application", "varchar", 50, false));
-        columns.put("metricname", new ColumnFeatures("metricName", "varchar", 200, false));
+        columns.put("metricname", new ColumnFeatures("metricname", "varchar", 200, false));
         columns.put("baseline", new ColumnFeatures("baseline", "varchar", 200, false));
         columns.put("frequency", new ColumnFeatures("frequency", "varchar", 50, false));
         columns.put("userange", new ColumnFeatures("userange", "tinyint", 1, false));
-        for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value"})
+        for( String columnName : new String[] { "metricid","starttimeinmillis", "occurrences", "currentvalue", "min", "max", "count", "sum", "value"})
             columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "bigint", 2, false));
-        columns.put("standardDeviation", new ColumnFeatures("standardDeviation", "decimal", 20, false));
-        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "datetime", -1, false));
+        columns.put("standarddeviation", new ColumnFeatures("standarddeviation", "decimal", 20, false));
+        columns.put("starttimestamp", new ColumnFeatures("starttimestamp", "timestamp", -1, false));
         this.initTable();
     }
 
@@ -39,8 +40,8 @@ public class BaselineTable extends MySQLTable implements com.cisco.josouthe.data
         int counter=0;
         StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
         insertSQL.append("controller, application, metricname, baseline, frequency, metricid, userange, ");
-        insertSQL.append("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
-        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,FROM_UNIXTIME(?))");
+        insertSQL.append("starttimeinmillis, occurrences, currentvalue, min, max, count, sum, value, standarddeviation, starttimestamp");
+        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         logger.trace("insertMetric SQL: %s",insertSQL);
         try ( Connection conn = database.getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());){
             //for(BaselineTimeslice baselineTimeslice : baselineData.dataTimeslices ) {
@@ -68,13 +69,14 @@ public class BaselineTable extends MySQLTable implements com.cisco.josouthe.data
                 preparedStatement.setLong(parameterIndex++, metricValue.sum);
                 preparedStatement.setLong(parameterIndex++, metricValue.value);
                 preparedStatement.setDouble(parameterIndex++, metricValue.standardDeviation);
-                preparedStatement.setLong(parameterIndex++, baselineTimeslice.startTime);
+                preparedStatement.setTimestamp(parameterIndex++, new Timestamp(baselineTimeslice.startTime));
                 preparedStatement.addBatch();
                 preparedStatement.clearParameters();
             }
             counter += preparedStatement.executeBatch().length;
         } catch (Exception exception) {
             logger.error("Error inserting baseline into %s, Exception: %s", name, exception.toString());
+            logger.warn("Bad SQL: %s",insertSQL.toString());
         }
         return counter;
     }
