@@ -74,7 +74,11 @@ public abstract class Table {
         if( missingColumns == null ) return;
         for( ColumnFeatures column : missingColumns.values() ) {
             if( column.isMissing ) alterTableToAddColumn( column);
-            if( column.isWrongNullable || column.isWrongType ) logger.warn("We can't fix this problem with the table %s.%s, wrong nullable: %s, wrong type: %s is %s but should be", getName(), column.name, column.isWrongNullable, column.isWrongType, column.type, getColumns().get(column.name).type);
+            if( column.isWrongNullable || column.isWrongType ) {
+                ColumnFeatures columnFeatures = getColumns().get(column.name);
+                if( columnFeatures == null ) logger.warn("Abbout to error because getColumns().get(%s) returns null",column.name);
+                logger.warn("We can't fix this problem with the table %s.%s, wrong nullable: %s, wrong type: %s is %s but should be", getName(), column.name, column.isWrongNullable, column.isWrongType, column.type, columnFeatures.type);
+            }
             if( column.isWrongSize && !column.isWrongType ) {
                 ColumnFeatures columnFeatures = getColumnDefinition(column.name);
                 if( columnFeatures != null && column.size < columnFeatures.size ) { //we can increase column size
