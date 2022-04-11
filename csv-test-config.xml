@@ -12,7 +12,7 @@
         <ClientID>ETLClient@southerland-test</ClientID>
         <ClientSecret>869b6e71-230c-4e6f-918d-6713fb73b3ad</ClientSecret>
         <Application getAllAvailableMetrics="true" getAllEvents="true" getAllHealthRuleViolations="false">
-            <Name>Agent Proxy</Name>
+            <Name>BTPlaybook_Lab</Name>
             <Defaults>
                 <DisableDataRollup>true</DisableDataRollup>
                 <MetricTable>ProxyAppMetrics</MetricTable>
