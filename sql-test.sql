@@ -61,3 +61,14 @@ select * from AppDynamics_Analytics_transactionDetails;
 select * from AppDynamics_Analytics_allTransactionDetails;
 
 select * from ProxyAppEvents;
+
+STATEMENT BATCH insert into AppD_An_CrossSellCreditoMobile (
+    starttimestamp, endtimestamp, navegador, correoelectronico, numerotelefonico,
+    fecha, usuario, completed, dispositivo, numerodecuenta,
+    primeraoferta, segundaoferta, ofertaseleccionada, cuartaoferta, monto,
+    tasadeinterïs, tipodeamortizaciïn, otp, fechadelprimerpago, motivodelcrïdito)
+VALUES (
+    TO_DATE('19700101','yyyymmdd') + (('1640107395113'/1000)/24/60/60),TO_DATE('19700101','yyyymmdd') + (('1640114595114'/1000)/24/60/60),'1640114083522','CROSSELL4','0',
+    TO_DATE('19700101','yyyymmdd') + (('MB'/1000)/24/60/60),,,,
+    ,,,,,
+    ,,,,,)
