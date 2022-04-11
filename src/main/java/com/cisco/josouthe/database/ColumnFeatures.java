@@ -10,6 +10,13 @@ public class ColumnFeatures implements Cloneable, Comparable {
         this.size=size;
         this.isNull=isNull;
     }
+    public ColumnFeatures( String name, String type, int size, boolean isNull, boolean isPrimary) {
+        this.name=name.toLowerCase();
+        this.type=type.toLowerCase();
+        this.size=size;
+        this.isNull=isNull;
+        this.isPrimary=isPrimary;
+    }
     public ColumnFeatures( String name, String isNullable, String typeAndSizeString ) {
         this.name = name.toLowerCase();
         if( isNullable != null && isNullable.toLowerCase().equals("not null") ) this.isNull=false;
@@ -33,7 +40,7 @@ public class ColumnFeatures implements Cloneable, Comparable {
     public String name, type;
     public int size;
     public boolean isNull = true;
-    public boolean isMissing = false, isWrongType = false, isWrongSize = false, isWrongNullable = false;
+    public boolean isMissing = false, isWrongType = false, isWrongSize = false, isWrongNullable = false, isPrimary = false;
 
     public ColumnFeatures clone() {
         return new ColumnFeatures(name, type, size, isNull);
