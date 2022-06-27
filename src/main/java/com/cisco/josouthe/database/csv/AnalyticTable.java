@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.analytic.Field;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.IAnalyticTable;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,7 +15,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Date;
 
-public class AnalyticTable extends CSVTable implements com.cisco.josouthe.database.AnalyticTable {
+public class AnalyticTable extends CSVTable implements IAnalyticTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
     private File baseDir;
     private String headerLine;

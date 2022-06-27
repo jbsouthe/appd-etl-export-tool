@@ -3,6 +3,7 @@ package com.cisco.josouthe.database.mysql;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.IEventTable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -10,7 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 
-public class EventTable extends MySQLTable implements com.cisco.josouthe.database.EventTable {
+public class EventTable extends MySQLTable implements IEventTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
 
     public EventTable( String tableName, Database database ) {

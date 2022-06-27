@@ -3,6 +3,7 @@ package com.cisco.josouthe.database.csv;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.IEventTable;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +14,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Date;
 
-public class EventTable extends CSVTable implements com.cisco.josouthe.database.EventTable {
+public class EventTable extends CSVTable implements IEventTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
     private File baseDir;
 

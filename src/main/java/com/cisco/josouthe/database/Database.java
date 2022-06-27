@@ -45,11 +45,11 @@ public abstract class Database {
     }
 
 
-    public ControlTable getControlTable() { return (ControlTable) controlTable; }
-    protected abstract AnalyticTable getAnalyticTable(Result result );
-    protected abstract EventTable getEventTable(String name );
-    protected abstract MetricTable getMetricTable(String name );
-    protected abstract BaselineTable getBaselineTable(String name );
+    public IControlTable getControlTable() { return (IControlTable) controlTable; }
+    protected abstract IAnalyticTable getAnalyticTable(Result result );
+    protected abstract IEventTable getEventTable(String name );
+    protected abstract IMetricTable getMetricTable(String name );
+    protected abstract IBaselineTable getBaselineTable(String name );
 
     public abstract boolean isDatabaseAvailable();
 
@@ -83,7 +83,7 @@ public abstract class Database {
         for( MetricData metric : metricData ) {
             if( "METRIC DATA NOT FOUND".equals(metric.metricName) ) continue;
             cntStarted+=metric.metricValues.size();
-            MetricTable table = (MetricTable) getMetricTable(metric.targetTable);
+            IMetricTable table = (IMetricTable) getMetricTable(metric.targetTable);
             long startTimeTransaction = Utility.now();
             cntFinished += table.insert(metric);
             cntAverageCalc++;
@@ -112,7 +112,7 @@ public abstract class Database {
         long minDurationTime = Long.MAX_VALUE;
         for( BaselineData baseline : baselineData ) {
             cntStarted+=baseline.dataTimeslices.size();
-            BaselineTable table = (BaselineTable) getBaselineTable(baseline.targetTable);
+            IBaselineTable table = (IBaselineTable) getBaselineTable(baseline.targetTable);
             long startTimeTransaction = Utility.now();
             cntFinished += table.insert(baseline);
             cntAverageCalc++;
@@ -141,7 +141,7 @@ public abstract class Database {
         for( EventData event : events ) {
             cntStarted++;
             long startTimeTransaction = Utility.now();
-            EventTable table = (EventTable) getEventTable(event.targetTable);
+            IEventTable table = (IEventTable) getEventTable(event.targetTable);
             cntFinished += table.insert(event);
             long durationTimeTransaction = Utility.now() - startTimeTransaction;
             if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;
@@ -167,7 +167,7 @@ public abstract class Database {
             if( result.results == null ) continue;
             cntStarted+=result.results.length;
             long startTimeTransaction = Utility.now();
-            AnalyticTable table = (AnalyticTable) getAnalyticTable(result);
+            IAnalyticTable table = (IAnalyticTable) getAnalyticTable(result);
             cntFinished += table.insert(result);
             long durationTimeTransaction = Utility.now() - startTimeTransaction;
             if( durationTimeTransaction > maxDurationTime ) maxDurationTime = durationTimeTransaction;

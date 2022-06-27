@@ -1,5 +1,5 @@
 package com.cisco.josouthe.database;
 
-public interface MetricTable {
+public interface IMetricTable {
     public int insert( Object object );
 }

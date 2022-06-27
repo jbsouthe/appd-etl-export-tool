@@ -3,13 +3,14 @@ package com.cisco.josouthe.database.csv;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.IControlTable;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 
-public class ControlTable extends CSVTable implements com.cisco.josouthe.database.ControlTable {
+public class ControlTable extends CSVTable implements IControlTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
     private int defaultLoadNumberOfHoursIfControlRowMissing = 48;
     private File baseDir;
