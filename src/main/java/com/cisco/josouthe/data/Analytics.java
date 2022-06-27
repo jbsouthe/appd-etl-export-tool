@@ -3,7 +3,7 @@ package com.cisco.josouthe.data;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.database.ControlEntry;
-import com.cisco.josouthe.database.ControlTable;
+import com.cisco.josouthe.database.IControlTable;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.HttpClientFactory;
@@ -78,7 +78,7 @@ public class Analytics {
     ArrayList<Search> searches = new ArrayList<>();
     HttpClient client = null;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    ControlTable controlTable = null;
+    IControlTable controlTable = null;
     final ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
         private String uri = "Unset";
         public void setUri( String uri ) { this.uri=uri; }
@@ -116,7 +116,7 @@ public class Analytics {
         this.searches=searches;
     }
 
-    public void setControlTable(ControlTable controlTable) {
+    public void setControlTable(IControlTable controlTable) {
         this.controlTable=controlTable;
     }
 

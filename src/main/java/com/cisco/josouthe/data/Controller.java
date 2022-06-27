@@ -11,7 +11,7 @@ import com.cisco.josouthe.data.model.Node;
 import com.cisco.josouthe.data.model.Tier;
 import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.database.ControlEntry;
-import com.cisco.josouthe.database.ControlTable;
+import com.cisco.josouthe.database.IControlTable;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.HttpClientFactory;
 import com.cisco.josouthe.util.Utility;
@@ -54,7 +54,7 @@ public class Controller {
     private AccessToken accessToken = null;
     public Application[] applications = null;
     public Model controllerModel = null;
-    private ControlTable controlTable = null;
+    private IControlTable controlTable = null;
     private boolean getAllAnalyticsSearchesFlag = false;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
@@ -92,7 +92,7 @@ public class Controller {
 
     public boolean isGetAllAnalyticsSearchesFlag() { return getAllAnalyticsSearchesFlag; }
 
-    public void setControlTable( ControlTable table ) { this.controlTable=table; }
+    public void setControlTable( IControlTable table ) { this.controlTable=table; }
 
     public String getBearerToken() {
         if( isAccessTokenExpired() && !refreshAccessToken()) return null;

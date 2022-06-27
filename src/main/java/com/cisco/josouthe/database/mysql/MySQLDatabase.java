@@ -2,9 +2,7 @@ package com.cisco.josouthe.database.mysql;
 
 import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.data.analytic.Result;
-import com.cisco.josouthe.database.ColumnFeatures;
-import com.cisco.josouthe.database.Database;
-import com.cisco.josouthe.database.Table;
+import com.cisco.josouthe.database.*;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -83,45 +81,45 @@ public class MySQLDatabase extends Database {
         return false;
     }
 
-    protected com.cisco.josouthe.database.MetricTable getMetricTable(String name ) {
+    protected IMetricTable getMetricTable(String name ) {
         if( name != null ) {
             if( ! this.tablesMap.containsKey(name) ) {
                 Table table = new MetricTable(name, this);
                 this.tablesMap.put(name,table);
             }
-            return (com.cisco.josouthe.database.MetricTable) this.tablesMap.get(name);
+            return (IMetricTable) this.tablesMap.get(name);
         }
-        return (com.cisco.josouthe.database.MetricTable) this.defaultMetricTable;
+        return (IMetricTable) this.defaultMetricTable;
     }
 
-    protected com.cisco.josouthe.database.BaselineTable getBaselineTable(String name ) {
+    protected IBaselineTable getBaselineTable(String name ) {
         if( name != null ) {
             if( ! this.tablesMap.containsKey(name) ) {
                 Table table = new BaselineTable(name, this);
                 this.tablesMap.put(name,table);
             }
-            return (com.cisco.josouthe.database.BaselineTable) this.tablesMap.get(name);
+            return (IBaselineTable) this.tablesMap.get(name);
         }
-        return (com.cisco.josouthe.database.BaselineTable) this.defaultBaselineTable;
+        return (IBaselineTable) this.defaultBaselineTable;
     }
 
-    protected com.cisco.josouthe.database.EventTable getEventTable(String name ) {
+    protected IEventTable getEventTable(String name ) {
         if( name != null  ) {
             if (!this.tablesMap.containsKey(name)) {
                 Table table = new EventTable(name, this);
                 this.tablesMap.put(name,table);
             }
-            return (com.cisco.josouthe.database.EventTable) this.tablesMap.get(name);
+            return (IEventTable) this.tablesMap.get(name);
         }
-        return (com.cisco.josouthe.database.EventTable) this.defaulEventTable;
+        return (IEventTable) this.defaulEventTable;
     }
 
-    protected com.cisco.josouthe.database.AnalyticTable getAnalyticTable(Result result ) {
+    protected IAnalyticTable getAnalyticTable(Result result ) {
         if( !this.tablesMap.containsKey(result.targetTable) ) {
-            com.cisco.josouthe.database.AnalyticTable analyticTable = new AnalyticTable( result, this);
+            IAnalyticTable analyticTable = new AnalyticTable( result, this);
             this.tablesMap.put(result.targetTable, (Table) analyticTable);
         }
-        return (com.cisco.josouthe.database.AnalyticTable) this.tablesMap.get(result.targetTable);
+        return (IAnalyticTable) this.tablesMap.get(result.targetTable);
     }
     public Connection getConnection() throws SQLException {
         logger.trace("Getting Connection to DB for user %s",this.user);

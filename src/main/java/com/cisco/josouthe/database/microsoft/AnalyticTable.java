@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.analytic.Field;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.IAnalyticTable;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +14,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.ParseException;
 
-public class AnalyticTable extends MicrosoftTable implements com.cisco.josouthe.database.AnalyticTable {
+public class AnalyticTable extends MicrosoftTable implements IAnalyticTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
 
     public AnalyticTable(Result result, Database database ) {

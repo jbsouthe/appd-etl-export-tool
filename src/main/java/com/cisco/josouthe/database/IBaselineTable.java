@@ -1,5 +1,5 @@
 package com.cisco.josouthe.database;
 
-public interface AnalyticTable {
+public interface IBaselineTable {
     public int insert( Object object );
 }

@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.data.metric.MetricValue;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.IMetricTable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,7 +12,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 
 
-public class MetricTable extends MicrosoftTable implements com.cisco.josouthe.database.MetricTable {
+public class MetricTable extends MicrosoftTable implements IMetricTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
 
     public MetricTable(String tableName, Database database ) {

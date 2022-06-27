@@ -5,6 +5,7 @@ import com.cisco.josouthe.data.metric.BaselineTimeslice;
 import com.cisco.josouthe.data.metric.MetricValue;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.database.IBaselineTable;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +14,7 @@ import java.io.*;
 import java.util.Date;
 
 
-public class BaselineTable extends CSVTable implements com.cisco.josouthe.database.BaselineTable {
+public class BaselineTable extends CSVTable implements IBaselineTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
     private File baseDir;
 
