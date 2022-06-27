@@ -1,21 +1,30 @@
 package com.cisco.josouthe;
 
-import com.cisco.josouthe.data.*;
+import com.cisco.josouthe.data.Analytics;
+import com.cisco.josouthe.data.Application;
+import com.cisco.josouthe.data.Controller;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.csv.CSVDatabase;
 import com.cisco.josouthe.database.microsoft.MicrosoftDatabase;
 import com.cisco.josouthe.database.mysql.MySQLDatabase;
 import com.cisco.josouthe.database.oracle.OracleDatabase;
+import com.cisco.josouthe.database.postgresql.PGSQLDatabase;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
 import org.apache.commons.digester3.Digester;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
 
 public class Configuration {
     private static final Logger logger = LogManager.getFormatterLogger();
@@ -305,6 +314,10 @@ public class Configuration {
             }
             case "mysql": {
                 this.database = new MySQLDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                break;
+            }
+            case "postgresql": {
+                this.database = new PGSQLDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
                 break;
             }
             default: {
