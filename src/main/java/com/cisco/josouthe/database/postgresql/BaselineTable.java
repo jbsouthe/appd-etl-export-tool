@@ -24,10 +24,10 @@ public class BaselineTable extends PGSQLTable implements IBaselineTable {
         columns.put("metricname", new ColumnFeatures("metricname", "varchar", 200, false));
         columns.put("baseline", new ColumnFeatures("baseline", "varchar", 200, false));
         columns.put("frequency", new ColumnFeatures("frequency", "varchar", 50, false));
-        columns.put("userange", new ColumnFeatures("userange", "tinyint", 1, false));
+        columns.put("userange", new ColumnFeatures("userange", "boolean", -1, false));
         for( String columnName : new String[] { "metricid","starttimeinmillis", "occurrences", "currentvalue", "min", "max", "count", "sum", "value"})
-            columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "bigint", 2, false));
-        columns.put("standarddeviation", new ColumnFeatures("standarddeviation", "decimal", 20, false));
+            columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "bigint", -1, false));
+        columns.put("standarddeviation", new ColumnFeatures("standarddeviation", "decimal", -1, false));
         columns.put("starttimestamp", new ColumnFeatures("starttimestamp", "timestamp", -1, false));
         this.initTable();
     }
@@ -60,7 +60,7 @@ public class BaselineTable extends PGSQLTable implements IBaselineTable {
                 preparedStatement.setString(parameterIndex++, fitToSize(baselineData.baseline.name, "baseline"));
                 preparedStatement.setString(parameterIndex++, fitToSize(baselineData.frequency, "frequency"));
                 preparedStatement.setLong(parameterIndex++, baselineData.metricId);
-                preparedStatement.setInt(parameterIndex++, (metricValue.useRange ? 1: 0 ));
+                preparedStatement.setBoolean(parameterIndex++, metricValue.useRange);
                 preparedStatement.setLong(parameterIndex++, baselineTimeslice.startTime);
                 preparedStatement.setLong(parameterIndex++, metricValue.occurrences);
                 preparedStatement.setLong(parameterIndex++, metricValue.current);

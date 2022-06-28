@@ -18,13 +18,13 @@ public class EventTable extends PGSQLTable implements IEventTable {
         super(tableName, "Event Table", database);
         columns.put("controller", new ColumnFeatures("controller", "varchar", 50, false));
         columns.put("application", new ColumnFeatures("application", "varchar", 50, false));
-        columns.put("id", new ColumnFeatures("id", "bigint", 20, false));
-        columns.put("eventtime", new ColumnFeatures("eventtime", "bigint", 20, false));
+        columns.put("id", new ColumnFeatures("id", "bigint", -1, false));
+        columns.put("eventtime", new ColumnFeatures("eventtime", "bigint", -1, false));
         columns.put("type", new ColumnFeatures("type", "varchar", 50, false));
         columns.put("subtype", new ColumnFeatures("subtype", "varchar", 50, true));
         columns.put("severity", new ColumnFeatures("severity", "varchar", 20, false));
         columns.put("summary", new ColumnFeatures("summary", "varchar", 120, true));
-        columns.put("triggeredentityid", new ColumnFeatures("triggeredentityid", "bigint", 20, false));
+        columns.put("triggeredentityid", new ColumnFeatures("triggeredentityid", "bigint", -1, false));
         columns.put("triggeredentityname", new ColumnFeatures("triggeredentityname", "varchar", 120, true));
         columns.put("triggeredentitytype", new ColumnFeatures("triggeredentitytype", "varchar", 120, false));
         columns.put("eventtimestamp", new ColumnFeatures("eventtimestamp", "timestamp", -1, false));

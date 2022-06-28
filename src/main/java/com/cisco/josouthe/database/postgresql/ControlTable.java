@@ -22,7 +22,7 @@ public class ControlTable extends PGSQLTable implements IControlTable {
         columns.put("controller", new ColumnFeatures("controller", "varchar", 120, false, true));
         columns.put("application", new ColumnFeatures("application", "varchar", 120, false, true));
         columns.put("datatype", new ColumnFeatures("datatype", "varchar", 50, false, true));
-        columns.put("lastruntimestamp", new ColumnFeatures("lastruntimestamp", "bigint", 20, false));
+        columns.put("lastruntimestamp", new ColumnFeatures("lastruntimestamp", "bigint", -1, false));
         initTable();
     }
 
@@ -42,7 +42,8 @@ public class ControlTable extends PGSQLTable implements IControlTable {
         controlEntry.type=dataType;
         Long timeStamp = null;
         try (Connection conn = database.getConnection(); Statement statement = conn.createStatement(); ){
-            String query = String.format(" select lastRunTimestamp from %s where lower(controller) like lower(\"%s\") and lower(application) like lower(\"%s\") and lower(dataType) like lower(\"%s\") ", this.name, controller, application, dataType);
+            String query = String.format(" select lastRunTimestamp from %s where lower(controller) like lower('%s') and lower(application) like lower('%s') and lower(dataType) like lower('%s') ", this.name, controller, application, dataType);
+            logger.trace("SQL: '%s'", query);
             ResultSet resultSet = statement.executeQuery(query);
             if( resultSet.next() ) {
                 timeStamp = resultSet.getLong(1);
