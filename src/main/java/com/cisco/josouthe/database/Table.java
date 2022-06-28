@@ -77,14 +77,14 @@ public abstract class Table {
             if( column.isWrongNullable || column.isWrongType ) {
                 ColumnFeatures columnFeatures = getColumns().get(column.name);
                 if( columnFeatures == null ) logger.warn("Abbout to error because getColumns().get(%s) returns null",column.name);
-                logger.warn("We can't fix this problem with the table %s.%s, wrong nullable: %s, wrong type: %s is %s but should be", getName(), column.name, column.isWrongNullable, column.isWrongType, column.type, columnFeatures.type);
+                logger.warn("We can't fix this problem with the table '%s.%s', wrong nullable: '%s', wrong type: '%s' is '%s' but should be '%s'", getName(), column.name, column.isWrongNullable, column.isWrongType, column.type, columnFeatures.type);
             }
             if( column.isWrongSize && !column.isWrongType ) {
                 ColumnFeatures columnFeatures = getColumnDefinition(column.name);
                 if( columnFeatures != null && column.size < columnFeatures.size ) { //we can increase column size
                     alterTableToIncreaseColumnSize(column, columnFeatures.size);
                 } else {
-                    logger.trace("We can't fix this problem with the table %s.%s, actual column size(%d) is larger than required(%d), this arguably isn't a problem now that i think about it",getName(),column.name, column.size, columnFeatures.size);
+                    //logger.trace("We can't fix this problem with the table %s.%s, actual column size(%d) is larger than required(%d), this arguably isn't a problem now that i think about it",getName(),column.name, column.size, columnFeatures.size);
                 }
             }
         }

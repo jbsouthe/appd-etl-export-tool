@@ -23,7 +23,7 @@ public class MetricTable extends PGSQLTable implements IMetricTable {
         columns.put("metricname", new ColumnFeatures("metricName", "varchar", 200, false));
         columns.put("metricpath", new ColumnFeatures("metricPath", "varchar", 200, false));
         columns.put("frequency", new ColumnFeatures("frequency", "varchar", 50, false));
-        columns.put("userange", new ColumnFeatures("userange", "tinyint", 1, false));
+        columns.put("userange", new ColumnFeatures("userange", "boolean", -1, false));
         for( String columnName : new String[] { "metricid","starttimeinmillis", "occurrences", "currentvalue", "min", "max", "count", "sum", "value"})
             columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "bigint", -1, false));
         columns.put("standarddeviation", new ColumnFeatures("standarddeviation", "decimal", -1, false));
@@ -50,7 +50,7 @@ public class MetricTable extends PGSQLTable implements IMetricTable {
                 preparedStatement.setString(parameterIndex++, fitToSize(metric.metricPath, "metricpath"));
                 preparedStatement.setString(parameterIndex++, metric.frequency);
                 preparedStatement.setLong(parameterIndex++, metric.metricId);
-                preparedStatement.setInt(parameterIndex++, (metricValue.useRange ? 1: 0 ));
+                preparedStatement.setBoolean(parameterIndex++, metricValue.useRange);
                 preparedStatement.setLong(parameterIndex++, metricValue.startTimeInMillis);
                 preparedStatement.setLong(parameterIndex++, metricValue.occurrences);
                 preparedStatement.setLong(parameterIndex++, metricValue.current);

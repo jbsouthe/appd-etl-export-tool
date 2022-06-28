@@ -80,7 +80,7 @@ public abstract class PGSQLTable extends Table {
             ResultSet resultSet = statement.executeQuery(query);
             while( resultSet.next() ) {
                 String columnName = resultSet.getString(1);
-                String columnType = resultSet.getString(2);
+                String columnType = normalizeTypeString(resultSet.getString(2));
                 int columnSize = resultSet.getInt(3);
                 String columnNullable = resultSet.getString(4);
                 ColumnFeatures columnFeatures = new ColumnFeatures(columnName, columnType, columnSize, ("NO".equals(columnNullable) ? false : true));
@@ -91,6 +91,16 @@ public abstract class PGSQLTable extends Table {
             logger.error("Error describing table %s, Exception: %s", getName(), exception.toString());
         }
         return tableColumns;
+    }
+
+    private String normalizeTypeString( String dbType ) {
+        String newType=dbType;
+        switch (dbType) {
+            case "character varying": return "varchar";
+            case "timestamp without time zone": return "timestamp";
+            case "numeric": return "decimal";
+        }
+        return newType;
     }
 
     protected boolean doesTableExist() {
