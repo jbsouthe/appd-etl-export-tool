@@ -10,11 +10,11 @@ The execution of this utility requires a Java VM v1.11 or greater, and the follo
     <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.8.9</version>
+        <version>2.9.0</version>
     </dependency>
 * asm-3.3.1.jar
 * cglib-2.2.2.jar
-* gson-2.8.9.jar
+* gson-2.9.0.jar
 
 ###Apache HTTP Client - for restful API requests to the AppDynamics Controller
 
@@ -44,15 +44,15 @@ The execution of this utility requires a Java VM v1.11 or greater, and the follo
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
-        <version>2.17.1</version>
+        <version>2.17.2</version>
     </dependency>
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
-        <version>2.17.1</version>
+        <version>2.17.2</version>
     </dependency>
-* log4j-api-2.17.1.jar
-* log4j-core-2.17.1.jar
+* log4j-api-2.17.2.jar
+* log4j-core-2.17.2.jar
 
 ###Oracle JDBC Driver (needed if connecting to an Oracle DB)
 
@@ -63,6 +63,22 @@ The execution of this utility requires a Java VM v1.11 or greater, and the follo
     </dependency>
 * ojdbc8-21.3.0.0.jar
 
+###Postgresql JDBC Driver (needed if connecting to a PostgreSQL database)
+
+    <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>42.4.0</version>
+    </dependency>
+* postgresql-42.4.0.jar 
+
+###MySQL JDBC Driver (needed if connecting to a MySQL database)
+    <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+        <version>8.0.29</version>
+    </dependency>
+* mysql-connector-java-8.0.29.jar
 
 ###Hikaru Connection Pooling Library - for database connection pools
 
