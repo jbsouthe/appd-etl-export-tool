@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: appd-etl-tool
+spec:
+  containers:
+  - name: appd-etl-tool
+    image: johnsoutherland/appdynamics-etl-tool:1.2
+    imagePullPolicy: Always
+#    resources:
+#        requests:
+#            memory: "1024Mi"
+#            cpu: "2"
+    volumeMounts:
+    - name: my-config
+      mountPath: /config
+  volumes:
+  - name: my-config
+    configMap:
+      name: csv-etl-config

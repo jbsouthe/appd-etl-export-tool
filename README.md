@@ -3,95 +3,15 @@
 The purpose of this utility is to run an export of AppDynamics Metrics, Events, and Analytics Searches and insert that data into either a database or Comma Separated Value file.
 One of the benefits of this utility is that it doesn't require any database schema creation, and will automatically create tables and columns as needed, dynamically during execution.
 
-The execution of this utility requires a Java VM v1.11 or greater, and the following external libraries:
+Supported Databases:
+* Oracle
+* MySQL
+* PostgreSQL
+* CSV Files
 
-###Google GSON - for JSON conversion to java classes
+The execution of this utility requires a Java VM v1.11 or greater
 
-    <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>2.9.0</version>
-    </dependency>
-* asm-3.3.1.jar
-* cglib-2.2.2.jar
-* gson-2.9.0.jar
-
-###Apache HTTP Client - for restful API requests to the AppDynamics Controller
-
-    <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>4.5.13</version>
-    </dependency>
-
-* httpclient-4.5.13.jar
-* httpcore-4.4.13.jar
-
-###Apache Commons Digester - for XML Configuration file processing
-
-    <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-digester3</artifactId>
-        <version>3.2</version>
-    </dependency>
-* commons-beanutils-1.8.3.jar
-* commons-codec-1.11.jar
-* commons-digester3-3.2.jar
-* commons-logging-1.1.1.jar
-
-###Log4j - for formatted log messages
-
-    <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-api</artifactId>
-        <version>2.17.2</version>
-    </dependency>
-    <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>2.17.2</version>
-    </dependency>
-* log4j-api-2.17.2.jar
-* log4j-core-2.17.2.jar
-
-###Oracle JDBC Driver (needed if connecting to an Oracle DB)
-
-    <dependency>
-        <groupId>com.oracle.database.jdbc</groupId>
-        <artifactId>ojdbc8</artifactId>
-        <version>21.3.0.0</version>
-    </dependency>
-* ojdbc8-21.3.0.0.jar
-
-###Postgresql JDBC Driver (needed if connecting to a PostgreSQL database)
-
-    <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>42.4.0</version>
-    </dependency>
-* postgresql-42.4.0.jar 
-
-###MySQL JDBC Driver (needed if connecting to a MySQL database)
-    <dependency>
-        <groupId>mysql</groupId>
-        <artifactId>mysql-connector-java</artifactId>
-        <version>8.0.29</version>
-    </dependency>
-* mysql-connector-java-8.0.29.jar
-
-###Hikaru Connection Pooling Library - for database connection pools
-
-    <dependency>
-        <groupId>com.zaxxer</groupId>
-        <artifactId>HikariCP</artifactId>
-        <version>5.0.0</version>
-    </dependency>
-* HikariCP-5.0.0.jar
-
-##Executing the utility requires:
-
-The libraries above are expected in the <current directory>/lib directory and the jar file has this classpath as a default, if a library is upgraded then the classpath will need to be updated as well or overridden.
+##Executing the utility:
 
 The command line to execute is:
 
@@ -247,3 +167,48 @@ Multiple Analytics Sections can be defined, but the Global Account Name must be 
         <LinkToControllerHostname>southerland-test.saas.appdynamics.com</LinkToControllerHostname>
         <Search name="UniqueTransactionCount" limit="20000">SELECT transactionName, count(*) FROM transactions</Search> <!--limit is optional and defaults to 20000, name must be unique for this section -->
     </Analytics>
+
+#Running in Kubernetes
+
+This utility can be run as a kubernetes pod by either using the public image, or creating a custom image in your own hosting environment. Check the examples in the ./container directory, or use this information
+
+Dockerfile:
+
+    FROM adoptopenjdk/openjdk11:latest
+    #version and build date for the deployment file, which should be copied to this directory for building
+    ENV VERSION 1.2
+    ENV BUILD_DATE 20220714
+    COPY appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz /tmp
+    RUN tar xzvf /tmp/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz
+    WORKDIR /appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}/ETL-Tool
+    CMD ["java", "-jar", "ETLExportTool.jar", "/config/etl-tool-config.xml"]
+
+
+Create the image, and publish it to your repo. Of course the ./target/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz file must be copied to your docker build dir
+
+Prepare a ConfigMap of the XML configuration file by creating a configuration and then naming it "etl-tool-config.xml" and create a configmap from file named for your configuration
+
+    kubectl create configmap csv-etl-config --from-file=etl-tool-config.xml
+
+now make a deployment for this, using this example and modifying it to your liking:
+
+    apiVersion: v1
+    kind: Pod
+    metadata:
+     name: appd-etl-tool
+    spec:
+        containers:
+        - name: appd-etl-tool
+          image: johnsoutherland/appdynamics-etl-tool:1.2
+          imagePullPolicy: Always
+        resources:
+            requests:
+                memory: "1024Mi"
+                cpu: "2"
+        volumeMounts:
+        - name: my-config
+          mountPath: /config
+        volumes:
+        - name: my-config
+          configMap:
+          name: csv-etl-config
