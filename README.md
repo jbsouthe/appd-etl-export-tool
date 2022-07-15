@@ -19,6 +19,58 @@ The command line to execute is:
 
 It is assumed the XML config file is the first and only argument. Also expected that a log4j2.xml is in the current working directory
 
+###Running in Kubernetes
+
+This utility can be run as a kubernetes pod by either using the public image "johnsoutherland/appdynamics-etl-tool:1.2", or creating a custom image in your own hosting environment. Check the examples in the ./container directory, or use this information
+
+####Create local Docker image, Optional
+
+Dockerfile:
+
+    FROM adoptopenjdk/openjdk11:latest
+    #version and build date for the deployment file, which should be copied to this directory for building
+    ENV VERSION 1.2
+    ENV BUILD_DATE 20220714
+    COPY appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz /tmp
+    RUN tar xzvf /tmp/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz
+    WORKDIR /appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}/ETL-Tool
+    CMD ["java", "-jar", "ETLExportTool.jar", "/config/etl-tool-config.xml"]
+
+
+Create the image, and publish it to your repo. Of course the ./target/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz file must be copied to your docker build dir, the release tar.gz is the image we are talking about in this section.
+
+####ConfigMap of XML Config File
+
+Prepare a ConfigMap of the XML configuration file by creating a configuration and then naming it "etl-tool-config.xml" and create a configmap from file named for your configuration
+
+    kubectl create configmap csv-etl-config --from-file=etl-tool-config.xml
+
+####Deployment Descriptor, with public image
+
+now make a deployment for this, using this example and modifying it to your liking:
+
+    apiVersion: v1
+    kind: Pod
+    metadata:
+     name: appd-etl-tool
+    spec:
+        containers:
+        - name: appd-etl-tool
+          image: johnsoutherland/appdynamics-etl-tool:1.2
+          imagePullPolicy: Always
+        resources:
+            requests:
+                memory: "1024Mi"
+                cpu: "2"
+        volumeMounts:
+        - name: my-config
+          mountPath: /config
+        volumes:
+        - name: my-config
+          configMap:
+          name: csv-etl-config
+
+
 ###Proxy Configuration
 
 If proxy support is required, set the following arguments before the -jar arguement:
@@ -47,6 +99,7 @@ or, to manually specify the host, port, and NTLM authentication:
      -Dhttp.proxyDomain=NT_DOMAIN
 
 ## Configure Logging
+
 Here is an example, simple log4j2.xml file as a starting point:
 
     <?xml version="1.0" encoding="UTF-8"?>
@@ -81,6 +134,7 @@ The sections are assumed to be in this order:
     </ETLTool>
 
 #Scheduler Section
+
 This section configures whether the utility runs only one iteration and exits, or sleeps and runs again repeatedly.
 Also, we can specify how much historical data to load if no previous run has been detected, otherwise we only load data since that last run.
 
@@ -102,6 +156,7 @@ The default settings are shown:
 * ConfigurationRefreshEveryHours 12, after this many hours, all the applications with the configuration setting to pull all metrics, will refresh the metrics in case new ones are registered since start.
 
 #TargetDB Section
+
 This section configures the destination for the extracted data. 
 We support only Oracle and CSV Files as of this document's writing.
 Other databases will need some development for SQL compatibility and of course different JDBC drivers to be included on the class path.
@@ -128,6 +183,7 @@ An example config is shown with some default options specified:
 * DefaultBaselineTable is used when the Application has not specified a table for baseline data
 
 #Controller Section
+
 Multiple Controller Sections can be defined, but the url must be unique.
 
     <Controller getAllAnalyticsSearches="false">
@@ -157,6 +213,7 @@ Multiple Controller Sections can be defined, but the url must be unique.
     </Controller>
 
 #Analytics Section
+
 Multiple Analytics Sections can be defined, but the Global Account Name must be unique for each.
 
     <Analytics>
@@ -167,48 +224,3 @@ Multiple Analytics Sections can be defined, but the Global Account Name must be 
         <LinkToControllerHostname>southerland-test.saas.appdynamics.com</LinkToControllerHostname>
         <Search name="UniqueTransactionCount" limit="20000">SELECT transactionName, count(*) FROM transactions</Search> <!--limit is optional and defaults to 20000, name must be unique for this section -->
     </Analytics>
-
-#Running in Kubernetes
-
-This utility can be run as a kubernetes pod by either using the public image, or creating a custom image in your own hosting environment. Check the examples in the ./container directory, or use this information
-
-Dockerfile:
-
-    FROM adoptopenjdk/openjdk11:latest
-    #version and build date for the deployment file, which should be copied to this directory for building
-    ENV VERSION 1.2
-    ENV BUILD_DATE 20220714
-    COPY appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz /tmp
-    RUN tar xzvf /tmp/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz
-    WORKDIR /appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}/ETL-Tool
-    CMD ["java", "-jar", "ETLExportTool.jar", "/config/etl-tool-config.xml"]
-
-
-Create the image, and publish it to your repo. Of course the ./target/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz file must be copied to your docker build dir
-
-Prepare a ConfigMap of the XML configuration file by creating a configuration and then naming it "etl-tool-config.xml" and create a configmap from file named for your configuration
-
-    kubectl create configmap csv-etl-config --from-file=etl-tool-config.xml
-
-now make a deployment for this, using this example and modifying it to your liking:
-
-    apiVersion: v1
-    kind: Pod
-    metadata:
-     name: appd-etl-tool
-    spec:
-        containers:
-        - name: appd-etl-tool
-          image: johnsoutherland/appdynamics-etl-tool:1.2
-          imagePullPolicy: Always
-        resources:
-            requests:
-                memory: "1024Mi"
-                cpu: "2"
-        volumeMounts:
-        - name: my-config
-          mountPath: /config
-        volumes:
-        - name: my-config
-          configMap:
-          name: csv-etl-config
