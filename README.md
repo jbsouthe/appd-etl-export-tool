@@ -11,7 +11,7 @@ Supported Databases:
 
 The execution of this utility requires a Java VM v1.11 or greater
 
-##Executing the utility:
+## Executing the utility:
 
 The command line to execute is:
 
@@ -19,11 +19,11 @@ The command line to execute is:
 
 It is assumed the XML config file is the first and only argument. Also expected that a log4j2.xml is in the current working directory
 
-###Running in Kubernetes
+### Running in Kubernetes
 
 This utility can be run as a kubernetes pod by either using the public image "johnsoutherland/appdynamics-etl-tool:1.2", or creating a custom image in your own hosting environment. Check the examples in the ./container directory, or use this information
 
-####Create local Docker image, Optional
+#### Create local Docker image, Optional
 
 Dockerfile:
 
@@ -39,13 +39,13 @@ Dockerfile:
 
 Create the image, and publish it to your repo. Of course the ./target/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz file must be copied to your docker build dir, the release tar.gz is the image we are talking about in this section.
 
-####ConfigMap of XML Config File
+#### ConfigMap of XML Config File
 
 Prepare a ConfigMap of the XML configuration file by creating a configuration and then naming it "etl-tool-config.xml" and create a configmap from file named for your configuration
 
     kubectl create configmap csv-etl-config --from-file=etl-tool-config.xml
 
-####Deployment Descriptor, with public image
+#### Deployment Descriptor, with public image
 
 now make a deployment for this, using this example and modifying it to your liking:
 
@@ -71,7 +71,7 @@ now make a deployment for this, using this example and modifying it to your liki
           name: csv-etl-config
 
 
-###Proxy Configuration
+### Proxy Configuration
 
 If proxy support is required, set the following arguments before the -jar arguement:
     
@@ -119,7 +119,7 @@ Here is an example, simple log4j2.xml file as a starting point:
       </Loggers>
     </Configuration>
 
-##Configure the Extraction Tool
+## Configure the Extraction Tool
 
 For this utility to run, a configuration must be in place that is minimally viable, and if it is not, then we will exit with helpful messages.
 This file is XML format with specific sections and options that those sections can use to override defaults and apply to other sections in heiarchy.
@@ -133,7 +133,7 @@ The sections are assumed to be in this order:
         <Analytics></Analytics> <!-- can be repeated -->
     </ETLTool>
 
-#Scheduler Section
+### Scheduler Section
 
 This section configures whether the utility runs only one iteration and exits, or sleeps and runs again repeatedly.
 Also, we can specify how much historical data to load if no previous run has been detected, otherwise we only load data since that last run.
@@ -155,7 +155,7 @@ The default settings are shown:
 * DatabaseThreads 50, the number of worker threads watching the data queue to insert into the database
 * ConfigurationRefreshEveryHours 12, after this many hours, all the applications with the configuration setting to pull all metrics, will refresh the metrics in case new ones are registered since start.
 
-#TargetDB Section
+### TargetDB Section
 
 This section configures the destination for the extracted data. 
 We support only Oracle and CSV Files as of this document's writing.
@@ -182,7 +182,7 @@ An example config is shown with some default options specified:
 * DefaultEventTable is used for events when no other table is specified, similar to the DefaultMetricTable above
 * DefaultBaselineTable is used when the Application has not specified a table for baseline data
 
-#Controller Section
+### Controller Section
 
 Multiple Controller Sections can be defined, but the url must be unique.
 
@@ -212,7 +212,7 @@ Multiple Controller Sections can be defined, but the url must be unique.
         </Application>
     </Controller>
 
-#Analytics Section
+### Analytics Section
 
 Multiple Analytics Sections can be defined, but the Global Account Name must be unique for each.
 
