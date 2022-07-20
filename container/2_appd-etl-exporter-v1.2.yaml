@@ -5,7 +5,12 @@ metadata:
 spec:
   containers:
   - name: appd-etl-tool
-    image: johnsoutherland/appdynamics-etl-tool:1.2
+    image: johnsoutherland/appdynamics-etl-tool:1.3
+    env:
+    - name: CONFIG_FILE 
+      value: "/config/etl-tool-config.xml"
+    - name: JAVA_OPT
+      value: "-XX:+TraceClassLoading -verbose:class"
     imagePullPolicy: Always
 #    resources:
 #        requests:
