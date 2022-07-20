@@ -21,7 +21,7 @@ It is assumed the XML config file is the first and only argument. Also expected 
 
 ### Running in Kubernetes
 
-This utility can be run as a kubernetes pod by either using the public image "johnsoutherland/appdynamics-etl-tool:1.2", or creating a custom image in your own hosting environment. Check the examples in the ./container directory, or use this information
+This utility can be run as a kubernetes pod by either using the public image "johnsoutherland/appdynamics-etl-tool:1.2", or creating a custom image in your own hosting environment. Check the examples in the ./container directory, or use this information. https://hub.docker.com/r/johnsoutherland/appdynamics-etl-tool/tags
 
 #### Create local Docker image, Optional
 
@@ -31,17 +31,18 @@ Dockerfile:
     #version and build date for the deployment file, which should be copied to this directory for building
     ENV VERSION 1.2
     ENV BUILD_DATE 20220714
+    ENV CONFIG_FILE /config/etl-tool-config.xml
     COPY appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz /tmp
     RUN tar xzvf /tmp/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz
     WORKDIR /appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}/ETL-Tool
-    CMD ["java", "-jar", "ETLExportTool.jar", "/config/etl-tool-config.xml"]
+    ENTRYPOINT java ${JAVA_OPT} -jar ETLExportTool.jar ${CONFIG_FILE}
 
 
 Create the image, and publish it to your repo. Of course the ./target/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz file must be copied to your docker build dir, the release tar.gz is the image we are talking about in this section.
 
 #### ConfigMap of XML Config File
 
-Prepare a ConfigMap of the XML configuration file by creating a configuration and then naming it "etl-tool-config.xml" and create a configmap from file named for your configuration
+Prepare a ConfigMap of the XML configuration file by creating a configuration and then naming it, for example, "etl-tool-config.xml" and create a configmap from file named for your configuration
 
     kubectl create configmap csv-etl-config --from-file=etl-tool-config.xml
 
@@ -56,7 +57,12 @@ now make a deployment for this, using this example and modifying it to your liki
     spec:
         containers:
         - name: appd-etl-tool
-          image: johnsoutherland/appdynamics-etl-tool:1.2
+          image: johnsoutherland/appdynamics-etl-tool:1.3
+        env:
+        - name: CONFIG_FILE 
+          value: "/config/etl-tool-config.xml"
+        - name: JAVA_OPT
+          value: "-XX:+TraceClassLoading -verbose:class"
           imagePullPolicy: Always
         resources:
             requests:
@@ -70,6 +76,8 @@ now make a deployment for this, using this example and modifying it to your liki
           configMap:
           name: csv-etl-config
 
+Make sure the config file name is correct to your ConfigMap
+If JAVA_OPTS are needed for something like Proxy Configuration, as below
 
 ### Proxy Configuration
 
