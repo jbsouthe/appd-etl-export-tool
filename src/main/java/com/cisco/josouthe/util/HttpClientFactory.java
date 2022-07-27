@@ -14,6 +14,10 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
+
 public class HttpClientFactory {
     private static final Logger logger = LogManager.getFormatterLogger();
     private static HttpClient httpClient = null;
@@ -49,6 +53,10 @@ public class HttpClientFactory {
                     httpClientBuilder.setProxyAuthenticationStrategy( new ProxyAuthenticationStrategy());
                 }
             }
+            if( isAcceptSelfSignedDefined() ) {
+                HostnameVerifier hv = new HostnameVerifier() { public boolean verify(String urlHostname, SSLSession session) { return true; }};
+                HttpsURLConnection.setDefaultHostnameVerifier(hv);
+            }
             httpClient = httpClientBuilder.build();
         }
         return httpClient;
@@ -67,5 +75,9 @@ public class HttpClientFactory {
     public static boolean isProxyNTLMDefined() {
         return !System.getProperty("http.proxyWorkstation", "unset").equals("unset")
                 && !System.getProperty("http.proxyDomain", "unset").equals("unset");
+    }
+
+    public static boolean isAcceptSelfSignedDefined() {
+        return System.getProperty("allow.self.signed.certs", "false").equals("true");
     }
 }
