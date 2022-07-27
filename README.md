@@ -106,6 +106,13 @@ or, to manually specify the host, port, and NTLM authentication:
      -Dhttp.proxyWorkstation=HOSTNAME
      -Dhttp.proxyDomain=NT_DOMAIN
 
+### Allow Self Signed SSL Certificates
+
+It's probably bad form to allow this via a java property, but this may greatly simplify execution for some people
+
+     -Dallow.self.signed.certs=true
+
+
 ## Configure Logging
 
 Here is an example, simple log4j2.xml file as a starting point:
