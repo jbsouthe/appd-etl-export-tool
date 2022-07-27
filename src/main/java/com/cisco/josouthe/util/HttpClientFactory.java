@@ -7,10 +7,13 @@ import org.apache.http.auth.NTCredentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.ProxyAuthenticationStrategy;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,6 +59,15 @@ public class HttpClientFactory {
             if( isAcceptSelfSignedDefined() ) {
                 HostnameVerifier hv = new HostnameVerifier() { public boolean verify(String urlHostname, SSLSession session) { return true; }};
                 HttpsURLConnection.setDefaultHostnameVerifier(hv);
+                try {
+                    SSLContextBuilder sslContextBuilder = new SSLContextBuilder();
+                    sslContextBuilder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+                    SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslContextBuilder.build());
+                    httpClientBuilder.setSSLSocketFactory(sslsf);
+                } catch (Exception exception) {
+                    logger.warn("Exception raised trying to accept self signed keys, Exception: %s", exception.getMessage());
+                }
+
             }
             httpClient = httpClientBuilder.build();
         }
