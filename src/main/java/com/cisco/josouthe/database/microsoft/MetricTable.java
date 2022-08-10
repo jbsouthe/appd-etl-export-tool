@@ -17,15 +17,15 @@ public class MetricTable extends MicrosoftTable implements IMetricTable {
 
     public MetricTable(String tableName, Database database ) {
         super(tableName,"Metric Table",database);
-        columns.put("controller", new ColumnFeatures("controller", "varchar", 50, false));
-        columns.put("application", new ColumnFeatures("application", "varchar", 50, false));
-        columns.put("metricname", new ColumnFeatures("metricName", "varchar", 200, false));
-        columns.put("metricpath", new ColumnFeatures("metricPath", "varchar", 200, false));
-        columns.put("frequency", new ColumnFeatures("frequency", "varchar", 50, false));
-        columns.put("userange", new ColumnFeatures("userange", "numeric", -1, false));
+        columns.put("controller", new ColumnFeatures("controller", MicrosoftDatabase.STRING_TYPE, 50, false));
+        columns.put("application", new ColumnFeatures("application", MicrosoftDatabase.STRING_TYPE, 50, false));
+        columns.put("metricname", new ColumnFeatures("metricName", MicrosoftDatabase.STRING_TYPE, 200, false));
+        columns.put("metricpath", new ColumnFeatures("metricPath", MicrosoftDatabase.STRING_TYPE, 200, false));
+        columns.put("frequency", new ColumnFeatures("frequency", MicrosoftDatabase.STRING_TYPE, 50, false));
+        columns.put("userange", new ColumnFeatures("userange", MicrosoftDatabase.INTEGER_TYPE, -1, false));
         for( String columnName : new String[] { "metricid","startTimeInMillis", "occurrences", "currentValue", "min", "max", "count", "sum", "value", "standardDeviation"})
-            columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, "numeric", -1, false));
-        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "date", -1, false));
+            columns.put(columnName.toLowerCase(), new ColumnFeatures(columnName, MicrosoftDatabase.INTEGER_TYPE, -1, false));
+        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", MicrosoftDatabase.DATE_TYPE, -1, false));
         this.initTable();
     }
 
@@ -35,7 +35,7 @@ public class MetricTable extends MicrosoftTable implements IMetricTable {
         StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
         insertSQL.append("controller, application, metricname, metricpath, frequency, metricid, userange, ");
         insertSQL.append("startTimeInMillis, occurrences, currentvalue, min, max, count, sum, value, standardDeviation, startTimestamp");
-        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60))");
+        insertSQL.append(") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,dateadd(s, ?/1000, '1970-01-01'))");
         logger.trace("insertMetric SQL: %s",insertSQL);
         try ( Connection conn = database.getConnection(); PreparedStatement preparedStatement = conn.prepareStatement(insertSQL.toString());){
             //for(MetricValue metricValue : metric.metricValues ) {

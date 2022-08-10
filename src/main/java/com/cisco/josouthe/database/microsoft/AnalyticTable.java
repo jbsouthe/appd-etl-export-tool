@@ -19,8 +19,8 @@ public class AnalyticTable extends MicrosoftTable implements IAnalyticTable {
 
     public AnalyticTable(Result result, Database database ) {
         super(result.targetTable, "Analytic Table", database);
-        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", "date", -1, false));
-        columns.put("endTimestamp", new ColumnFeatures("endTimestamp", "date", -1, false));
+        columns.put("startTimestamp", new ColumnFeatures("startTimestamp", MicrosoftDatabase.DATE_TYPE, -1, false));
+        columns.put("endTimestamp", new ColumnFeatures("endTimestamp", MicrosoftDatabase.DATE_TYPE, -1, false));
         for(Field field: result.fields) {
             columns.put( field.label,
                     new ColumnFeatures(database.convertToAcceptableColumnName(field.label, columns.values()),
@@ -35,30 +35,30 @@ public class AnalyticTable extends MicrosoftTable implements IAnalyticTable {
 
     private int getColumnSizeForName(String type) {
         switch(type) {
-            case "string": return database.STRING_SIZE;
-            case "integer": return database.INTEGER_SIZE;
-            case "float": return database.FLOAT_SIZE;
-            case "boolean": return database.BOOLEAN_SIZE;
-            case "date": return database.DATE_SIZE;
+            case "string": return MicrosoftDatabase.STRING_SIZE;
+            case "integer": return MicrosoftDatabase.INTEGER_SIZE;
+            case "float": return MicrosoftDatabase.FLOAT_SIZE;
+            case "boolean": return MicrosoftDatabase.BOOLEAN_SIZE;
+            case "date": return MicrosoftDatabase.DATE_SIZE;
             default: {
                 logger.warn("Unknown data type: %s setting table column size to %s", type, database.STRING_SIZE);
             }
         }
-        return database.STRING_SIZE;
+        return MicrosoftDatabase.STRING_SIZE;
     }
 
     private String getColumnTypeForName(String type) {
         switch(type) {
-            case "string": return database.STRING_TYPE;
-            case "integer": return database.INTEGER_TYPE;
-            case "float": return database.FLOAT_TYPE;
-            case "boolean": return database.BOOLEAN_TYPE;
-            case "date": return database.DATE_TYPE;
+            case "string": return MicrosoftDatabase.STRING_TYPE;
+            case "integer": return MicrosoftDatabase.INTEGER_TYPE;
+            case "float": return MicrosoftDatabase.FLOAT_TYPE;
+            case "boolean": return MicrosoftDatabase.BOOLEAN_TYPE;
+            case "date": return MicrosoftDatabase.DATE_TYPE;
             default: {
                 logger.warn("Unknown data type: %s setting table column type to %s", type, database.STRING_TYPE);
             }
         }
-        return database.STRING_TYPE;
+        return MicrosoftDatabase.STRING_TYPE;
     }
 
     @Override
@@ -69,8 +69,8 @@ public class AnalyticTable extends MicrosoftTable implements IAnalyticTable {
         StringBuilder sqlEnding = new StringBuilder(") VALUES (");
         for( String key : columns.keySet()) {
             sqlBeginning.append(" ").append( getColumns().get(key).name ).append(",");
-            if( columns.get(key).type.equals("date") ) {
-                sqlEnding.append("TO_DATE('19700101','yyyymmdd') + ((?/1000)/24/60/60),");
+            if( columns.get(key).type.equals(MicrosoftDatabase.DATE_TYPE) ) {
+                sqlEnding.append("dateadd(s, ?/1000, '1970-01-01'),");
             } else {
                 sqlEnding.append("?,");
             }

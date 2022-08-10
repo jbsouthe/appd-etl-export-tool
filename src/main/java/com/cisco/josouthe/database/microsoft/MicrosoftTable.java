@@ -63,8 +63,10 @@ public abstract class MicrosoftTable extends Table {
     protected Map<String, ColumnFeatures> getTableColumns() {
         Map<String,ColumnFeatures> tableColumns = new HashMap<>();
         try ( Connection conn = database.getConnection(); Statement statement = conn.createStatement();){
-            String query = String.format("select column_name, data_type, CHARACTER_MAXIMUM_LENGTH, is_nullable "+
-                    "where lower(table_name) like lower('%s')", getName());
+            String query = String.format("select information_schema.columns.column_name, information_schema.columns.data_type, information_schema.columns.character_maximum_length, information_schema.columns.is_nullable\n" +
+                    "from information_schema.columns\n" +
+                    "where lower(information_schema.columns.table_name) like lower('%s')\n" +
+                    "order by information_schema.columns.ordinal_position", getName());
             ResultSet resultSet = statement.executeQuery(query);
             while( resultSet.next() ) {
                 String columnName = resultSet.getString(1);
