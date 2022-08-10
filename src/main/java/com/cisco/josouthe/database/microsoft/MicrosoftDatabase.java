@@ -24,9 +24,9 @@ public class MicrosoftDatabase extends Database {
 
     public static final String STRING_TYPE = "varchar";
     public static final int STRING_SIZE = 120;
-    public static final String INTEGER_TYPE = "numeric";
+    public static final String INTEGER_TYPE = "bigint";
     public static final int INTEGER_SIZE = -1;
-    public static final String DATE_TYPE = "date";
+    public static final String DATE_TYPE = "datetime";
     public static final int DATE_SIZE = -1;
     public static final int MAX_TABLE_NAME_LENGTH=128;
     public static final int MAX_COLUMN_NAME_LENGTH=128;
