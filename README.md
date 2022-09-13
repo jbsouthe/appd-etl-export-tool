@@ -30,7 +30,7 @@ Dockerfile:
 
     FROM adoptopenjdk/openjdk11:latest
     #version and build date for the deployment file, which should be copied to this directory for building
-    ENV VERSION 1.4
+    ENV VERSION 1.5
     ENV BUILD_DATE 20220810
     ENV CONFIG_FILE /config/etl-tool-config.xml
     COPY appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz /tmp
@@ -58,7 +58,7 @@ now make a deployment for this, using this example and modifying it to your liki
     spec:
         containers:
         - name: appd-etl-tool
-          image: johnsoutherland/appdynamics-etl-tool:1.4
+          image: johnsoutherland/appdynamics-etl-tool:1.5
         env:
         - name: CONFIG_FILE 
           value: "/config/etl-tool-config.xml"
