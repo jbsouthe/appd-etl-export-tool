@@ -209,16 +209,4 @@ public class Analytics {
         return results;
     }
 
-    public static void main( String... args ) throws MalformedURLException {
-        Analytics analytics = new Analytics("https://analytics.api.appdynamics.com/", "southerland-test_65322e21-efed-4126-8827-920141a9ac21", "ae7a6973-dd00-4ebb-8bff-b9404d21bb74", null, null);
-        Result[] results = analytics.runAnalyticsQuery("UniqueTransactionCount","SELECT transactionName, count(*) FROM transactions");
-        for( Result result : results)
-            logger.info(result);
-
-        //SELECT transactionName, eventTimestamp, application, segments.tier FROM transactions
-        results = analytics.runAnalyticsQuery("TransactionDetails","SELECT transactionName, eventTimestamp, application, segments.tier, count(*) FROM transactions");
-        for( Result result : results)
-            logger.info(result);
-    }
-
 }

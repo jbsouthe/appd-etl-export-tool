@@ -432,7 +432,7 @@ public class Controller {
         logger.trace("Get Application id for %s",name);
         if( _applicationIdMap == null ) { //go get em
             try {
-                String json = getRequest("controller/restui/applicationManagerUiBean/getApplicationsAllTypes");
+                String json = getRequest("controller/restui/applicationManagerUiBean/getApplicationsAllTypes?output=json");
                 com.cisco.josouthe.data.model.ApplicationListing applicationListing = gson.fromJson(json, com.cisco.josouthe.data.model.ApplicationListing.class);
                 _applicationIdMap = new HashMap<>();
                 for (com.cisco.josouthe.data.model.Application app : applicationListing.getApplications() )
@@ -448,12 +448,12 @@ public class Controller {
     public Model getModel() {
         if( this.controllerModel == null ) {
             try {
-                String json = getRequest("controller/rest/applications");
+                String json = getRequest("controller/rest/applications?output=json");
                 this.controllerModel = new Model(gson.fromJson(json, com.cisco.josouthe.data.model.Application[].class));
                 for (com.cisco.josouthe.data.model.Application application : this.controllerModel.getApplications()) {
-                    json = getRequest("controller/rest/applications/%d/tiers", application.id);
+                    json = getRequest("controller/rest/applications/%d/tiers?output=json", application.id);
                     application.tiers = gson.fromJson(json, Tier[].class);
-                    json = getRequest("controller/rest/applications/%d/nodes", application.id);
+                    json = getRequest("controller/rest/applications/%d/nodes?output=json", application.id);
                     application.nodes = gson.fromJson(json, Node[].class);
                 }
             } catch (ControllerBadStatusException controllerBadStatusException) {
@@ -465,7 +465,7 @@ public class Controller {
 
     public Search[] getAllSavedSearchesFromController() { //yup, using an undocumented api of the ui ;)
         try {
-            String json = getRequest("controller/restui/analyticsSavedSearches/getAllAnalyticsSavedSearches");
+            String json = getRequest("controller/restui/analyticsSavedSearches/getAllAnalyticsSavedSearches?output=json");
             return gson.fromJson(json, Search[].class);
         } catch (ControllerBadStatusException controllerBadStatusException) {
             logger.warn("Error using undocumented api to pull back listing of all saved analytics searches");
@@ -473,38 +473,22 @@ public class Controller {
         return null;
     }
 
-    public Baseline[] getAllBaselines(Application application ) {
+    public Baseline[] getAllBaselines( Application application ) {
         if( application == null ) return null;
         if( application.id == -1 ) application.id = getApplicationId(application.getName());
         if( application.id == -1 ) return null;
+        return getAllBaselines(application.id);
+    }
+
+    public Baseline[] getAllBaselines(long applicationId ) {
         try {
-            String json = getRequest("controller/restui/baselines/getAllBaselines/%d", application.id);
+            String json = getRequest("controller/restui/baselines/getAllBaselines/%d?output=json", applicationId);
             Baseline[] baselines = gson.fromJson(json, Baseline[].class);
             return baselines;
         } catch (ControllerBadStatusException controllerBadStatusException) {
-            logger.warn("Error using undocumented api to pull back listing of all application baselines, application '%s'", application.getName());
+            logger.warn("Error using undocumented api to pull back listing of all application baselines, application '%s'", applicationId);
         }
         return null;
-    }
-
-    public static void main( String... args ) throws Exception {
-        Controller controller;
-        if( args.length == 0 ) {
-            controller = new Controller("https://southerland-test.saas.appdynamics.com/", "ETLClient@southerland-test", "869b6e71-230c-4e6f-918d-6713fb73b3ad", null, false);
-        } else {
-            controller = new Controller( args[0], args[1], args[2], null, false );
-        }
-        /*
-        System.out.printf("%s Test 1: %s\n", Controller.class, controller.getBearerToken());
-        MetricData[] metricData = controller.getMetricValue("https://southerland-test.saas.appdynamics.com/controller/rest/applications/Agent%20Proxy/metric-data?metric-path=Application%20Infrastructure%20Performance%7C*%7CJVM%7CProcess%20CPU%20Usage%20%25&time-range-type=BEFORE_NOW&duration-in-mins=60");
-        System.out.printf("%s Test 2: %d elements\n", Controller.class, metricData.length);
-        metricData = controller.getMetricValue("https://southerland-test.saas.appdynamics.com/controller/rest/applications/Agent%20Proxy/metric-data?metric-path=Business%20Transaction%20Performance%7CBusiness%20Transactions%7C*%7C*%7CAverage%20Response%20Time%20%28ms%29&time-range-type=BEFORE_NOW&duration-in-mins=60");
-        System.out.printf("%s Test 3: %d elements\n", Controller.class, metricData.length);
-         */
-        Search[] searches = controller.getAllSavedSearchesFromController();
-        for( Search search : searches ) {
-            System.out.println(String.format("<Search name=\"%s\" visualization=\"%s\" >%s</Search>",search.getName(), search.visualization, search.getQuery()));
-        }
     }
 
     public void discardToken() {
