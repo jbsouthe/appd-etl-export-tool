@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -241,6 +242,17 @@ public class Configuration {
         if( (applications == null || applications.isEmpty()) && !getAllAnalyticsSearchesFlag ) {
             logger.warn("Controller configured, but no applications configured, please add at least one application, or set getAllAnalyticsSearches Flag to true");
             throw new InvalidConfigurationException("Controller configured, but no applications configured, please add at least one application, or set getAllAnalyticsSearches Flag to true");
+        }
+        String hostname = "<hostname>";
+        try{
+            hostname = new URL(urlString).getHost();
+        } catch (MalformedURLException exception) {
+            logger.warn("Url is really bad, '%s' Error: %s",urlString, exception);
+            throw new InvalidConfigurationException(String.format("Controller URL just can't be correct, let's fix this '%s'",urlString));
+        }
+        if( !Utility.isAPIKeyValidFormat( clientID, hostname) ) {
+            String error = String.format("API Key is missing the hostname, it should probably be %s@%s instead of just %s, but I'm not going to automate config error corrections, it is just bad practice, so bailing early", clientID, hostname, clientID);
+            throw new InvalidConfigurationException(error);
         }
         try{
             Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag);

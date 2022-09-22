@@ -8,7 +8,7 @@
     </Scheduler>
     -->
     <!-- Only one database can be specified, and one must be specified. It is assumed the correct database driver is loaded in the classpath,
-    and as of today, only oracle is provided and assumed. To add other database vendor support, we must ensure SQL compatibility and provide
+    and as of today, only csv files, oracle, mysql, postgres, and MS SQL Server are supported. To add other database vendor support, we must ensure SQL compatibility and provide
     a list of reserved words so the database table can be created and verified
 
     For Oracle the following connection string works, with the libraries packaged: "jdbc:oracle:thin:@<hostname>:<port ie: 1521>:<schema ie: orcl>"

@@ -103,4 +103,12 @@ public class Utility {
         }
         return snapshotDatascope;
     }
+
+    public static boolean isAPIKeyValidFormat(String clientID, String hostname) {
+        if( clientID == null || hostname == null ) return false;
+        if( !clientID.contains("@") ) return false;
+        String apikey = clientID.split("\\@")[0];
+        if( String.format("%s@%s",apikey,hostname).equals(clientID) ) return true;
+        return false;
+    }
 }
