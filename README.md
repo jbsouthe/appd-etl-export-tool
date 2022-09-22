@@ -173,9 +173,7 @@ The default settings are shown:
 
 ### TargetDB Section
 
-This section configures the destination for the extracted data. 
-We support only Oracle and CSV Files as of this document's writing.
-Other databases will need some development for SQL compatibility and of course different JDBC drivers to be included on the class path.
+This section configures the destination for the extracted data.
 Only one target database is allowed, and it is required for execution. 
 If not available for testing please configure a CSV output directory as per the notes below.
 
