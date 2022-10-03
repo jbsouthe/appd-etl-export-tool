@@ -1,5 +1,7 @@
 # AppDynamics ETL Export Tool
 
+[![published](https://static.production.devnetcloud.com/codeexchange/assets/images/devnet-published.svg)](https://developer.cisco.com/codeexchange/github/repo/jbsouthe/appd-etl-export-tool)
+
 The purpose of this utility is to run an export of AppDynamics Metrics, Events, and Analytics Searches and insert that data into either a database or Comma Separated Value file.
 One of the benefits of this utility is that it doesn't require any database schema creation, and will automatically create tables and columns as needed, dynamically during execution.
 
