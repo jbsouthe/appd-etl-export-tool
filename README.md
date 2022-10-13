@@ -24,7 +24,7 @@ It is assumed the XML config file is the first and only argument. Also expected 
 
 ### Running in Kubernetes
 
-This utility can be run as a kubernetes pod by either using the public image "johnsoutherland/appdynamics-etl-tool:1.2", or creating a custom image in your own hosting environment. Check the examples in the ./container directory, or use this information. https://hub.docker.com/r/johnsoutherland/appdynamics-etl-tool/tags
+This utility can be run as a kubernetes pod by either using the public image "johnsoutherland/appdynamics-etl-tool:LATEST", or creating a custom image in your own hosting environment. Check the examples in the ./container directory, or use this information. https://hub.docker.com/r/johnsoutherland/appdynamics-etl-tool/tags
 
 #### Create local Docker image, Optional
 
@@ -60,7 +60,7 @@ now make a deployment for this, using this example and modifying it to your liki
     spec:
         containers:
         - name: appd-etl-tool
-          image: johnsoutherland/appdynamics-etl-tool:1.5
+          image: johnsoutherland/appdynamics-etl-tool:LATEST
         env:
         - name: CONFIG_FILE 
           value: "/config/etl-tool-config.xml"
