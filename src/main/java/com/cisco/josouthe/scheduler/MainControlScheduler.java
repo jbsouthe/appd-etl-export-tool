@@ -16,6 +16,7 @@ public class MainControlScheduler {
     private ThreadPoolExecutor executorFetchData;
     private ThreadPoolExecutor executorInsertData;
     private ScheduledThreadPoolExecutor executorConfigRefresh;
+    private CountDownLatch fetchDataLatch;
 
     public MainControlScheduler(Configuration configuration ) {
         this.configuration = configuration;
@@ -36,17 +37,34 @@ public class MainControlScheduler {
         }
         logger.info("Started %d Database Insert Tasks, all looking for work", executorInsertData.getPoolSize());
         while(configuration.isRunning() ) {
+            int numberOfJobs = 0;
+
+            for( Controller controller : configuration.getControllerList() ) {
+                for (Application application : controller.applications) {
+                    numberOfJobs += 2;
+                }
+            }
+            if( configuration.getAnalyticsList() != null )
+                numberOfJobs += configuration.getAnalyticsList().length;
+
+            this.fetchDataLatch = new CountDownLatch(numberOfJobs);
+
             for( Controller controller : configuration.getControllerList() ) {
                 for(Application application : controller.applications ) {
                     logger.info("Running collector for %s@%s", application.getName(), controller.hostname);
-                    executorFetchData.execute(new ApplicationMetricTask( application, dataToInsertLinkedBlockingQueue));
-                    executorFetchData.execute( new ApplicationEventTask( application, dataToInsertLinkedBlockingQueue));
+                    executorFetchData.execute(new ApplicationMetricTask( application, dataToInsertLinkedBlockingQueue, fetchDataLatch));
+                    executorFetchData.execute( new ApplicationEventTask( application, dataToInsertLinkedBlockingQueue, fetchDataLatch));
                 }
             }
 
             for(Analytics analytic : configuration.getAnalyticsList() ) {
-                executorFetchData.execute( new AnalyticsSearchTask( analytic, dataToInsertLinkedBlockingQueue) );
+                executorFetchData.execute( new AnalyticsSearchTask( analytic, dataToInsertLinkedBlockingQueue, fetchDataLatch) );
             }
+            sleep(200);
+            try {
+                fetchDataLatch.await();
+            } catch (InterruptedException ignored) {}
+
             if( configuration.getProperty("scheduler-enabled", true) ) {
                 logger.info("MainControlScheduler is enabled, so sleeping for %d minutes and running again", configuration.getProperty("scheduler-pollIntervalMinutes", 60L));
                 sleep( configuration.getProperty("scheduler-pollIntervalMinutes", 60L) * 60000 );

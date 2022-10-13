@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.Analytics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class AnalyticsSearchTask implements Runnable {
@@ -11,10 +12,12 @@ public class AnalyticsSearchTask implements Runnable {
 
     private Analytics analytics;
     private LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue;
+    private CountDownLatch countDownLatch;
 
-    public AnalyticsSearchTask(Analytics analytic, LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue) {
+    public AnalyticsSearchTask(Analytics analytic, LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue, CountDownLatch fetchDataLatch) {
         this.analytics=analytic;
         this.dataToInsertLinkedBlockingQueue=dataToInsertLinkedBlockingQueue;
+        this.countDownLatch=fetchDataLatch;
     }
 
     /**
@@ -31,5 +34,6 @@ public class AnalyticsSearchTask implements Runnable {
     @Override
     public void run() {
         this.analytics.getAllSearches(dataToInsertLinkedBlockingQueue);
+        this.countDownLatch.countDown();
     }
 }

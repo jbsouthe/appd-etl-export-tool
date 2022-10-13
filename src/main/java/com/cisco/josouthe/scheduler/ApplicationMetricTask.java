@@ -1,11 +1,10 @@
 package com.cisco.josouthe.scheduler;
 
 import com.cisco.josouthe.data.Application;
-import com.cisco.josouthe.data.Controller;
-import com.cisco.josouthe.data.metric.MetricData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class ApplicationMetricTask implements Runnable{
@@ -13,10 +12,12 @@ public class ApplicationMetricTask implements Runnable{
 
     private Application application;
     private LinkedBlockingQueue<Object[]> dataQueue;
+    private CountDownLatch countDownLatch;
 
-    public ApplicationMetricTask(Application application, LinkedBlockingQueue<Object[]> dataQueue) {
+    public ApplicationMetricTask(Application application, LinkedBlockingQueue<Object[]> dataQueue, CountDownLatch fetchDataLatch) {
         this.application=application;
         this.dataQueue=dataQueue;
+        this.countDownLatch=fetchDataLatch;
     }
 
     /**
@@ -38,5 +39,6 @@ public class ApplicationMetricTask implements Runnable{
             } catch (InterruptedException ignored) { }
         }
         this.application.getAllMetrics(dataQueue);
+        this.countDownLatch.countDown();
     }
 }
