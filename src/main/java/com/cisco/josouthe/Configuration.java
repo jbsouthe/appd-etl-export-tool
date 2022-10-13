@@ -246,6 +246,8 @@ public class Configuration {
         String hostname = "<hostname>";
         try{
             hostname = new URL(urlString).getHost();
+            if( hostname.contains(".") )
+                hostname = hostname.split("\\.")[0];
         } catch (MalformedURLException exception) {
             logger.warn("Url is really bad, '%s' Error: %s",urlString, exception);
             throw new InvalidConfigurationException(String.format("Controller URL just can't be correct, let's fix this '%s'",urlString));
