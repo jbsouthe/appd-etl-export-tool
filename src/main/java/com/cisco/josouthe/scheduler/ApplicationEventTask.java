@@ -1,10 +1,10 @@
 package com.cisco.josouthe.scheduler;
 
 import com.cisco.josouthe.data.Application;
-import com.cisco.josouthe.data.Controller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class ApplicationEventTask implements Runnable{
@@ -12,10 +12,12 @@ public class ApplicationEventTask implements Runnable{
 
     private Application application;
     private LinkedBlockingQueue<Object[]> dataQueue;
+    private CountDownLatch countDownLatch;
 
-    public ApplicationEventTask(Application application, LinkedBlockingQueue<Object[]> dataQueue) {
+    public ApplicationEventTask(Application application, LinkedBlockingQueue<Object[]> dataQueue, CountDownLatch fetchDataLatch) {
         this.application=application;
         this.dataQueue=dataQueue;
+        this.countDownLatch=fetchDataLatch;
     }
 
     /**
@@ -32,5 +34,6 @@ public class ApplicationEventTask implements Runnable{
     @Override
     public void run() {
         this.application.getAllEvents(dataQueue);
+        this.countDownLatch.countDown();
     }
 }
