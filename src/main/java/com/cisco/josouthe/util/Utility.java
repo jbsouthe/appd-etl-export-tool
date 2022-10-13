@@ -108,6 +108,8 @@ public class Utility {
         if( clientID == null || hostname == null ) return false;
         if( !clientID.contains("@") ) return false;
         String apikey = clientID.split("\\@")[0];
+        if( hostname.contains(".") )
+            hostname = hostname.split("\\.")[0];
         if( String.format("%s@%s",apikey,hostname).equals(clientID) ) return true;
         return false;
     }

@@ -10,6 +10,7 @@ public class UtilityTest extends TestCase {
     @Test
     public void testIsAPIKeyValidFormat() {
         assert Utility.isAPIKeyValidFormat("ETLClient@southerland-test", "southerland-test");
+        assert Utility.isAPIKeyValidFormat("ETLClient@southerland-test", "southerland-test.saas.appdynamics.com");
         assert !Utility.isAPIKeyValidFormat("ETLClient", "southerland-test");
         assert !Utility.isAPIKeyValidFormat("ETLClient@sutherland-test", "southerland-test");
     }
