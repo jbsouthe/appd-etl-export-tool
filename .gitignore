@@ -1,5 +1,5 @@
 /src/main/java/com/cisco/josouthe/MetaData.java
-./ETLExportTool-*.jar
+ETLExportTool-*.jar
 **/.DS_Store
 .idea/*
 *-test-config.xml
@@ -7,3 +7,4 @@
 lib/*.jar
 target/*
 test-settings.properties
+container/etl-tool-config.xml
