@@ -12,6 +12,7 @@ public class ETLTransferMain {
 
     public static void main( String... args ) {
         logger.info("Initializing ETL Transfer Tool version %s build date %s", MetaData.VERSION, MetaData.BUILDTIMESTAMP);
+        logger.info("Report issues and concerns to: %s", MetaData.GITHUB);
         String configFileName = "default-config.xml";
         if( args.length > 0 ) configFileName=args[0];
         Configuration config = null;
