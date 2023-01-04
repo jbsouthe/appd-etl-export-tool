@@ -2,6 +2,7 @@ package com.cisco.josouthe;
 
 import com.cisco.josouthe.data.Analytics;
 import com.cisco.josouthe.data.Application;
+import com.cisco.josouthe.data.ApplicationRegex;
 import com.cisco.josouthe.data.Controller;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.database.Database;
@@ -41,6 +42,7 @@ public class Configuration {
     private boolean definedApplication = false;
     private boolean definedAnalytics = false;
     private boolean running = true;
+    private List<ApplicationRegex> applicationRegexList = new ArrayList<>();
 
     public boolean isRunning() { return this.running; }
     public void setRunning( boolean b ) { this.running=b; }
@@ -100,7 +102,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller", 3, "getAllAnalyticsSearches");
 
         //application config, within a controller
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 11);
+        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 12);
         digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
         digester.addCallParam("ETLTool/Controller/Application/Name", 1);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 2);
@@ -112,6 +114,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/Application/Events/Include", 8);
         digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 9);
         digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 10);
+        digester.addCallParam("ETLTool/Controller/Application/Name", 11, "regex");
 
 
 
@@ -215,7 +218,8 @@ public class Configuration {
     public void addApplication( String getAllAvailableMetrics, String name , String defaultDisableAutoRollup,
                                 String metricTable, String eventTable, String baselineTable,
                                 String getAllEvents, String getAllHealthRuleViolations,
-                                String includeEventList, String excludeEventList, String eventSeverities
+                                String includeEventList, String excludeEventList, String eventSeverities,
+                                String isRegexAppNameFlag
                                 ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
@@ -224,10 +228,18 @@ public class Configuration {
         if( metricTable != null && database.isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
         if( eventTable != null && database.isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
         if( baselineTable != null && database.isValidDatabaseTableName(baselineTable) ) logger.debug("Application %s Baseline Table set to: %s", name, baselineTable);
-        Application application = new Application( getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, baselineTable, getAllEvents, getAllHealthRuleViolations, metrics);
-        application.setEventTypeList( getEventListForApplication(includeEventList, excludeEventList));
-        if( eventSeverities != null ) application.eventSeverities = eventSeverities;
-        applications.add(application);
+        boolean isRegexAppName = false;
+        if( isRegexAppNameFlag != null ) isRegexAppName = Boolean.parseBoolean(isRegexAppNameFlag);
+        if( isRegexAppName ) {
+            applicationRegexList.add( new ApplicationRegex( name, getAllAvailableMetrics, defaultDisableAutoRollup, metricTable, eventTable, baselineTable,
+                    getAllEvents, getAllHealthRuleViolations, metrics ));
+        } else {
+            Application application = new Application(getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, baselineTable,
+                    getAllEvents, getAllHealthRuleViolations, metrics);
+            application.setEventTypeList(getEventListForApplication(includeEventList, excludeEventList));
+            if (eventSeverities != null) application.eventSeverities = eventSeverities;
+            applications.add(application);
+        }
         metrics = new ArrayList<>();
     }
 
@@ -239,7 +251,7 @@ public class Configuration {
         boolean getAllAnalyticsSearchesFlag=false;
         if( "true".equals(getAllAnalyticsSearches) )
             getAllAnalyticsSearchesFlag=true;
-        if( (applications == null || applications.isEmpty()) && !getAllAnalyticsSearchesFlag ) {
+        if( ((applications == null || applications.isEmpty()) && (applicationRegexList == null || applicationRegexList.isEmpty())) && !getAllAnalyticsSearchesFlag ) {
             logger.warn("Controller configured, but no applications configured, please add at least one application, or set getAllAnalyticsSearches Flag to true");
             throw new InvalidConfigurationException("Controller configured, but no applications configured, please add at least one application, or set getAllAnalyticsSearches Flag to true");
         }
@@ -257,8 +269,9 @@ public class Configuration {
             throw new InvalidConfigurationException(error);
         }
         try{
-            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag);
-            applications = new ArrayList<>();;
+            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag, applicationRegexList.toArray( new ApplicationRegex[0]));
+            applications = new ArrayList<>();
+            applicationRegexList = new ArrayList<>();
             controllerMap.put( controller.hostname, controller);
             logger.info("Added Controller  to config for host: %s url: %s", controller.hostname, urlString);
         } catch (MalformedURLException exception) {
