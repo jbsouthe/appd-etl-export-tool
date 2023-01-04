@@ -32,8 +32,8 @@ Dockerfile:
 
     FROM adoptopenjdk/openjdk11:latest
     #version and build date for the deployment file, which should be copied to this directory for building
-    ENV VERSION 1.5
-    ENV BUILD_DATE 20220810
+    ENV VERSION <version number>
+    ENV BUILD_DATE <build date>
     ENV CONFIG_FILE /config/etl-tool-config.xml
     COPY appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz /tmp
     RUN tar xzvf /tmp/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz
@@ -207,7 +207,12 @@ Multiple Controller Sections can be defined, but the url must be unique.
         <ClientID>ETLClient@southerland-test</ClientID>
         <ClientSecret>the generated client secret</ClientSecret>
         <Application getAllAvailableMetrics="true" getAllEvents="false"> <!-- these are the default options in default values -->
-            <Name>Agent Proxy</Name>
+            <Name regex="false">Agent Proxy</Name>
+                 <!-- if regex="true" then the application name will instead function as a regex match pattern,
+                 in which case the configuration details will be applied to all applications matching this 
+                 pattern. In situations where a pattern matches an existing application name defined elsewhere
+                 the specific name takes precidence, so the first match is what is resolved, with regex patterns 
+                 being resolved AFTER the application names where regex="false" -->
             <Defaults>
                 <DisableDataRollup>true</DisableDataRollup>
                 <MetricTable>ProxyAppMetrics</MetricTable>

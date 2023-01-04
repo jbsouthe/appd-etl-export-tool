@@ -6,11 +6,9 @@
     </Console>
   </Appenders>
   <Loggers>
-<!--
-    <Logger name="com.cisco.josouthe.database" level="trace" additivity="false">
+    <Logger name="com.cisco.josouthe" level="trace" additivity="false">
       <AppenderRef ref="Console"/>
     </Logger>
--->
     <Root level="info">
       <AppenderRef ref="Console"/>
     </Root>
