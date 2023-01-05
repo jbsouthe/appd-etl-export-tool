@@ -137,7 +137,8 @@ public class AnalyticTable extends OracleTable implements IAnalyticTable {
                 counter += preparedStatement.executeUpdate();
             }
         } catch (Exception exception) {
-            logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString());
+            logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString(), exception);
+            logger.warn("Bad SQL: %s",insertSQL.toString());
         }
         return counter;
     }

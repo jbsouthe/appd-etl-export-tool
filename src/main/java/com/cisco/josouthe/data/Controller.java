@@ -15,6 +15,7 @@ import com.cisco.josouthe.database.IControlTable;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.HttpClientFactory;
 import com.cisco.josouthe.util.Utility;
+import com.cisco.josouthe.util.WorkingStatusThread;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
@@ -53,6 +54,7 @@ public class Controller {
     private String clientId, clientSecret;
     private AccessToken accessToken = null;
     public Application[] applications = null;
+    public ApplicationRegex[] applicationRegexes = null;
     public Model controllerModel = null;
     private IControlTable controlTable = null;
     private boolean getAllAnalyticsSearchesFlag = false;
@@ -79,7 +81,7 @@ public class Controller {
 
     };
 
-    public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag ) throws MalformedURLException {
+    public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag, ApplicationRegex[] applicationRegexes ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
         this.url = new URL(urlString);
         this.hostname = this.url.getHost();
@@ -88,6 +90,36 @@ public class Controller {
         this.applications = applications;
         this.getAllAnalyticsSearchesFlag=getAllAnalyticsSearchesFlag;
         this.client = HttpClientFactory.getHttpClient();
+        this.applicationRegexes = applicationRegexes;
+        if( this.applicationRegexes != null && this.applicationRegexes.length > 0 ) {
+            initApplicationIdMap();
+            List<Application> applicationsToAdd = new ArrayList<>();
+            MAIN: for( String appName : _applicationIdMap.keySet() ){
+                if( isApplicationInList(appName) ) continue MAIN;
+                for( ApplicationRegex applicationRegex : this.applicationRegexes ) {
+                    Application application = applicationRegex.getApplicationIfMatches(appName);
+                    if( application != null ) {
+                        applicationsToAdd.add(application);
+                        continue MAIN;
+                    }
+                }
+            }
+            if(!applicationsToAdd.isEmpty()) {
+                if( this.applications != null )
+                    for( Application application : this.applications) {
+                        applicationsToAdd.add(application);
+                    }
+                this.applications = applicationsToAdd.toArray( new Application[0] );
+            }
+        }
+    }
+
+    public boolean isApplicationInList( String name ) {
+        if( this.applications == null ) return false;
+        for( Application application : this.applications ) {
+            if( name.equalsIgnoreCase(application.name) ) return true;
+        }
+        return false;
     }
 
     public boolean isGetAllAnalyticsSearchesFlag() { return getAllAnalyticsSearchesFlag; }
@@ -259,6 +291,8 @@ public class Controller {
              */
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now();
+        WorkingStatusThread workingStatusThread = new WorkingStatusThread("Get Controller Metrics", application.name, logger);
+        workingStatusThread.start();
         for( String applicationMetricName : application.metricGraph.getUniqueCompressedMetricNames() ) {
             for( MetricData metricData : getMetricValue( application, applicationMetricName, startTimestamp, endTimestamp )) {
                 if( "METRIC DATA NOT FOUND".equals(metricData.metricName) ) continue;
@@ -273,6 +307,7 @@ public class Controller {
                 metrics.clear();
             }
         }
+        workingStatusThread.cancel();
         controlEntry.timestamp = endTimestamp;
         //serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
         //serviceEndPoint.end();
@@ -351,6 +386,8 @@ public class Controller {
             boolean succeeded=false;
             String json = null;
             while( !succeeded && tries < 3 ) {
+                WorkingStatusThread workingStatusThread = new WorkingStatusThread("Controller Events", application.name, logger);
+                workingStatusThread.start();
                 try {
                     json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
                             Utility.encode(application.name), startTimestamp, endTimestamp, application.eventTypeList, application.eventSeverities);
@@ -358,6 +395,8 @@ public class Controller {
                 } catch (ControllerBadStatusException controllerBadStatusException) {
                     tries++;
                     logger.warn("Error on try %d while trying to get Events for application %s Error: %s", tries, application.name, controllerBadStatusException.getMessage());
+                } finally {
+                   workingStatusThread.cancel();
                 }
             }
             if( !succeeded ) {
@@ -431,18 +470,22 @@ public class Controller {
     public long getApplicationId( String name ) {
         logger.trace("Get Application id for %s",name);
         if( _applicationIdMap == null ) { //go get em
-            try {
-                String json = getRequest("controller/restui/applicationManagerUiBean/getApplicationsAllTypes?output=json");
-                com.cisco.josouthe.data.model.ApplicationListing applicationListing = gson.fromJson(json, com.cisco.josouthe.data.model.ApplicationListing.class);
-                _applicationIdMap = new HashMap<>();
-                for (com.cisco.josouthe.data.model.Application app : applicationListing.getApplications() )
-                    if( app.active ) _applicationIdMap.put(app.name, app.id);
-            } catch (ControllerBadStatusException controllerBadStatusException) {
-                logger.warn("Giving up on getting application id, not even going to retry");
-            }
+            initApplicationIdMap();
         }
         if( !_applicationIdMap.containsKey(name) ) return -1;
         return _applicationIdMap.get(name);
+    }
+
+    private void initApplicationIdMap() {
+        try {
+            String json = getRequest("controller/restui/applicationManagerUiBean/getApplicationsAllTypes?output=json");
+            com.cisco.josouthe.data.model.ApplicationListing applicationListing = gson.fromJson(json, com.cisco.josouthe.data.model.ApplicationListing.class);
+            _applicationIdMap = new HashMap<>();
+            for (com.cisco.josouthe.data.model.Application app : applicationListing.getApplications() )
+                if( app.active ) _applicationIdMap.put(app.name, app.id);
+        } catch (ControllerBadStatusException controllerBadStatusException) {
+            logger.warn("Giving up on getting application id, not even going to retry");
+        }
     }
 
     public Model getModel() {
