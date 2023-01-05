@@ -8,6 +8,7 @@ import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.HttpClientFactory;
 import com.cisco.josouthe.util.Utility;
+import com.cisco.josouthe.util.WorkingStatusThread;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.http.HttpEntity;
@@ -30,44 +31,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/*
-curl -X POST "https://analytics.api.appdynamics.com/events/query"
--H"X-Events-API-AccountName:fico-prod_a604fd85-5055-433d-bbaa-5255064880a9"
--H"X-Events-API-Key:4c67a50d-5f8b-406c-a9bb-c1b09358d2fd"
--H"Content-type: application/vnd.appd.events+json;v=2"
--d ' SELECT segments.userData.`BT - getSsBureauName`,
-        count(segments.userData.`BT - getSsBureauName`) AS "BCOUNT",
-        toFloat(segments.userData.`BT - getSsBureauScore`) AS "BSCORE"
-    FROM transactions
-        WHERE application = "Originations-OM_4.8-Core-T-Mobile-PROD"
-        and transactionName REGEXP "OM-APM-WebServices-Application.*"'
-
-When executed, the following data is returned:
-
-[
-{"fields":[
-    {"label":"segments.userData.BT - getSsBureauName","field":"segments.userData.BT - getSsBureauName","type":"string"},
-    {"label":"BCOUNT","field":"segments.userData.BT - getSsBureauName","type":"integer","aggregation":"count"},
-    {"label":"BSCORE","field":"toFloat(segments.userData.BT - getSsBureauScore)","type":"float"}
-],
-"results":[
-    [null,3348079,null],
-    ["ID Analytics US Consumer ID Score",85342,null],
-    ["IDAnalytics",85342,null],
-    ["Lexis Nexis ADL",84982,null],
-    ["Lexis Nexis US Consumer Accurint DataLink",84982,null],
-    ["TransUnion US Consumer",22685,null],
-    ["TransUnionUSConsumer41",22685,null],
-    ["LexisNexisRiskView",22117,null],
-    ["Lexis Nexis US Consumer Risk View Thick",16613,null],
-    ["Equifax US Consumer",6055,null]
-],
-"moreData":true,
-"schema":"biz_txn_v1"
-}
-]
-
- */
 public class Analytics {
     private static final Logger logger = LogManager.getFormatterLogger();
 
@@ -134,15 +97,14 @@ public class Analytics {
             //serviceEndPoint.collectData("Search Query", search.query, Utility.getSnapshotDatascope());
             logger.info("Running Analytics Search %s query: '%s'", search.getName(), search.getQuery());
             Result[] searchResults = runAnalyticsQuery(search, startTimestamp, endTimestamp);
-            if( searchResults != null ) {
-                for (Result result : searchResults)
-                    if (result != null) results.add(result);
-            }
             //serviceEndPoint.end();
-        }
-        if( dataToInsertLinkedBlockingQueue != null ) {
-            dataToInsertLinkedBlockingQueue.add(results.toArray( new Result[0]));
-            results.clear();
+            if( dataToInsertLinkedBlockingQueue != null && searchResults != null ) {
+                logger.info("Adding Analytics Search %s data to database queue, elements %d", search.getName(), searchResults.length);
+                dataToInsertLinkedBlockingQueue.add(searchResults);
+            } else if( searchResults != null ) {
+                for( Result result : searchResults )
+                    results.add(result);
+            }
         }
         controlEntry.timestamp = endTimestamp;
         this.controlTable.setLastRunTimestamp(controlEntry);
@@ -178,6 +140,8 @@ public class Analytics {
         boolean succeeded=false;
         String json = "";
         while (!succeeded && tries < 3) {
+            WorkingStatusThread workingStatusThread = new WorkingStatusThread(String.format("Analytics Query %s",name), query, logger);
+            workingStatusThread.start();
             try{
                 json = this.client.execute(request, this.responseHandler);
                 succeeded=true;
@@ -187,6 +151,8 @@ public class Analytics {
             } catch (IOException ioException) {
                 tries++;
                 logger.warn("IOException: %s",ioException.getMessage());
+            } finally {
+                workingStatusThread.cancel();
             }
         }
         if( !succeeded ) {

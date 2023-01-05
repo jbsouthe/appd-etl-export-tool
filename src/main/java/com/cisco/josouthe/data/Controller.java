@@ -15,6 +15,7 @@ import com.cisco.josouthe.database.IControlTable;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.util.HttpClientFactory;
 import com.cisco.josouthe.util.Utility;
+import com.cisco.josouthe.util.WorkingStatusThread;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
@@ -290,6 +291,8 @@ public class Controller {
              */
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now();
+        WorkingStatusThread workingStatusThread = new WorkingStatusThread("Get Controller Metrics", application.name, logger);
+        workingStatusThread.start();
         for( String applicationMetricName : application.metricGraph.getUniqueCompressedMetricNames() ) {
             for( MetricData metricData : getMetricValue( application, applicationMetricName, startTimestamp, endTimestamp )) {
                 if( "METRIC DATA NOT FOUND".equals(metricData.metricName) ) continue;
@@ -304,6 +307,7 @@ public class Controller {
                 metrics.clear();
             }
         }
+        workingStatusThread.cancel();
         controlEntry.timestamp = endTimestamp;
         //serviceEndPoint.collectData("End-Timestamp", String.valueOf(endTimestamp), Utility.getSnapshotDatascope());
         //serviceEndPoint.end();
@@ -382,6 +386,8 @@ public class Controller {
             boolean succeeded=false;
             String json = null;
             while( !succeeded && tries < 3 ) {
+                WorkingStatusThread workingStatusThread = new WorkingStatusThread("Controller Events", application.name, logger);
+                workingStatusThread.start();
                 try {
                     json = getRequest("controller/rest/applications/%s/events?time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&event-types=%s&severities=%s&output=JSON",
                             Utility.encode(application.name), startTimestamp, endTimestamp, application.eventTypeList, application.eventSeverities);
@@ -389,6 +395,8 @@ public class Controller {
                 } catch (ControllerBadStatusException controllerBadStatusException) {
                     tries++;
                     logger.warn("Error on try %d while trying to get Events for application %s Error: %s", tries, application.name, controllerBadStatusException.getMessage());
+                } finally {
+                   workingStatusThread.cancel();
                 }
             }
             if( !succeeded ) {
