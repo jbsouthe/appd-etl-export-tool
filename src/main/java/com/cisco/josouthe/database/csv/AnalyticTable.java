@@ -46,7 +46,7 @@ public class AnalyticTable extends CSVTable implements IAnalyticTable {
             case "boolean": return database.BOOLEAN_SIZE;
             case "date": return database.DATE_SIZE;
             default: {
-                logger.warn("Unknown data type: %s setting table column size to %s", type, database.STRING_SIZE);
+                logger.debug("Unknown data type: %s setting table column size to %s", type, database.STRING_SIZE);
             }
         }
         return database.STRING_SIZE;
@@ -60,7 +60,7 @@ public class AnalyticTable extends CSVTable implements IAnalyticTable {
             case "boolean": return database.BOOLEAN_TYPE;
             case "date": return database.DATE_TYPE;
             default: {
-                logger.warn("Unknown data type: %s setting table column type to %s", type, database.STRING_TYPE);
+                logger.debug("Unknown data type: %s setting table column type to %s", type, database.STRING_TYPE);
             }
         }
         return database.STRING_TYPE;
@@ -122,7 +122,7 @@ public class AnalyticTable extends CSVTable implements IAnalyticTable {
             printStream.flush();
             printStream.close();
         } catch (Exception exception) {
-            logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString());
+            logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString(), exception);
         }
         return counter;
     }

@@ -42,7 +42,7 @@ public class AnalyticTable extends MySQLTable implements IAnalyticTable {
             case "boolean": return MySQLDatabase.BOOLEAN_SIZE;
             case "date": return MySQLDatabase.DATE_SIZE;
             default: {
-                logger.warn("Unknown data type: %s setting table column size to %s", type, MySQLDatabase.STRING_SIZE);
+                logger.debug("Unknown data type: %s setting table column size to %s", type, MySQLDatabase.STRING_SIZE);
             }
         }
         return MySQLDatabase.STRING_SIZE;
@@ -56,7 +56,7 @@ public class AnalyticTable extends MySQLTable implements IAnalyticTable {
             case "boolean": return MySQLDatabase.BOOLEAN_TYPE;
             case "date": return MySQLDatabase.DATE_TYPE;
             default: {
-                logger.warn("Unknown data type: %s setting table column type to %s", type, MySQLDatabase.STRING_TYPE);
+                logger.debug("Unknown data type: %s setting table column type to %s", type, MySQLDatabase.STRING_TYPE);
             }
         }
         return MySQLDatabase.STRING_TYPE;

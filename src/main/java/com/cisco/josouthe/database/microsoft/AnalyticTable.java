@@ -41,7 +41,7 @@ public class AnalyticTable extends MicrosoftTable implements IAnalyticTable {
             case "boolean": return MicrosoftDatabase.BOOLEAN_SIZE;
             case "date": return MicrosoftDatabase.DATE_SIZE;
             default: {
-                logger.warn("Unknown data type: %s setting table column size to %s", type, database.STRING_SIZE);
+                logger.debug("Unknown data type: %s setting table column size to %s", type, database.STRING_SIZE);
             }
         }
         return MicrosoftDatabase.STRING_SIZE;
@@ -55,7 +55,7 @@ public class AnalyticTable extends MicrosoftTable implements IAnalyticTable {
             case "boolean": return MicrosoftDatabase.BOOLEAN_TYPE;
             case "date": return MicrosoftDatabase.DATE_TYPE;
             default: {
-                logger.warn("Unknown data type: %s setting table column type to %s", type, database.STRING_TYPE);
+                logger.debug("Unknown data type: %s setting table column type to %s", type, database.STRING_TYPE);
             }
         }
         return MicrosoftDatabase.STRING_TYPE;
@@ -137,7 +137,7 @@ public class AnalyticTable extends MicrosoftTable implements IAnalyticTable {
                 counter += preparedStatement.executeUpdate();
             }
         } catch (Exception exception) {
-            logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString());
+            logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString(), exception);
         }
         return counter;
     }
