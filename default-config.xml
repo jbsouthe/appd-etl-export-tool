@@ -41,7 +41,7 @@
         <ClientID>ETLClient@southerland-test</ClientID>
         <ClientSecret>the generated client secret</ClientSecret>
         <Application getAllAvailableMetrics="true" getAllEvents="false"> <!-- these are the default options in default values -->
-            <Name>Agent Proxy</Name>
+            <Name regex="false">Agent Proxy</Name>
             <Defaults>
                 <DisableDataRollup>true</DisableDataRollup>
                 <MetricTable>ProxyAppMetrics</MetricTable>

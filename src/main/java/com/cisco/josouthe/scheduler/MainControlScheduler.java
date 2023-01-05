@@ -62,7 +62,9 @@ public class MainControlScheduler {
             }
             sleep(200);
             try {
+                logger.debug("starting await for fetchDataLatch awaiting %d tasks", fetchDataLatch.getCount());
                 fetchDataLatch.await();
+                logger.debug("finished fetchDataLatch.await() %d jobs (expecting 0) toString: '%s'", fetchDataLatch.getCount(), fetchDataLatch.toString());
             } catch (InterruptedException ignored) {}
 
             if( configuration.getProperty("scheduler-enabled", true) ) {

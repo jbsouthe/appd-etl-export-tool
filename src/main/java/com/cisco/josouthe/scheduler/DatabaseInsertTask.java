@@ -2,6 +2,7 @@ package com.cisco.josouthe.scheduler;
 
 import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.util.WorkingStatusThread;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +39,10 @@ public class DatabaseInsertTask implements Runnable{
                 Object[] data = dataQueue.poll(5000, TimeUnit.MILLISECONDS);
                 if( data != null && data.length > 0 ) {
                     logger.debug("Poll returned %d data elements to insert into the database", (data == null ? 0 : data.length));
+                    WorkingStatusThread workingStatusThread = new WorkingStatusThread("Database Insert", Thread.currentThread().getName(), logger);
+                    workingStatusThread.start();
                     this.database.importData(data);
+                    workingStatusThread.cancel();
                 }
             } catch (InterruptedException ignored) {
                 //ignore it
