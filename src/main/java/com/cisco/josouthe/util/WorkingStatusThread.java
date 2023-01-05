@@ -1,0 +1,43 @@
+package com.cisco.josouthe.util;
+
+import org.apache.logging.log4j.Logger;
+
+public class WorkingStatusThread extends Thread {
+    private String name,query;
+    private Logger logger = null;
+    private long cycleTime = 30000;
+    private long startTime;
+    private boolean running = true;
+
+    public WorkingStatusThread( String name, String query, long cycleTime, Logger logger ) {
+        super();
+        this.name=name;
+        this.query=query;
+        this.cycleTime=cycleTime;
+        this.logger=logger;
+        this.startTime = Utility.now();
+    }
+
+    public WorkingStatusThread(String name, String query, Logger logger ) {
+        this(name, query, 30000, logger);
+        //if in debug set more verbose messages, trace, even more
+        if( logger.isDebugEnabled() ) this.cycleTime=10000;
+        if( logger.isTraceEnabled() ) this.cycleTime=3000;
+
+    }
+
+    public void cancel() { running=false; }
+
+    @Override
+    public void run() {
+        while( running ) {
+            try { Thread.sleep(cycleTime); } catch (InterruptedException e) { /*ignore */ }
+            if( running ) {
+                String holdName = Thread.currentThread().getName();
+                Thread.currentThread().setName("Execution-Watchdog-"+ name);
+                logger.info("%s '%s' is still running, so far %d (s)", this.name, this.query, (Utility.now()-this.startTime)/1000 );
+                Thread.currentThread().setName(holdName);
+            }
+        }
+    }
+}

@@ -7,6 +7,7 @@ import com.cisco.josouthe.data.metric.MetricGraph;
 import com.cisco.josouthe.data.metric.MetricPaths;
 import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
+import com.cisco.josouthe.util.WorkingStatusThread;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,11 +69,17 @@ public class Application {
     public void refreshAllAvailableMetricsIfEnabled() {
         synchronized (this.metricsToAdd) {
             if( getAllAvailableMetrics ) {
+                WorkingStatusThread workingStatusThread = new WorkingStatusThread("Refresh Metrics", "Recursive Tree Walk", logger);
+                workingStatusThread.start();
                 TreeNode[] folders = controller.getApplicationMetricFolders(this, "Application Infrastructure Performance");
                 logger.debug("Found %d folders we can go into", (folders == null ? "0" : folders.length));
                 findMetrics( controller, folders, "");
+                workingStatusThread.cancel();
+                workingStatusThread = new WorkingStatusThread("Refresh Metrics", "Build Metric Graph", logger);
+                workingStatusThread.start();
                 this.metricGraph = new MetricGraph(metricsToAdd);
                 this.metricGraph.addMetricNames( this.metricPaths.getMetricPaths() );
+                workingStatusThread.cancel();
                 this.metricsToAdd.clear(); //possible memory leak, moving to the end of this method instead of beginning
             }
         }
