@@ -430,7 +430,7 @@ public class Controller {
         logger.trace("HTTP Method: %s with body: '%s'",request, body);
         String json = null;
         try {
-            request.setEntity( new StringEntity(body));
+            request.setEntity( new StringEntity(body, "UTF8"));
             request.setHeader("Accept", "application/json");
             request.setHeader("Content-Type", "application/json");
             json = client.execute( request, this.responseHandler);
