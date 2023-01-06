@@ -34,33 +34,6 @@ public class AnalyticTable extends PGSQLTable implements IAnalyticTable {
         this.initTable();
     }
 
-    private int getColumnSizeForName(String type) {
-        switch(type) {
-            case "string": return PGSQLDatabase.STRING_SIZE;
-            case "integer": return PGSQLDatabase.INTEGER_SIZE;
-            case "float": return PGSQLDatabase.FLOAT_SIZE;
-            case "boolean": return PGSQLDatabase.BOOLEAN_SIZE;
-            case "date": return PGSQLDatabase.DATE_SIZE;
-            default: {
-                logger.debug("Unknown data type: %s setting table column size to %s", type, PGSQLDatabase.STRING_SIZE);
-            }
-        }
-        return PGSQLDatabase.STRING_SIZE;
-    }
-
-    private String getColumnTypeForName(String type) {
-        switch(type) {
-            case "string": return PGSQLDatabase.STRING_TYPE;
-            case "integer": return PGSQLDatabase.INTEGER_TYPE;
-            case "float": return PGSQLDatabase.FLOAT_TYPE;
-            case "boolean": return PGSQLDatabase.BOOLEAN_TYPE;
-            case "date": return PGSQLDatabase.DATE_TYPE;
-            default: {
-                logger.debug("Unknown data type: %s setting table column type to %s", type, PGSQLDatabase.STRING_TYPE);
-            }
-        }
-        return PGSQLDatabase.STRING_TYPE;
-    }
 
     @Override
     public int insert(Object object) {

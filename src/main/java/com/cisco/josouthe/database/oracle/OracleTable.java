@@ -112,4 +112,32 @@ public abstract class OracleTable extends Table {
         }
         return tableExists;
     }
+
+    public int getColumnSizeForName(String type) {
+        switch(type) {
+            case "string": return OracleDatabase.STRING_SIZE;
+            case "integer": return OracleDatabase.INTEGER_SIZE;
+            case "float": return OracleDatabase.FLOAT_SIZE;
+            case "boolean": return OracleDatabase.BOOLEAN_SIZE;
+            case "date": return OracleDatabase.DATE_SIZE;
+            default: {
+                logger.debug("Unknown data type: %s setting table column size to %s", type, OracleDatabase.STRING_SIZE);
+            }
+        }
+        return OracleDatabase.STRING_SIZE;
+    }
+
+    public String getColumnTypeForName(String type) {
+        switch(type) {
+            case "string": return OracleDatabase.STRING_TYPE;
+            case "integer": return OracleDatabase.INTEGER_TYPE;
+            case "float": return OracleDatabase.FLOAT_TYPE;
+            case "boolean": return OracleDatabase.BOOLEAN_TYPE;
+            case "date": return OracleDatabase.DATE_TYPE;
+            default: {
+                logger.debug("Unknown data type: %s setting table column type to %s", type, OracleDatabase.STRING_TYPE);
+            }
+        }
+        return OracleDatabase.STRING_TYPE;
+    }
 }

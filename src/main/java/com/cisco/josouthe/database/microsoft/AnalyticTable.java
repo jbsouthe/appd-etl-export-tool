@@ -33,33 +33,7 @@ public class AnalyticTable extends MicrosoftTable implements IAnalyticTable {
         this.initTable();
     }
 
-    private int getColumnSizeForName(String type) {
-        switch(type) {
-            case "string": return MicrosoftDatabase.STRING_SIZE;
-            case "integer": return MicrosoftDatabase.INTEGER_SIZE;
-            case "float": return MicrosoftDatabase.FLOAT_SIZE;
-            case "boolean": return MicrosoftDatabase.BOOLEAN_SIZE;
-            case "date": return MicrosoftDatabase.DATE_SIZE;
-            default: {
-                logger.debug("Unknown data type: %s setting table column size to %s", type, database.STRING_SIZE);
-            }
-        }
-        return MicrosoftDatabase.STRING_SIZE;
-    }
 
-    private String getColumnTypeForName(String type) {
-        switch(type) {
-            case "string": return MicrosoftDatabase.STRING_TYPE;
-            case "integer": return MicrosoftDatabase.INTEGER_TYPE;
-            case "float": return MicrosoftDatabase.FLOAT_TYPE;
-            case "boolean": return MicrosoftDatabase.BOOLEAN_TYPE;
-            case "date": return MicrosoftDatabase.DATE_TYPE;
-            default: {
-                logger.debug("Unknown data type: %s setting table column type to %s", type, database.STRING_TYPE);
-            }
-        }
-        return MicrosoftDatabase.STRING_TYPE;
-    }
 
     @Override
     public int insert(Object object) {

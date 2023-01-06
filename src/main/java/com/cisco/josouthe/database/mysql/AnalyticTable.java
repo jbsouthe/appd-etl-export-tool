@@ -34,33 +34,6 @@ public class AnalyticTable extends MySQLTable implements IAnalyticTable {
         this.initTable();
     }
 
-    private int getColumnSizeForName(String type) {
-        switch(type) {
-            case "string": return MySQLDatabase.STRING_SIZE;
-            case "integer": return MySQLDatabase.INTEGER_SIZE;
-            case "float": return MySQLDatabase.FLOAT_SIZE;
-            case "boolean": return MySQLDatabase.BOOLEAN_SIZE;
-            case "date": return MySQLDatabase.DATE_SIZE;
-            default: {
-                logger.debug("Unknown data type: %s setting table column size to %s", type, MySQLDatabase.STRING_SIZE);
-            }
-        }
-        return MySQLDatabase.STRING_SIZE;
-    }
-
-    private String getColumnTypeForName(String type) {
-        switch(type) {
-            case "string": return MySQLDatabase.STRING_TYPE;
-            case "integer": return MySQLDatabase.INTEGER_TYPE;
-            case "float": return MySQLDatabase.FLOAT_TYPE;
-            case "boolean": return MySQLDatabase.BOOLEAN_TYPE;
-            case "date": return MySQLDatabase.DATE_TYPE;
-            default: {
-                logger.debug("Unknown data type: %s setting table column type to %s", type, MySQLDatabase.STRING_TYPE);
-            }
-        }
-        return MySQLDatabase.STRING_TYPE;
-    }
 
     @Override
     public int insert(Object object) {
