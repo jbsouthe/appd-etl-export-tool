@@ -3,11 +3,22 @@ package com.cisco.josouthe.data.analytic;
 public class Result {
     public String query;
     public String schema;
-    public boolean moreData;
+    public String error;
+    public String scrollid;
+    public boolean moreData=false;
     public Field[] fields;
+    public long total;
     public Object[][] results;
     public String name, targetTable;
     public long startTimestamp, endTimestamp;
+
+    public boolean isMoreDataSet() {
+        return moreData;
+    }
+
+    public boolean isError() {
+        return error != null;
+    }
 
     public String toString() {
         int rows =0, columns=0;

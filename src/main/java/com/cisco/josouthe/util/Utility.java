@@ -65,6 +65,10 @@ public class Utility {
         return null;
     }
 
+    public static String escapeQuotes( String input ) {
+        return input.replace("\"", "\\\"");
+    }
+
     public static String parseDatabaseVendor( String connectionString) {
         Matcher matcher = patternConnectionString.matcher(connectionString);
         if(matcher.find()) return matcher.group("vendor");
