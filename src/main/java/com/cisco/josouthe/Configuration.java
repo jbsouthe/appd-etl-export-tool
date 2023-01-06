@@ -18,11 +18,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -139,7 +140,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
 
-        digester.parse( new File(configFileName) );
+        digester.parse(new InputStreamReader(new FileInputStream(configFileName), StandardCharsets.UTF_8));
         if( ! definedScheduler ) {
             logger.warn("No scheduler defined in the config file, we are going to configure a basic one run scheduler for you");
             setSchedulerProperties("false","", "1", "10", "50", "12");
