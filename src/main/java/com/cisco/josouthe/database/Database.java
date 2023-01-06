@@ -175,7 +175,16 @@ public abstract class Database {
             logger.debug("Loaded %d analytic search results into the database in time %d(ms)", result.results.length, durationTimeTransaction);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
-        logger.info("Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
+        if( maxDurationTime != minDurationTime ) {
+            logger.info(
+                    "Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",
+                    cntStarted, cntFinished, durationTimeOverallMS, maxDurationTime, minDurationTime,
+                    (cntStarted > 0 ? durationTimeOverallMS / cntStarted : -1));
+        } else {
+            logger.info(
+                    "Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms)",
+                    cntStarted, cntFinished, durationTimeOverallMS);
+        }
     }
 
     public abstract Connection getConnection() throws SQLException;
