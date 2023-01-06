@@ -25,7 +25,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -129,8 +128,8 @@ public class Analytics {
         request.addHeader("Content-type","application/vnd.appd.events+json;v=2");
         request.addHeader("Accept","application/vnd.appd.events+json;v=2");
         try {
-            request.setEntity(new StringEntity(query));
-        } catch (UnsupportedEncodingException e) {
+            request.setEntity(new StringEntity(query, "UTF-8"));
+        } catch (Exception e) {
             logger.error("Query could not be encoded in the body of the request: '%s' Exception: %s",query,e.getMessage());
             return null;
         }
@@ -201,12 +200,12 @@ public class Analytics {
         request.addHeader("Content-type","application/vnd.appd.events+json;v=2");
         request.addHeader("Accept","application/vnd.appd.events+json;v=2");
         try {
-            StringBuilder stringBuilder = new StringBuilder(String.format("[{\"query\": \"%s\",\"mode\": \"scroll\", \"limit\": 10000", Utility.escapeQuotes(query)));
+            StringBuilder stringBuilder = new StringBuilder(String.format("[{\"query\": \"%s\",\"mode\": \"scroll\"", Utility.escapeQuotes(query)));
             if( scrollId != null ) stringBuilder.append(String.format(",\"scrollid\": \"%s\"",scrollId) );
             stringBuilder.append("}]");
             logger.trace("JSON BODY: '%s'", stringBuilder.toString());
-            request.setEntity(new StringEntity(stringBuilder.toString()));
-        } catch (UnsupportedEncodingException e) {
+            request.setEntity(new StringEntity(stringBuilder.toString(), "UTF-8"));
+        } catch (Exception e) {
             logger.error("Query could not be encoded in the body of the request: '%s' Exception: %s",query,e.getMessage());
             return ;
         }
