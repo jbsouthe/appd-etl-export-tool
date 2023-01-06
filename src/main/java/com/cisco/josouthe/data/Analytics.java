@@ -127,6 +127,7 @@ public class Analytics {
         request.addHeader("X-Events-API-AccountName", this.APIAccountName);
         request.addHeader("X-Events-API-Key", this.APIKey);
         request.addHeader("Content-type","application/vnd.appd.events+json;v=2");
+        request.addHeader("Accept","application/vnd.appd.events+json;v=2");
         try {
             request.setEntity(new StringEntity(query));
         } catch (UnsupportedEncodingException e) {
