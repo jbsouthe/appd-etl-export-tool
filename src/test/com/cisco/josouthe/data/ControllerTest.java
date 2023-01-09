@@ -30,7 +30,7 @@ public class ControllerTest extends TestCase {
             testProperties = new Properties();
             testProperties.load(new FileInputStream(new File("./test-settings.properties")));
             this.controller = new Controller(testProperties.getProperty("controller.url"), testProperties.getProperty("controller.client.id"),
-                    testProperties.getProperty("controller.client.secret"), null, false, null);
+                    testProperties.getProperty("controller.client.secret"), null, false, null, 0);
             this.initialized=true;
         } catch (Exception exception ) {
             throw exception;

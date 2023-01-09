@@ -96,11 +96,13 @@ public class Configuration {
         digester.addCallParam("ETLTool/TargetDB/DefaultBaselineTable", 6);
 
         //controller section, which centralizes authentication config
-        digester.addCallMethod("ETLTool/Controller", "addController", 4);
-        digester.addCallParam("ETLTool/Controller/URL", 0);
-        digester.addCallParam("ETLTool/Controller/ClientID", 1);
-        digester.addCallParam("ETLTool/Controller/ClientSecret", 2);
-        digester.addCallParam("ETLTool/Controller", 3, "getAllAnalyticsSearches");
+        paramCounter=0;
+        digester.addCallMethod("ETLTool/Controller", "addController", 5);
+        digester.addCallParam("ETLTool/Controller/URL", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/ClientID", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/ClientSecret", paramCounter++);
+        digester.addCallParam("ETLTool/Controller", paramCounter++, "getAllAnalyticsSearches");
+        digester.addCallParam("ETLTool/Controller/AdjustEndTimeMinutes", paramCounter++);
 
         //application config, within a controller
         digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 12);
@@ -126,12 +128,13 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/Application/Metric", 2);
 
         paramCounter=0;
-        digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 5);
+        digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 6);
         digester.addCallParam("ETLTool/Analytics/URL", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/GlobalAccountName", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/APIKey", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/TableNamePrefix", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/LinkToControllerHostname", paramCounter++);
+        digester.addCallParam("ETLTool/Analytics/AdjustEndTimeMinutes", paramCounter++);
 
         paramCounter=0;
         digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 4);
@@ -186,7 +189,7 @@ public class Configuration {
         logger.info("Added Search %s: '%s' to list for collection",name, query);
     }
 
-    public void addAnalytics( String urlString, String accountName, String apiKey, String tableNamePrefix, String linkedControllerHostname ) throws InvalidConfigurationException {
+    public void addAnalytics( String urlString, String accountName, String apiKey, String tableNamePrefix, String linkedControllerHostname, String minutesToAdjustEndTimestampByString ) throws InvalidConfigurationException {
         if( urlString == null || accountName == null || apiKey == null ) {
             logger.warn("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
             throw new InvalidConfigurationException("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
@@ -196,9 +199,15 @@ public class Configuration {
             for( Search search : controller.getAllSavedSearchesFromController() )
                 addAnalyticsSearch(search.getName(), search.getQuery(), null, search.visualization);
         }
+        if( minutesToAdjustEndTimestampByString == null ) minutesToAdjustEndTimestampByString="5";
+        int minutesToAdjustEndTimestampBy = Integer.parseInt(minutesToAdjustEndTimestampByString);
+        if( minutesToAdjustEndTimestampBy < 0 ) {
+            logger.warn("Configuration option <AdjustEndTimeMinutes>%d</AdjustEndTimeMinutes> is a bit strange, we subtract this from the end timestamp, we are going to swap the negative to positive and subtract that for you, maybe rethink this setting", minutesToAdjustEndTimestampBy);
+            minutesToAdjustEndTimestampBy *= -1;
+        }
         //if( this.searches.size() == 0 ) throw new InvalidConfigurationException("We can't add an Analytics section without any Searches!");
         try {
-            Analytics analytic = new Analytics( urlString, accountName, apiKey, tableNamePrefix, getDatabase(), (ArrayList<Search>) this.searches.clone());
+            Analytics analytic = new Analytics( urlString, accountName, apiKey, tableNamePrefix, getDatabase(), (ArrayList<Search>) this.searches.clone(), minutesToAdjustEndTimestampBy);
             this.searches = new ArrayList<>();
             this.analytics.add(analytic);
             this.definedAnalytics=true;
@@ -244,7 +253,7 @@ public class Configuration {
         metrics = new ArrayList<>();
     }
 
-    public void addController( String urlString, String clientID, String clientSecret, String getAllAnalyticsSearches) throws InvalidConfigurationException {
+    public void addController( String urlString, String clientID, String clientSecret, String getAllAnalyticsSearches, String minutesToAdjustEndTimestampByString ) throws InvalidConfigurationException {
         if( urlString == null || clientID == null || clientSecret == null ) {
             logger.warn("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
@@ -269,8 +278,14 @@ public class Configuration {
             String error = String.format("API Key is missing the hostname, it should probably be %s@%s instead of just %s, but I'm not going to automate config error corrections, it is just bad practice, so bailing early", clientID, hostname, clientID);
             throw new InvalidConfigurationException(error);
         }
+        if( minutesToAdjustEndTimestampByString == null ) minutesToAdjustEndTimestampByString="5";
+        int minutesToAdjustEndTimestampBy = Integer.parseInt(minutesToAdjustEndTimestampByString);
+        if( minutesToAdjustEndTimestampBy < 0 ) {
+            logger.warn("Configuration option <AdjustEndTimeMinutes>%d</AdjustEndTimeMinutes> is a bit strange, we subtract this from the end timestamp, we are going to swap the negative to positive and subtract that for you, maybe rethink this setting", minutesToAdjustEndTimestampBy);
+            minutesToAdjustEndTimestampBy *= -1;
+        }
         try{
-            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag, applicationRegexList.toArray( new ApplicationRegex[0]));
+            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag, applicationRegexList.toArray( new ApplicationRegex[0]), minutesToAdjustEndTimestampBy);
             applications = new ArrayList<>();
             applicationRegexList = new ArrayList<>();
             controllerMap.put( controller.hostname, controller);

@@ -85,6 +85,7 @@ public class Utility {
         return in.replace('.', '_').replace(' ', '_');
     }
 
+    public static long now( long adj ) { return now()+adj; }
     public static long now() { return new Date().getTime(); }
 
     public static boolean isThisStringADate(String data) {

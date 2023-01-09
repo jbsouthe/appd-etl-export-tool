@@ -38,6 +38,7 @@ public class Analytics {
     public URL url;
     public boolean ignoreNullsInFirstColumnOfReturnedData = true;
     private Database database;
+    private int minutesToAdjustEndTimestampBy = 5;
     ArrayList<Search> searches = new ArrayList<>();
     HttpClient client = null;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -74,9 +75,10 @@ public class Analytics {
         this.client = HttpClientFactory.getHttpClient();
     }
 
-    public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searches) throws MalformedURLException{
+    public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searchesi, int minutesToAdjustEndTimestampBy ) throws MalformedURLException{
         this(urlString, accountName, apiKey, tableNamePrefix, database);
         this.searches=searches;
+        this.minutesToAdjustEndTimestampBy=minutesToAdjustEndTimestampBy;
     }
 
     public void setControlTable(IControlTable controlTable) {
@@ -91,7 +93,11 @@ public class Analytics {
         ArrayList<Result> results = new ArrayList<>();
         ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(url.getHost(), this.APIAccountName, "AnalyticsData");
         long startTimestamp = controlEntry.timestamp;
-        long endTimestamp = Utility.now();
+        long endTimestamp = Utility.now(this.minutesToAdjustEndTimestampBy*-60000 ); //going to try setting the end time to now()-5 minutes to see if this is enough to allow the backend time to finish collecting all data for a period
+        if( endTimestamp <= startTimestamp ) {
+            logger.warn("While trying to set the end timestamp to 5 minutes before now(), we have reached a situation where the end time is less than or equal to the start time, this means we are going to skip this run");
+            return null;
+        }
         for( Search search : searches ) {
             //Transaction serviceEndPoint = AppdynamicsAgent.startTransactionAndServiceEndPoint("Analytics Search", null, "Analytics Search "+ search.name, EntryTypes.POJO, false);
             //serviceEndPoint.collectData("Search Query", search.query, Utility.getSnapshotDatascope());
@@ -109,7 +115,7 @@ public class Analytics {
     }
 
     public Result[] runAnalyticsQuery(Search search) {
-        return runAnalyticsQuery(search.getName(), search.getQuery(),(Utility.now())-3600000, Utility.now(), search.limit, null);
+        return runAnalyticsQuery(search.getName(), search.getQuery(),Utility.now(-3600000), Utility.now(), search.limit, null);
     }
 
     public Result[] runAnalyticsQuery(Search search, long startTimestamp, long endTimestamp, LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue) {
@@ -117,7 +123,7 @@ public class Analytics {
     }
 
     public Result[] runAnalyticsQuery(String name, String query) {
-        return runAnalyticsQuery(name, query, (Utility.now())-3600000, Utility.now(), 10000, null);
+        return runAnalyticsQuery(name, query, Utility.now(-3600000), Utility.now(), 10000, null);
     }
 
     public Result[] runAnalyticsQuery(String name, String query, long startTimestamp, long endTimestamp, int limit, LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue ) {

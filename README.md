@@ -206,6 +206,7 @@ Multiple Controller Sections can be defined, but the url must be unique.
         <URL>https://southerland-test.saas.appdynamics.com/</URL>
         <ClientID>ETLClient@southerland-test</ClientID>
         <ClientSecret>the generated client secret</ClientSecret>
+        <AdjustEndTimeMinutes>5</AdjustEndTimeMinutes>
         <Application getAllAvailableMetrics="true" getAllEvents="false"> <!-- these are the default options in default values -->
             <Name regex="false">Agent Proxy</Name>
                  <!-- if regex="true" then the application name will instead function as a regex match pattern,
@@ -243,5 +244,14 @@ Multiple Analytics Sections can be defined, but the Global Account Name must be 
         <APIKey>generate your own key</APIKey> <!-- API Key is created in analytics configuration settings -->
         <TableNamePrefix>AppDynamics_Analytics_</TableNamePrefix> <!-- this is the prefix table name for data extracted, final table is <PrefixTableName><Search name> -->
         <LinkToControllerHostname>southerland-test.saas.appdynamics.com</LinkToControllerHostname>
-        <Search name="UniqueTransactionCount" limit="20000">SELECT transactionName, count(*) FROM transactions</Search> <!--limit is optional and defaults to 20000, name must be unique for this section -->
+        <AdjustEndTimeMinutes>5</AdjustEndTimeMinutes> <!-- this is the default if missing, 5 minutes will hopefully ensure that agents have had plenty of time to send this data to analytics, in some situations this may need to be increased -->
+        <Search name="UniqueTransactionCount" limit="10000">SELECT transactionName, count(*) FROM transactions</Search> <!--limit is optional and defaults to 20000, name must be unique for this section -->
     </Analytics>
+
+* URL is the event services url, for saas this is pretty easy, but on premise deployments will require the local url https://docs.appdynamics.com/paa/saas-domains-and-ip-ranges
+* GlobalAccountName can be taken from teh controller license panel
+* APIKey needs to be generated on the analytics settings panels
+* TableNamePrefix will be used on the target database/csv for naming, the Search name will be appended to this
+* LinkToControllerHostname, we want to link the controller section above to the analytics for that controller in case you want to load all saved searches, and not define them manually in this section
+* AdjustEndTimeMinutes this is the amount of time to skew the end time of the query to analytics, setting this to 5 minutes ensures all data that will be written from agents makes it in. Under some crazy conditions this delay may need to be extended, if your local event service cluster is super slow or a huge latency is seen on agents sending data. Let me know if this becomes a bigger problem.
+* Search, search sections can be added for each query to execute, limit can be excluded, if more than 10k records are available we will switch to a paged query mode and pull everything back with multiple requests.

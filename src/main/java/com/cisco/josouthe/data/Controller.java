@@ -58,6 +58,7 @@ public class Controller {
     public Model controllerModel = null;
     private IControlTable controlTable = null;
     private boolean getAllAnalyticsSearchesFlag = false;
+    private int minutesToAdjustEndTimestampBy = 5;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
     final ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
@@ -81,7 +82,7 @@ public class Controller {
 
     };
 
-    public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag, ApplicationRegex[] applicationRegexes ) throws MalformedURLException {
+    public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag, ApplicationRegex[] applicationRegexes, int minutesToAdjustEndTimestampBy ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
         this.url = new URL(urlString);
         this.hostname = this.url.getHost();
@@ -91,6 +92,7 @@ public class Controller {
         this.getAllAnalyticsSearchesFlag=getAllAnalyticsSearchesFlag;
         this.client = HttpClientFactory.getHttpClient();
         this.applicationRegexes = applicationRegexes;
+        this.minutesToAdjustEndTimestampBy = minutesToAdjustEndTimestampBy;
         if( this.applicationRegexes != null && this.applicationRegexes.length > 0 ) {
             initApplicationIdMap();
             List<Application> applicationsToAdd = new ArrayList<>();
@@ -290,7 +292,7 @@ public class Controller {
             serviceEndPoint.collectData("Start-Timestamp", String.valueOf(controlEntry.timestamp), Utility.getSnapshotDatascope());
              */
         long startTimestamp = controlEntry.timestamp;
-        long endTimestamp = Utility.now();
+        long endTimestamp = Utility.now( this.minutesToAdjustEndTimestampBy*-60000 );
         WorkingStatusThread workingStatusThread = new WorkingStatusThread("Get Controller Metrics", application.name, logger);
         workingStatusThread.start();
         for( String applicationMetricName : application.metricGraph.getUniqueCompressedMetricNames() ) {
@@ -380,7 +382,7 @@ public class Controller {
 
              */
         long startTimestamp = controlEntry.timestamp;
-        long endTimestamp = Utility.now();
+        long endTimestamp = Utility.now( this.minutesToAdjustEndTimestampBy*-60000 );
         if( application.getAllEvents ) {
             int tries=0;
             boolean succeeded=false;
