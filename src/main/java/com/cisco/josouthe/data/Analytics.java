@@ -75,7 +75,7 @@ public class Analytics {
         this.client = HttpClientFactory.getHttpClient();
     }
 
-    public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searchesi, int minutesToAdjustEndTimestampBy ) throws MalformedURLException{
+    public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searches, int minutesToAdjustEndTimestampBy ) throws MalformedURLException{
         this(urlString, accountName, apiKey, tableNamePrefix, database);
         this.searches=searches;
         this.minutesToAdjustEndTimestampBy=minutesToAdjustEndTimestampBy;
@@ -94,6 +94,7 @@ public class Analytics {
         ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(url.getHost(), this.APIAccountName, "AnalyticsData");
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now(this.minutesToAdjustEndTimestampBy*-60000 ); //going to try setting the end time to now()-5 minutes to see if this is enough to allow the backend time to finish collecting all data for a period
+        logger.trace("Adjustment, if enabled: minutes %d (negated)mil: %d", this.minutesToAdjustEndTimestampBy,this.minutesToAdjustEndTimestampBy*-60000 );
         if( endTimestamp <= startTimestamp ) {
             logger.warn("While trying to set the end timestamp to 5 minutes before now(), we have reached a situation where the end time is less than or equal to the start time, this means we are going to skip this run");
             return null;
@@ -115,7 +116,7 @@ public class Analytics {
     }
 
     public Result[] runAnalyticsQuery(Search search) {
-        return runAnalyticsQuery(search.getName(), search.getQuery(),Utility.now(-3600000), Utility.now(), search.limit, null);
+        return runAnalyticsQuery(search.getName(), search.getQuery(), Utility.now(), Utility.now(this.minutesToAdjustEndTimestampBy*-60000), search.limit, null);
     }
 
     public Result[] runAnalyticsQuery(Search search, long startTimestamp, long endTimestamp, LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue) {
