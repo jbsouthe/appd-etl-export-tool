@@ -143,11 +143,8 @@ public class Configuration {
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
 
+        setSchedulerProperties("false","", "1", "10", "50", "12");
         digester.parse(new InputStreamReader(new FileInputStream(configFileName), StandardCharsets.UTF_8));
-        if( ! definedScheduler ) {
-            logger.warn("No scheduler defined in the config file, we are going to configure a basic one run scheduler for you");
-            setSchedulerProperties("false","", "1", "10", "50", "12");
-        }
 
         logger.info("Validating Configured Settings");
         for( Controller controller : getControllerList() ) {
@@ -299,7 +296,6 @@ public class Configuration {
         if( "false".equalsIgnoreCase(enabledFlag) ) {
             logger.info("MainControlScheduler is disabled, running only once");
             properties.setProperty("scheduler-enabled", "false");
-            return;
         } else {
             properties.setProperty("scheduler-enabled", "true");
             this.definedScheduler = true;
