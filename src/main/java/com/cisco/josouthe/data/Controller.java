@@ -58,6 +58,7 @@ public class Controller {
     public Model controllerModel = null;
     private IControlTable controlTable = null;
     private boolean getAllAnalyticsSearchesFlag = false;
+    private boolean wireTraceEnabled = false;
     private int minutesToAdjustEndTimestampBy = 5;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
@@ -71,7 +72,9 @@ public class Controller {
             if (status >= HttpStatus.SC_OK && status < HttpStatus.SC_TEMPORARY_REDIRECT) {
                 final HttpEntity entity = response.getEntity();
                 try {
-                    return entity != null ? EntityUtils.toString(entity) : null;
+                    String json =entity != null ? EntityUtils.toString(entity) : null;
+                    if( wireTraceEnabled ) logger.info("JSON returned: '%s'",json);
+                    return json;
                 } catch (final ParseException ex) {
                     throw new ClientProtocolException(ex);
                 }
@@ -93,6 +96,7 @@ public class Controller {
         this.client = HttpClientFactory.getHttpClient();
         this.applicationRegexes = applicationRegexes;
         this.minutesToAdjustEndTimestampBy = minutesToAdjustEndTimestampBy;
+        if( System.getProperty("wireTrace") != null && System.getProperty("wireTrace").toLowerCase().contains("controller") ) this.wireTraceEnabled=true;
         if( this.applicationRegexes != null && this.applicationRegexes.length > 0 ) {
             initApplicationIdMap();
             List<Application> applicationsToAdd = new ArrayList<>();
@@ -187,7 +191,6 @@ public class Controller {
         String json = null;
         try {
             json = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-            logger.trace("JSON returned: %s",json);
         } catch (IOException e) {
             logger.warn("IOException parsing returned encoded string to json text: "+ e.getMessage());
             return false;
@@ -458,7 +461,6 @@ public class Controller {
         String json = null;
         try {
             json = client.execute(request, this.responseHandler);
-            logger.trace("Data Returned: '%s'",json);
         } catch (ControllerBadStatusException controllerBadStatusException) {
             controllerBadStatusException.setURL(request.getURI().toString());
             throw controllerBadStatusException;

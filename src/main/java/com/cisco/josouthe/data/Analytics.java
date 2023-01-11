@@ -36,7 +36,7 @@ public class Analytics {
 
     public String APIAccountName, APIKey, tableNamePrefix="AppDynamics_Analytics_";
     public URL url;
-    public boolean ignoreNullsInFirstColumnOfReturnedData = true;
+    public boolean wireTraceEnabled = false;
     private Database database;
     private int minutesToAdjustEndTimestampBy = 5;
     ArrayList<Search> searches = new ArrayList<>();
@@ -53,7 +53,9 @@ public class Analytics {
             if (status >= HttpStatus.SC_OK && status < HttpStatus.SC_TEMPORARY_REDIRECT) {
                 final HttpEntity entity = response.getEntity();
                 try {
-                    return entity != null ? EntityUtils.toString(entity) : null;
+                    String json =entity != null ? EntityUtils.toString(entity) : null;
+                    if( wireTraceEnabled ) logger.info("JSON returned: '%s'",json);
+                    return json;
                 } catch (final ParseException ex) {
                     throw new ClientProtocolException(ex);
                 }
@@ -73,6 +75,7 @@ public class Analytics {
             this.tableNamePrefix=tableNamePrefix;
         this.database = database;
         this.client = HttpClientFactory.getHttpClient();
+        if( System.getProperty("wireTrace") != null && System.getProperty("wireTrace").toLowerCase().contains("analytics") ) this.wireTraceEnabled=true;
     }
 
     public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searches, int minutesToAdjustEndTimestampBy ) throws MalformedURLException{
@@ -124,7 +127,7 @@ public class Analytics {
     }
 
     public Result[] runAnalyticsQuery(String name, String query) {
-        return runAnalyticsQuery(name, query, Utility.now(-3600000), Utility.now(), 10000, null);
+        return runAnalyticsQuery(name, query, Utility.now(), Utility.now(-3600000), 10000, null);
     }
 
     public Result[] runAnalyticsQuery(String name, String query, long startTimestamp, long endTimestamp, int limit, LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue ) {
@@ -150,7 +153,6 @@ public class Analytics {
             try{
                 json = this.client.execute(request, this.responseHandler);
                 succeeded=true;
-                //logger.trace("JSON Returned: '%s'",json);
             } catch (ControllerBadStatusException controllerBadStatusException) {
                 tries++;
                 logger.warn("Error on try %d while trying to get Analytics Query Results for %s Error: %s", tries, query, controllerBadStatusException.getMessage());
@@ -226,7 +228,6 @@ public class Analytics {
             try{
                 json = this.client.execute(request, this.responseHandler);
                 succeeded=true;
-                //logger.trace("JSON Returned: '%s'",json);
             } catch (ControllerBadStatusException controllerBadStatusException) {
                 tries++;
                 logger.warn("Error on try %d while trying to get Analytics Query Results for %s Error: %s", tries, query, controllerBadStatusException.getMessage());
