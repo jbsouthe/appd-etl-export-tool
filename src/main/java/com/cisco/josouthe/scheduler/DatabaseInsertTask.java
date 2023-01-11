@@ -2,6 +2,7 @@ package com.cisco.josouthe.scheduler;
 
 import com.cisco.josouthe.Configuration;
 import com.cisco.josouthe.database.Database;
+import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import com.cisco.josouthe.util.WorkingStatusThread;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,17 +36,22 @@ public class DatabaseInsertTask implements Runnable{
     @Override
     public void run() {
         while( configuration.isRunning() || !dataQueue.isEmpty() ) {
+            WorkingStatusThread workingStatusThread = null;
             try {
                 Object[] data = dataQueue.poll(5000, TimeUnit.MILLISECONDS);
                 if( data != null && data.length > 0 ) {
                     logger.debug("Poll returned %d data elements to insert into the database", (data == null ? 0 : data.length));
-                    WorkingStatusThread workingStatusThread = new WorkingStatusThread("Database Insert", Thread.currentThread().getName(), logger);
+                    workingStatusThread = new WorkingStatusThread("Database Insert", Thread.currentThread().getName(), logger);
                     workingStatusThread.start();
                     this.database.importData(data);
-                    workingStatusThread.cancel();
                 }
             } catch (InterruptedException ignored) {
                 //ignore it
+            } catch (FailedDataLoadException e) {
+                logger.warn("Failed to load data into the database, will add it back to the queue for processing, message: %s", e);
+                dataQueue.add(e.getData());
+            } finally {
+                if( workingStatusThread != null ) workingStatusThread.cancel();
             }
         }
         logger.debug("Shutting down database Insert Task");

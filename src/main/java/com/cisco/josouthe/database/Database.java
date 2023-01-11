@@ -5,6 +5,7 @@ import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.BaselineData;
 import com.cisco.josouthe.data.metric.MetricData;
+import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +54,7 @@ public abstract class Database {
 
     public abstract boolean isDatabaseAvailable();
 
-    public void importData( Object[] someData ) {
+    public void importData( Object[] someData ) throws FailedDataLoadException {
         if( someData == null || someData.length == 0 ) return;
         if( someData instanceof MetricData[] ) {
             importMetricData((MetricData[]) someData);
@@ -68,7 +69,7 @@ public abstract class Database {
         }
     }
 
-    public void importMetricData(MetricData[] metricData) {
+    public void importMetricData(MetricData[] metricData) throws FailedDataLoadException {
         logger.trace("Beginning of import metric data method");
         if( metricData == null || metricData.length == 0 ) {
             logger.debug("Nothing to import, leaving quickly");
@@ -80,7 +81,7 @@ public abstract class Database {
         long startTimeOverall = Utility.now();
         long maxDurationTime = -1;
         long minDurationTime = Long.MAX_VALUE;
-        for( MetricData metric : metricData ) {
+        for( MetricData metric : metricData ) { //TODO pop a data element off the array on success, otherwise leave the data in the array, in case of exception
             if( "METRIC DATA NOT FOUND".equals(metric.metricName) ) continue;
             cntStarted+=metric.metricValues.size();
             IMetricTable table = (IMetricTable) getMetricTable(metric.targetTable);
@@ -98,7 +99,7 @@ public abstract class Database {
 
     }
 
-    public void importBaselineData(BaselineData[] baselineData) {
+    public void importBaselineData(BaselineData[] baselineData) throws FailedDataLoadException {
         logger.trace("Beginning of import metric data method");
         if( baselineData == null || baselineData.length == 0 ) {
             logger.debug("Nothing to import, leaving quickly");
@@ -127,7 +128,7 @@ public abstract class Database {
 
     }
 
-    public void importEventData(EventData[] events) {
+    public void importEventData(EventData[] events) throws FailedDataLoadException{
         logger.trace("Beginning of import event data method");
         if( events == null || events.length == 0 ) {
             logger.debug("Nothing to import, leaving quickly");
@@ -152,7 +153,7 @@ public abstract class Database {
         logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime,  (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
     }
 
-    public void importAnalyticData(Result[] results) {
+    public void importAnalyticData(Result[] results) throws FailedDataLoadException{
         logger.trace("Begining of import analytics search results method");
         if( results == null || results.length == 0 ) {
             logger.debug("Nothing to import, leaving quickly");

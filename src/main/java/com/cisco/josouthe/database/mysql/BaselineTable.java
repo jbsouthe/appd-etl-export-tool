@@ -6,6 +6,7 @@ import com.cisco.josouthe.data.metric.MetricValue;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.IBaselineTable;
+import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,7 +33,7 @@ public class BaselineTable extends MySQLTable implements IBaselineTable {
         this.initTable();
     }
 
-    public int insert(Object object) {
+    public int insert(Object object) throws FailedDataLoadException {
         if( object == null ) {
             logger.warn("Can not insert a null Baseline Data Object!");
             return 0;
@@ -78,6 +79,7 @@ public class BaselineTable extends MySQLTable implements IBaselineTable {
         } catch (Exception exception) {
             logger.error("Error inserting baseline into %s, Exception: %s", name, exception.toString());
             logger.warn("Bad SQL: %s",insertSQL.toString());
+            throw new FailedDataLoadException( String.format("Error inserting baseline into %s, Exception: %s", name, exception.toString()), object);
         }
         return counter;
     }

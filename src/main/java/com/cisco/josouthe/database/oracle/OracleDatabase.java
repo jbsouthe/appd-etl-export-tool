@@ -31,14 +31,19 @@ public class OracleDatabase extends Database {
 
     private HikariConfig hikariConfig;
     private HikariDataSource dataSource;
+    private int maxColumnNameLength = 30;
 
 
-    public OracleDatabase(Configuration configuration, String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable, Long firstRunHistoricNumberOfHours) throws InvalidConfigurationException {
+    public OracleDatabase(Configuration configuration, String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable, Long firstRunHistoricNumberOfHours, Integer maxColumnNameLengthInteger ) throws InvalidConfigurationException {
         super( configuration, connectionString, user, password);
         this.hikariConfig = new HikariConfig();
         this.hikariConfig.setJdbcUrl(connectionString);
         this.hikariConfig.setUsername(user);
         this.hikariConfig.setPassword(password);
+        if( maxColumnNameLengthInteger != null ) {
+            this.maxColumnNameLength = maxColumnNameLengthInteger;
+            logger.info("Setting Oracle Max Column Name Length to %d", maxColumnNameLength);
+        }
         this.hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         this.hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         this.hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
@@ -156,13 +161,13 @@ public class OracleDatabase extends Database {
         label.chars().filter( ch -> ch == '_' || Character.isAlphabetic(ch) || Character.isDigit(ch)).forEach( ch -> result.append((char) ch));
         if( _tableNameForbiddenWords.contains(result.toString().toLowerCase()) ) result.append("_c");
         if( containsColumnAlready(result.toString(), existingColumns) ) result.append("_2");
-        if( result.length() > 30 ) {
-            String shorterLabel = result.substring(0,30);
+        if( result.length() > this.maxColumnNameLength ) {
+            String shorterLabel = result.substring(0,this.maxColumnNameLength);
             if( _tableNameForbiddenWords.contains(shorterLabel.toLowerCase()) ) {
-                shorterLabel = shorterLabel.substring(0,28)+"_c"; //this could only happen if a reserved word is 30 characters long!
+                shorterLabel = shorterLabel.substring(0,this.maxColumnNameLength-2)+"_c"; //this could only happen if a reserved word is 30 characters long!
             }
             logger.trace("Setting database column name to short version: %s",shorterLabel);
-            if( containsColumnAlready(shorterLabel, existingColumns) ) shorterLabel = shorterLabel.substring(0,28) + "_2";
+            if( containsColumnAlready(shorterLabel, existingColumns) ) shorterLabel = shorterLabel.substring(0,this.maxColumnNameLength-2) + "_2";
             return shorterLabel;
         }
         logger.trace("Returning database column name: %s for field label %s", result, label);

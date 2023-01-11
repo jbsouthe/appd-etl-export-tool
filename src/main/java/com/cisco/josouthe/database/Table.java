@@ -1,5 +1,6 @@
 package com.cisco.josouthe.database;
 
+import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,11 +56,12 @@ public abstract class Table {
 
     public String fitToSize( String text, int maxSize) {
         if( text.length() <= maxSize) return text;
+        logger.warn("Truncating insert text to '%s'(%d) original value: '%s'(%d)", text.substring(0,maxSize), maxSize, text, text.length());
         return text.substring(0,maxSize);
     }
 
     //each table has a specific method for the insert
-    public abstract int insert(Object object);
+    public abstract int insert(Object object) throws FailedDataLoadException;
 
     //each database vendor has their own specific SQL for these methods
     protected abstract void createTable();
@@ -76,7 +78,7 @@ public abstract class Table {
             if( column.isMissing ) alterTableToAddColumn( column);
             if( column.isWrongNullable || column.isWrongType ) {
                 ColumnFeatures columnFeatures = getColumns().get(column.name);
-                if( columnFeatures == null ) logger.warn("Abbout to error because getColumns().get(%s) returns null",column.name);
+                if( columnFeatures == null ) logger.warn("About to error because getColumns().get(%s) returns null",column.name);
                 logger.warn("We can't fix this problem with the table '%s.%s', wrong nullable: '%s', wrong type: '%s' is '%s' but should be '%s'", getName(), column.name, column.isWrongNullable, column.isWrongType, column.type, columnFeatures.type);
             }
             if( column.isWrongSize && !column.isWrongType ) {

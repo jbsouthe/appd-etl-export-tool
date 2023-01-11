@@ -5,6 +5,7 @@ import com.cisco.josouthe.data.metric.MetricValue;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.IMetricTable;
+import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +30,7 @@ public class MetricTable extends MicrosoftTable implements IMetricTable {
         this.initTable();
     }
 
-    public int insert(Object object) {
+    public int insert(Object object) throws FailedDataLoadException {
         MetricData metric = (MetricData) object;
         int counter=0;
         StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
@@ -65,6 +66,7 @@ public class MetricTable extends MicrosoftTable implements IMetricTable {
             counter += preparedStatement.executeBatch().length;
         } catch (Exception exception) {
             logger.error("Error inserting metrics into %s, Exception: %s", name, exception.toString());
+            throw new FailedDataLoadException( String.format("Error inserting metrics into %s, Exception: %s", name, exception.toString()), object);
         }
         return counter;
     }

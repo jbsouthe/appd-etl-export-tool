@@ -5,6 +5,7 @@ import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.IAnalyticTable;
+import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,7 +37,7 @@ public class AnalyticTable extends PGSQLTable implements IAnalyticTable {
 
 
     @Override
-    public int insert(Object object) {
+    public int insert(Object object) throws FailedDataLoadException {
         Result result = (Result) object;
         int counter=0;
         StringBuilder sqlBeginning = new StringBuilder(String.format("insert into %s (",name));
@@ -109,6 +110,7 @@ public class AnalyticTable extends PGSQLTable implements IAnalyticTable {
         } catch (Exception exception) {
             logger.error("Error inserting analytics data into %s, Exception: %s", name, exception.toString(), exception);
             logger.warn("Bad SQL: %s",insertSQL.toString());
+            throw new FailedDataLoadException( String.format("Error inserting analytics data into %s with sql '%s', Exception: %s", name, insertSQL.toString(),exception.toString()), object);
         }
         return counter;
     }

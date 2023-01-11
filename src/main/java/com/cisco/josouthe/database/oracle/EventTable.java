@@ -4,6 +4,7 @@ import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.IEventTable;
+import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +32,7 @@ public class EventTable extends OracleTable implements IEventTable {
     }
 
     @Override
-    public int insert(Object object) {
+    public int insert(Object object) throws FailedDataLoadException {
         EventData event = (EventData) object;
         int counter=0;
         StringBuilder insertSQL = new StringBuilder(String.format("insert into %s (",name));
@@ -65,6 +66,7 @@ public class EventTable extends OracleTable implements IEventTable {
             counter += preparedStatement.executeUpdate();
         } catch (Exception exception) {
             logger.error("Error inserting events into %s, Exception: %s", name, exception.toString());
+            throw new FailedDataLoadException( String.format("Error inserting events into %s, Exception: %s", name, exception.toString()), object);
         }
         return counter;
     }
