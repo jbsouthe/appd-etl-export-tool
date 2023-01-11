@@ -86,14 +86,16 @@ public class Configuration {
         digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5 );
 
         //database configuration section
-        digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 7);
-        digester.addCallParam("ETLTool/TargetDB/ConnectionString", 0);
-        digester.addCallParam("ETLTool/TargetDB/User", 1);
-        digester.addCallParam("ETLTool/TargetDB/Password", 2);
-        digester.addCallParam("ETLTool/TargetDB/DefaultMetricTable", 3);
-        digester.addCallParam("ETLTool/TargetDB/ControlTable", 4);
-        digester.addCallParam("ETLTool/TargetDB/DefaultEventTable", 5);
-        digester.addCallParam("ETLTool/TargetDB/DefaultBaselineTable", 6);
+        paramCounter=0;
+        digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 8);
+        digester.addCallParam("ETLTool/TargetDB/ConnectionString", paramCounter++);
+        digester.addCallParam("ETLTool/TargetDB/User", paramCounter++);
+        digester.addCallParam("ETLTool/TargetDB/Password", paramCounter++);
+        digester.addCallParam("ETLTool/TargetDB/DefaultMetricTable", paramCounter++);
+        digester.addCallParam("ETLTool/TargetDB/ControlTable", paramCounter++);
+        digester.addCallParam("ETLTool/TargetDB/DefaultEventTable", paramCounter++);
+        digester.addCallParam("ETLTool/TargetDB/DefaultBaselineTable", paramCounter++);
+        digester.addCallParam("ETLTool/TargetDB/MaximumColumnNameLength", paramCounter++);
 
         //controller section, which centralizes authentication config
         paramCounter=0;
@@ -327,7 +329,7 @@ public class Configuration {
         this.properties.setProperty("scheduler-ConfigRefreshHours", numberConfigRefreshHours);
     }
 
-    public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable ) throws InvalidConfigurationException {
+    public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable, String maximumColumnNameLengthString ) throws InvalidConfigurationException {
         if( connectionString == null ) {
             logger.warn("No valid minimum config parameters for ETL Database! Ensure Connection String is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for ETL Database! Ensure Connection String is configured");
@@ -338,9 +340,17 @@ public class Configuration {
         if( controlTable == null ) controlTable = "AppDynamics_SchedulerControl";
         if( eventTable == null ) eventTable = "AppDynamics_EventTable";
         if( baselineTable == null ) baselineTable = "AppDynamics_BaselineTable";
+        int maxColumnNameLength = 30;
+        if( maximumColumnNameLengthString != null ) {
+            try {
+                maxColumnNameLength = Integer.parseInt(maximumColumnNameLengthString);
+            } catch (NumberFormatException e) {
+                throw new InvalidConfigurationException(String.format("Bad value for MaximumColumnNameLength in Database Configuration Section: %s", maximumColumnNameLengthString) );
+            }
+        }
         switch( Utility.parseDatabaseVendor(connectionString).toLowerCase() ) {
             case "oracle": {
-                this.database = new OracleDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L));
+                this.database = new OracleDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L), maxColumnNameLength);
                 break;
             }
             case "csv": {
