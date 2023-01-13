@@ -161,10 +161,11 @@ public class Controller {
             logger.warn("Unsupported Encoding Exception in post parameter encoding: %s",e.getMessage());
         }
 
-        if( logger.isTraceEnabled()){
-            logger.trace("Request to run: %s",request.toString());
+        if( wireTraceEnabled ){
+            logger.info("Request to run: %s",request.toString());
             for( Header header : request.getAllHeaders())
-                logger.trace("with header: %s",header.toString());
+                logger.info("with header: %s",header.toString());
+            logger.info("post parameters: %s", postParameters);
         }
 
         HttpResponse response = null;
@@ -232,7 +233,9 @@ public class Controller {
         if( ! urlString.contains("output=JSON") ) urlString += "&output=JSON";
         HttpGet request = new HttpGet(urlString);
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
-        logger.trace("HTTP Method: %s",request);
+        if( wireTraceEnabled ) {
+            logger.info("Wire Trace Request: '%s'",request.toString());
+        }
         String json = null;
         try {
             json = client.execute(request, this.responseHandler);
@@ -433,6 +436,9 @@ public class Controller {
         HttpPost request = new HttpPost(String.format("%s%s", this.url.toString(), requestUri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.trace("HTTP Method: %s with body: '%s'",request, body);
+        if( wireTraceEnabled ) {
+            logger.info("Wire Trace POST Request: '%s' with Body: '%s'",request.toString(), body);
+        }
         String json = null;
         try {
             request.setEntity( new StringEntity(body, "UTF8"));
@@ -457,7 +463,9 @@ public class Controller {
     private String getRequest( String uri ) throws ControllerBadStatusException {
         HttpGet request = new HttpGet(String.format("%s%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
-        logger.trace("HTTP Method: %s",request);
+        if( wireTraceEnabled ) {
+            logger.info("Wire Trace GET Request: '%s'",request.toString());
+        }
         String json = null;
         try {
             json = client.execute(request, this.responseHandler);

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#Trace analytics
+export DEBUGARGS="-DwireTrace=analytics"
+
 CP=".:$1"
 for i in ./lib/*.jar
 do
@@ -12,5 +15,5 @@ if [[ "$2" == "test" ]]; then
   java -cp $CP com.cisco.josouthe.data.Analytics
 #  java -cp $CP com.cisco.josouthe.data.metric.graph.MetricGraph $3
 else
-  java -cp $CP com.cisco.josouthe.ETLTransferMain $2
+  java $DEBUGARGS -cp $CP com.cisco.josouthe.ETLTransferMain $2
 fi

@@ -144,6 +144,9 @@ public class Analytics {
             return null;
         }
         logger.trace("Request: %s with query: %s", request.toString(), query);
+        if( wireTraceEnabled ) {
+            logger.info("Wire Trace Request: '%s' with Body: '%s'",request.toString(), query);
+        }
         int tries=0;
         boolean succeeded=false;
         String json = "";
@@ -208,17 +211,20 @@ public class Analytics {
         request.addHeader("X-Events-API-Key", this.APIKey);
         request.addHeader("Content-type","application/vnd.appd.events+json;v=2");
         request.addHeader("Accept","application/vnd.appd.events+json;v=2");
+        StringBuilder stringBuilder = new StringBuilder(String.format("[{\"query\": \"%s\",\"mode\": \"scroll\"", Utility.escapeQuotes(query)));
+        if( scrollId != null ) stringBuilder.append(String.format(",\"scrollid\": \"%s\"",scrollId) );
+        stringBuilder.append("}]");
+        logger.trace("JSON BODY: '%s'", stringBuilder.toString());
         try {
-            StringBuilder stringBuilder = new StringBuilder(String.format("[{\"query\": \"%s\",\"mode\": \"scroll\"", Utility.escapeQuotes(query)));
-            if( scrollId != null ) stringBuilder.append(String.format(",\"scrollid\": \"%s\"",scrollId) );
-            stringBuilder.append("}]");
-            logger.trace("JSON BODY: '%s'", stringBuilder.toString());
             request.setEntity(new StringEntity(stringBuilder.toString(), "UTF-8"));
         } catch (Exception e) {
             logger.error("Query could not be encoded in the body of the request: '%s' Exception: %s",query,e.getMessage());
             return ;
         }
         logger.trace("Request: %s with query: %s", request.toString(), query);
+        if( wireTraceEnabled ) {
+            logger.info("Wire Trace Request: '%s' with Body: '%s'",request.toString(), stringBuilder.toString());
+        }
         int tries=0;
         boolean succeeded=false;
         String json = "";
