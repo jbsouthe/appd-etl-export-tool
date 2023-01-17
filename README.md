@@ -20,7 +20,15 @@ The command line to execute is:
 
 `java -jar ETLExportTool-<version>.jar <configfile.xml>`
 
-It is assumed the XML config file is the first and only argument. Also expected that a log4j2.xml is in the current working directory
+It is assumed the XML config file is the first and only argument. Also expected that a log4j2.xml is in the current working directory. Also, on most systems no java arguments are needed, please check the section for kubernetes on what is needed.
+
+### Command line options for extended debug
+
+In order to print the response data from the controller or analytics to the log file, you must include a command line argument with a string value that is a comma separated list of channels to debug HTTP response data. for example:
+
+* Controller Data: -DwireTrace=controller
+* Analytics Data: -DwireTrace=analytics
+* Both: -DwireTrace=controller,analytics
 
 ### Running in Kubernetes
 
@@ -65,11 +73,11 @@ now make a deployment for this, using this example and modifying it to your liki
         - name: CONFIG_FILE 
           value: "/config/etl-tool-config.xml"
         - name: JAVA_OPT
-          value: "-XX:+TraceClassLoading -verbose:class"
+          value: "-XX:+UseParallelGC -XX:ParallelGCThreads=10 -XX:MaxGCPauseMillis=1000 -XX:MaxRAMPercentage=75 "
           imagePullPolicy: Always
         resources:
             requests:
-                memory: "1024Mi"
+                memory: "1536Mi"
                 cpu: "2"
         volumeMounts:
         - name: my-config
@@ -79,8 +87,9 @@ now make a deployment for this, using this example and modifying it to your liki
           configMap:
           name: csv-etl-config
 
-Make sure the config file name is correct to your ConfigMap
-If JAVA_OPTS are needed for something like Proxy Configuration, as below
+Make sure the config file name is correct to your ConfigMap.
+If JAVA_OPTS are needed for something like Proxy Configuration, as below. 
+The settings for resources and JVM arguments are what I was able to find worked best, YMMV. The nice thing about these settings, is if you or someone else changes the resources available, we can still run pretty good.
 
 ### Proxy Configuration
 
@@ -249,18 +258,11 @@ Multiple Analytics Sections can be defined, but the Global Account Name must be 
     </Analytics>
 
 * URL is the event services url, for saas this is pretty easy, but on premise deployments will require the local url https://docs.appdynamics.com/paa/saas-domains-and-ip-ranges
-* GlobalAccountName can be taken from teh controller license panel
+* GlobalAccountName can be taken from the controller license panel
 * APIKey needs to be generated on the analytics settings panels
 * TableNamePrefix will be used on the target database/csv for naming, the Search name will be appended to this
 * LinkToControllerHostname, we want to link the controller section above to the analytics for that controller in case you want to load all saved searches, and not define them manually in this section
 * AdjustEndTimeMinutes this is the amount of time to skew the end time of the query to analytics, setting this to 5 minutes ensures all data that will be written from agents makes it in. Under some crazy conditions this delay may need to be extended, if your local event service cluster is super slow or a huge latency is seen on agents sending data. Let me know if this becomes a bigger problem.
 * Search, search sections can be added for each query to execute, limit can be excluded, if more than 10k records are available we will switch to a paged query mode and pull everything back with multiple requests.
 
-### Command line options for extended debug
-
-In order to print the response data from the controller or analytics to the log file, you must include a command line argument with a string value that is a comma separated list of channels to debug HTTP response data. for example:
-
-* Controller Data: -DwireTrace=controller
-* Analytics Data: -DwireTrace=analytics
-* Both: -DwireTrace=controller,analytics
 
