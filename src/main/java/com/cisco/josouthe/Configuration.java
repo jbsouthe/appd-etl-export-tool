@@ -145,7 +145,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
 
-        setSchedulerProperties("false","", "1", "10", "50", "12");
+        setSchedulerProperties("false","", "1", "10", "50", "12", false);
         digester.parse(new InputStreamReader(new FileInputStream(configFileName), StandardCharsets.UTF_8));
 
         logger.info("Validating Configured Settings");
@@ -295,8 +295,11 @@ public class Configuration {
     }
 
     public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours ) {
+        setSchedulerProperties(enabledFlag, pollIntervalMinutes, firstRunHistoricNumberOfHours, numberOfControllerThreads, numberOfDatabaseThreads, numberConfigRefreshHours, true );
+    }
+    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours, boolean printOutput ) {
         if( "false".equalsIgnoreCase(enabledFlag) ) {
-            logger.info("MainControlScheduler is disabled, running only once");
+            if(printOutput) logger.info("MainControlScheduler is disabled, running only once");
             properties.setProperty("scheduler-enabled", "false");
         } else {
             properties.setProperty("scheduler-enabled", "true");
@@ -305,27 +308,27 @@ public class Configuration {
         if( "".equals(pollIntervalMinutes) || pollIntervalMinutes == null ) {
             pollIntervalMinutes = "10";
         }
-        logger.info("Setting poll interval to every %s minutes", pollIntervalMinutes);
+        if(printOutput) logger.info("Setting poll interval to every %s minutes", pollIntervalMinutes);
         this.properties.setProperty("scheduler-pollIntervalMinutes", pollIntervalMinutes);
         if( "".equals(firstRunHistoricNumberOfHours) || firstRunHistoricNumberOfHours == null ) {
             firstRunHistoricNumberOfHours = "48";
         }
-        logger.info("Setting first run historic data to pull to %s hours", firstRunHistoricNumberOfHours);
+        if(printOutput) logger.info("Setting first run historic data to pull to %s hours", firstRunHistoricNumberOfHours);
         this.properties.setProperty("scheduler-FirstRunHistoricNumberOfHours", firstRunHistoricNumberOfHours);
         if( "".equals(numberOfControllerThreads) || numberOfControllerThreads == null ) {
             numberOfControllerThreads="10";
         }
-        logger.info("Setting Number of Controller Communication Threads to %s", numberOfControllerThreads);
+        if(printOutput) logger.info("Setting Number of Controller Communication Threads to %s", numberOfControllerThreads);
         this.properties.setProperty("scheduler-NumberOfControllerThreads", numberOfControllerThreads);
         if( "".equals(numberOfDatabaseThreads) || numberOfDatabaseThreads == null ) {
             numberOfDatabaseThreads="50";
         }
-        logger.info("Setting Number of Database Communication Threads to %s", numberOfDatabaseThreads);
+        if(printOutput) logger.info("Setting Number of Database Communication Threads to %s", numberOfDatabaseThreads);
         this.properties.setProperty("scheduler-NumberOfDatabaseThreads", numberOfDatabaseThreads);
         if( "".equals(numberConfigRefreshHours) || numberConfigRefreshHours == null ) {
             numberConfigRefreshHours="12";
         }
-        logger.info("Setting Number of Hours to refresh controller application metric list to %s", numberConfigRefreshHours);
+        if(printOutput) logger.info("Setting Number of Hours to refresh controller application metric list to %s", numberConfigRefreshHours);
         this.properties.setProperty("scheduler-ConfigRefreshHours", numberConfigRefreshHours);
     }
 
