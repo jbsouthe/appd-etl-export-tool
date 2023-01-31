@@ -69,21 +69,25 @@ public class Configuration {
     public Controller[] getControllerList() { return controllerMap.values().toArray(new Controller[0]); }
     public Analytics[] getAnalyticsList() { return analytics.toArray( new Analytics[0]); }
 
-    public Configuration( String configFileName) throws Exception {
+    public Configuration( String configFileName ) throws Exception { this( configFileName, false); }
+    public Configuration( String configFileName, boolean onlyConfigureDatabase ) throws Exception {
         logger.info("Processing Config File: %s", configFileName);
         this.properties = new Properties();
         this.controllerMap = new HashMap<>();
         Digester digester = new Digester();
         digester.push(this);
         int paramCounter=0;
-        //scheduler config section default enabled with 10 minute run intervals
-        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 6 );
-        digester.addCallParam("ETLTool/Scheduler", 0 , "enabled");
-        digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1 );
-        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2 );
-        digester.addCallParam("ETLTool/Scheduler/ControllerThreads", 3 );
-        digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", 4 );
-        digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5 );
+
+        if( !onlyConfigureDatabase ) {
+            //scheduler config section default enabled with 10 minute run intervals
+            digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 6);
+            digester.addCallParam("ETLTool/Scheduler", 0, "enabled");
+            digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1);
+            digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2);
+            digester.addCallParam("ETLTool/Scheduler/ControllerThreads", 3);
+            digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", 4);
+            digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5);
+        }
 
         //database configuration section
         paramCounter=0;
@@ -97,78 +101,80 @@ public class Configuration {
         digester.addCallParam("ETLTool/TargetDB/DefaultBaselineTable", paramCounter++);
         digester.addCallParam("ETLTool/TargetDB/MaximumColumnNameLength", paramCounter++);
 
-        //controller section, which centralizes authentication config
-        paramCounter=0;
-        digester.addCallMethod("ETLTool/Controller", "addController", 5);
-        digester.addCallParam("ETLTool/Controller/URL", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/ClientID", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/ClientSecret", paramCounter++);
-        digester.addCallParam("ETLTool/Controller", paramCounter++, "getAllAnalyticsSearches");
-        digester.addCallParam("ETLTool/Controller/AdjustEndTimeMinutes", paramCounter++);
+        if( !onlyConfigureDatabase ) {
+            //controller section, which centralizes authentication config
+            paramCounter = 0;
+            digester.addCallMethod("ETLTool/Controller", "addController", 5);
+            digester.addCallParam("ETLTool/Controller/URL", paramCounter++);
+            digester.addCallParam("ETLTool/Controller/ClientID", paramCounter++);
+            digester.addCallParam("ETLTool/Controller/ClientSecret", paramCounter++);
+            digester.addCallParam("ETLTool/Controller", paramCounter++, "getAllAnalyticsSearches");
+            digester.addCallParam("ETLTool/Controller/AdjustEndTimeMinutes", paramCounter++);
 
-        //application config, within a controller
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 12);
-        digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
-        digester.addCallParam("ETLTool/Controller/Application/Name", 1);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 2);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", 3);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", 4);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/BaselineTable", 5);
-        digester.addCallParam("ETLTool/Controller/Application", 6, "getAllEvents");
-        digester.addCallParam("ETLTool/Controller/Application", 7, "getAllHealthRuleViolations");
-        digester.addCallParam("ETLTool/Controller/Application/Events/Include", 8);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 9);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 10);
-        digester.addCallParam("ETLTool/Controller/Application/Name", 11, "regex");
+            //application config, within a controller
+            digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 12);
+            digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
+            digester.addCallParam("ETLTool/Controller/Application/Name", 1);
+            digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 2);
+            digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", 3);
+            digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", 4);
+            digester.addCallParam("ETLTool/Controller/Application/Defaults/BaselineTable", 5);
+            digester.addCallParam("ETLTool/Controller/Application", 6, "getAllEvents");
+            digester.addCallParam("ETLTool/Controller/Application", 7, "getAllHealthRuleViolations");
+            digester.addCallParam("ETLTool/Controller/Application/Events/Include", 8);
+            digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 9);
+            digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 10);
+            digester.addCallParam("ETLTool/Controller/Application/Name", 11, "regex");
 
+            //metric config, within an application
+            digester.addCallMethod("ETLTool/Controller/Application/Metric", "addMetric", 3);
+            digester.addCallParam("ETLTool/Controller/Application/Metric", 0, "time-range-type");
+            digester.addCallParam("ETLTool/Controller/Application/Metric", 1, "duration-in-mins");
+            digester.addCallParam("ETLTool/Controller/Application/Metric", 2);
 
+            paramCounter = 0;
+            digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 6);
+            digester.addCallParam("ETLTool/Analytics/URL", paramCounter++);
+            digester.addCallParam("ETLTool/Analytics/GlobalAccountName", paramCounter++);
+            digester.addCallParam("ETLTool/Analytics/APIKey", paramCounter++);
+            digester.addCallParam("ETLTool/Analytics/TableNamePrefix", paramCounter++);
+            digester.addCallParam("ETLTool/Analytics/LinkToControllerHostname", paramCounter++);
+            digester.addCallParam("ETLTool/Analytics/AdjustEndTimeMinutes", paramCounter++);
 
-        //metric config, within an application
-        digester.addCallMethod( "ETLTool/Controller/Application/Metric", "addMetric", 3);
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 0, "time-range-type");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 1, "duration-in-mins");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 2);
+            paramCounter = 0;
+            digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 4);
+            digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "name");
+            digester.addCallParam("ETLTool/Analytics/Search", paramCounter++);
+            digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
+            digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
 
-        paramCounter=0;
-        digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 6);
-        digester.addCallParam("ETLTool/Analytics/URL", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/GlobalAccountName", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/APIKey", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/TableNamePrefix", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/LinkToControllerHostname", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/AdjustEndTimeMinutes", paramCounter++);
-
-        paramCounter=0;
-        digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 4);
-        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "name");
-        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
-        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
-
-        setSchedulerProperties("false","", "1", "10", "50", "12", false);
+            setSchedulerProperties("false", "", "1", "10", "50", "12", false);
+        }
         digester.parse(new InputStreamReader(new FileInputStream(configFileName), StandardCharsets.UTF_8));
 
-        logger.info("Validating Configured Settings");
-        for( Controller controller : getControllerList() ) {
-            controller.setControlTable( database.getControlTable() );
-            definedController=true;
-            logger.info("%s Authentication: %s",controller.hostname,controller.getBearerToken());
-            for( Application application : controller.applications ){
-                try {
-                    application.validateConfiguration(controller);
-                    definedApplication=true;
-                    logger.info("%s %s is valid",controller.hostname,application.name);
-                } catch (InvalidConfigurationException e) {
-                    logger.info("%s %s is invalid, reason: ",controller.hostname,application.name,e);
+        if(!onlyConfigureDatabase ) {
+            logger.info("Validating Configured Settings");
+            for (Controller controller : getControllerList()) {
+                controller.setControlTable(database.getControlTable());
+                definedController = true;
+                logger.info("%s Authentication: %s", controller.hostname, controller.getBearerToken());
+                for (Application application : controller.applications) {
+                    try {
+                        application.validateConfiguration(controller);
+                        definedApplication = true;
+                        logger.info("%s %s is valid", controller.hostname, application.name);
+                    } catch (InvalidConfigurationException e) {
+                        logger.info("%s %s is invalid, reason: ", controller.hostname, application.name, e);
+                    }
                 }
             }
-        }
-        for( Analytics analytic : analytics ) {
-            analytic.setControlTable( database.getControlTable() );
-        }
-        if( (! definedController || ! definedApplication ) && ! definedAnalytics) {
-            logger.warn("Config file doesn't have a controller or application and no analytics collection configured? not one? we can't do much here");
-            throw new InvalidConfigurationException("Config file doesn't have a controller or application configured? not one? we can't do much here");
+            for (Analytics analytic : analytics) {
+                analytic.setControlTable(database.getControlTable());
+            }
+            if ((!definedController || !definedApplication) && !definedAnalytics) {
+                logger.warn("Config file doesn't have a controller or application and no analytics collection configured? not one? we can't do much here");
+                throw new InvalidConfigurationException("Config file doesn't have a controller or application configured? not one? we can't do much here");
+            }
         }
         if(database != null && database.isDatabaseAvailable()) {
             logger.info("Database is available");
