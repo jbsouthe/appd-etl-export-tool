@@ -1,6 +1,6 @@
 package com.cisco.josouthe.scheduler;
 
-import com.cisco.josouthe.Configuration;
+import com.cisco.josouthe.config.Configuration;
 import com.cisco.josouthe.data.Analytics;
 import com.cisco.josouthe.data.Application;
 import com.cisco.josouthe.data.Controller;

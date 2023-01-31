@@ -1,4 +1,4 @@
-package com.cisco.josouthe;
+package com.cisco.josouthe.config;
 
 import com.cisco.josouthe.data.Analytics;
 import com.cisco.josouthe.data.Application;
