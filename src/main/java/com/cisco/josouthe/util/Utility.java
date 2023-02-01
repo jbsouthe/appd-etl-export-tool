@@ -2,6 +2,7 @@ package com.cisco.josouthe.util;
 
 import com.appdynamics.apm.appagent.api.DataScope;
 import com.cisco.josouthe.database.TypeAndSize;
+import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,8 +13,10 @@ import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -117,5 +120,15 @@ public class Utility {
             hostname = hostname.split("\\.")[0];
         if( String.format("%s@%s",apikey,hostname).equals(clientID) ) return true;
         return false;
+    }
+
+    public static List<String> getCommands( Namespace namespace ) {
+        List<String> commands = new ArrayList<>();
+        try {
+            commands = namespace.getList("command");
+        } catch (java.lang.ClassCastException ignored) {
+            commands.add(namespace.getString("command"));
+        }
+        return commands;
     }
 }

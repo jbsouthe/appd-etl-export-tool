@@ -10,4 +10,6 @@ public interface IControlTable {
     int setLastRunTimestamp(ControlEntry controlEntry);
 
     List<ControlEntry> getControlEntries();
+
+    String getName();
 }

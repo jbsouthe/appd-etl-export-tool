@@ -14,8 +14,10 @@ import com.cisco.josouthe.database.postgresql.PGSQLDatabase;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
 import org.apache.commons.digester3.Digester;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -71,11 +73,12 @@ public class Configuration {
     public Analytics[] getAnalyticsList() { return analytics.toArray( new Analytics[0]); }
 
     public Configuration( String configFileName ) throws Exception { this( configFileName, false); }
-    public Configuration( String configFileName, boolean onlyConfigureDatabase ) throws Exception {
+    public Configuration( String configFileName, boolean printInfoLogs ) throws Exception {
         File file = new File(configFileName);
         if (!file.exists()) throw new IOException("Config File not found!");
         if (!file.canRead()) throw new IOException("Config File not readable!");
         if (!file.isFile()) throw new IOException("Config File not a file?!?!");
+        if( !printInfoLogs ) Configurator.setAllLevels(logger.getName(), Level.WARN);
         logger.info("Processing Config File: %s", configFileName);
         this.properties = new Properties();
         this.controllerMap = new HashMap<>();
@@ -83,16 +86,14 @@ public class Configuration {
         digester.push(this);
         int paramCounter = 0;
 
-        if (!onlyConfigureDatabase) {
-            //scheduler config section default enabled with 10 minute run intervals
-            digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 6);
-            digester.addCallParam("ETLTool/Scheduler", 0, "enabled");
-            digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1);
-            digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2);
-            digester.addCallParam("ETLTool/Scheduler/ControllerThreads", 3);
-            digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", 4);
-            digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5);
-        }
+        //scheduler config section default enabled with 10 minute run intervals
+        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 6);
+        digester.addCallParam("ETLTool/Scheduler", 0, "enabled");
+        digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1);
+        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2);
+        digester.addCallParam("ETLTool/Scheduler/ControllerThreads", 3);
+        digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", 4);
+        digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5);
 
         //database configuration section
         paramCounter = 0;
@@ -152,35 +153,33 @@ public class Configuration {
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
 
-        if( !onlyConfigureDatabase ) {
-            setSchedulerProperties("false", "", "1", "10", "50", "12", false);
-        }
+        setSchedulerProperties("false", "", "1", "10", "50", "12", false);
         digester.parse(new InputStreamReader(new FileInputStream(configFileName), StandardCharsets.UTF_8));
 
-        if(!onlyConfigureDatabase ) {
-            logger.info("Validating Configured Settings");
-            for (Controller controller : getControllerList()) {
-                controller.setControlTable(database.getControlTable());
-                definedController = true;
-                logger.info("%s Authentication: %s", controller.hostname, controller.getBearerToken());
-                for (Application application : controller.applications) {
-                    try {
-                        application.validateConfiguration(controller);
-                        definedApplication = true;
-                        logger.info("%s %s is valid", controller.hostname, application.name);
-                    } catch (InvalidConfigurationException e) {
-                        logger.info("%s %s is invalid, reason: ", controller.hostname, application.name, e);
-                    }
+
+        logger.info("Validating Configured Settings");
+        for (Controller controller : getControllerList()) {
+            controller.setControlTable(database.getControlTable());
+            definedController = true;
+            logger.info("%s Authentication: %s", controller.hostname, controller.getBearerToken());
+            for (Application application : controller.applications) {
+                try {
+                    application.validateConfiguration(controller);
+                    definedApplication = true;
+                    logger.info("%s %s is valid", controller.hostname, application.name);
+                } catch (InvalidConfigurationException e) {
+                    logger.info("%s %s is invalid, reason: ", controller.hostname, application.name, e);
                 }
             }
-            for (Analytics analytic : analytics) {
-                analytic.setControlTable(database.getControlTable());
-            }
-            if ((!definedController || !definedApplication) && !definedAnalytics) {
-                logger.warn("Config file doesn't have a controller or application and no analytics collection configured? not one? we can't do much here");
-                throw new InvalidConfigurationException("Config file doesn't have a controller or application configured? not one? we can't do much here");
-            }
         }
+        for (Analytics analytic : analytics) {
+            analytic.setControlTable(database.getControlTable());
+        }
+        if ((!definedController || !definedApplication) && !definedAnalytics) {
+            logger.warn("Config file doesn't have a controller or application and no analytics collection configured? not one? we can't do much here");
+            throw new InvalidConfigurationException("Config file doesn't have a controller or application configured? not one? we can't do much here");
+        }
+
         if(database != null && database.isDatabaseAvailable()) {
             logger.info("Database is available");
         } else {

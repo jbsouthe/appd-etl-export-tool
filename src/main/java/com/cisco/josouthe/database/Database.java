@@ -8,8 +8,13 @@ import com.cisco.josouthe.data.metric.BaselineData;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
+import com.cisco.josouthe.print.IPrintable;
+import com.cisco.josouthe.print.Printer;
+import com.cisco.josouthe.print.ResultSetPrinter;
 import com.cisco.josouthe.print.TablePrinter;
 import com.cisco.josouthe.util.Utility;
+import com.cisco.josouthe.util.WorkingStatusThread;
+import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -263,5 +268,48 @@ public abstract class Database {
             }
         }
         return tablePrinters;
+    }
+
+    public void executeUpdate(Namespace namespace) throws SQLException {
+        StringBuilder query = new StringBuilder();
+        for( Object part : namespace.getList("command") ) {
+            query.append(part.toString().replace("\\", "")).append(" ");
+        }
+        Connection conn = getConnection();
+        Statement statement = conn.createStatement();
+        WorkingStatusThread workingStatusThread = new WorkingStatusThread("Database Execute", query.toString(), logger);
+        workingStatusThread.start();
+        try {
+            statement.execute(query.toString());
+        } finally {
+            workingStatusThread.cancel();
+        }
+        statement.close();
+        conn.close();
+    }
+
+    public void executeQuery(Namespace namespace) throws SQLException {
+        StringBuilder query = new StringBuilder();
+        for( Object part : namespace.getList("command") ) {
+            query.append(part.toString().replace("\\", "")).append(" ");
+        }
+        Connection conn = getConnection();
+        Statement statement = conn.createStatement();
+        ResultSet resultSet = null;
+        WorkingStatusThread workingStatusThread = new WorkingStatusThread("Database Query", query.toString(), logger);
+        workingStatusThread.start();
+        try {
+            resultSet = statement.executeQuery(query.toString());
+        } finally {
+            workingStatusThread.cancel();
+        }
+        List<IPrintable> resultSetPrinters = new ArrayList<>();
+        while( resultSet.next() ) {
+            resultSetPrinters.add(new ResultSetPrinter(resultSet));
+        }
+        System.out.println(Printer.print(resultSetPrinters));
+        resultSet.close();
+        statement.close();
+        conn.close();
     }
 }

@@ -11,6 +11,7 @@ public class Printer {
         if( printables == null || printables.length == 0 ) return null;
         String[] headers = printables[0].getHeader();
         int columnSizes[] = new int[headers.length];
+        Justification justifications[] = printables[0].getJustifications();
         for( int i = 0; i< headers.length; i++ )
             columnSizes[i] = headers[i].length()+1;
         for( IPrintable printable : printables ) {
@@ -24,7 +25,7 @@ public class Printer {
         outputStringBuilder.append("--\n");
 
         for( int i=0; i< headers.length; i++ ) {
-            outputStringBuilder.append("| ").append( paddString(columnSizes[i], headers[i]) );
+            outputStringBuilder.append("| ").append( paddString(columnSizes[i], headers[i], justifications[i]) );
         }
         outputStringBuilder.append(" |\n");
         for( int i=0; i< headers.length; i++ ) {
@@ -34,7 +35,7 @@ public class Printer {
 
         for( IPrintable printable : printables ) {
             for (int i = 0; i < headers.length; i++)
-                outputStringBuilder.append("| ").append(paddString(columnSizes[i], printable.toArray()[i].toString()));
+                outputStringBuilder.append("| ").append(paddString(columnSizes[i], printable.toArray()[i].toString(), justifications[i]));
             outputStringBuilder.append(" |\n");
         }
 
@@ -45,10 +46,20 @@ public class Printer {
         return outputStringBuilder.toString();
     }
 
-    public static String paddString( int size, String string ) {
-        StringBuilder sb = new StringBuilder(string);
-        for( int i=0; i< size-string.length(); i++) sb.append(" ");
-        return sb.toString();
+    public static String paddString( int size, String string, Justification justification ) {
+        switch (justification) {
+            case LEFT: {
+                return string + fillString(size-string.length(), ' ');
+            }
+            case RIGHT: {
+                return fillString(size-string.length(), ' ') + string;
+            }
+            default: { //CENTER
+                boolean addOne = false;
+                if( (size-string.length()) %2 == 1 ) addOne=true;
+                return fillString((size-string.length())/2, ' ') + string +fillString((size-string.length())/2, ' ') + (addOne ? " ": "");
+            }
+        }
     }
     public static String fillString( int size, char c ) {
         StringBuilder sb = new StringBuilder();

@@ -1,6 +1,7 @@
 package com.cisco.josouthe.database;
 
 import com.cisco.josouthe.print.IPrintable;
+import com.cisco.josouthe.print.Justification;
 
 import java.util.Date;
 
@@ -20,5 +21,9 @@ public class ControlEntry implements IPrintable {
 
     public String[] getHeader() {
         return new String[] { "Controller", "Application", "Type", "Last Timestamp" };
+    }
+
+    public Justification[] getJustifications() {
+        return new Justification[] { Justification.LEFT, Justification.LEFT, Justification.LEFT, Justification.RIGHT };
     }
 }
