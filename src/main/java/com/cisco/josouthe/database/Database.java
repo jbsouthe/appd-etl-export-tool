@@ -1,20 +1,26 @@
 package com.cisco.josouthe.database;
 
 import com.cisco.josouthe.config.Configuration;
+import com.cisco.josouthe.data.Analytics;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.BaselineData;
 import com.cisco.josouthe.data.metric.MetricData;
 import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
+import com.cisco.josouthe.print.TablePrinter;
 import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class Database {
@@ -45,6 +51,7 @@ public abstract class Database {
         this.vendorName = Utility.parseDatabaseVendor(connectionString);
     }
 
+    public Map<String,Table> getTablesMap() { return this.tablesMap; }
 
     public IControlTable getControlTable() { return (IControlTable) controlTable; }
     protected abstract IAnalyticTable getAnalyticTable(Result result );
@@ -195,4 +202,66 @@ public abstract class Database {
     public abstract boolean isValidDatabaseTableName( String tableName ) throws InvalidConfigurationException;
 
     public abstract String convertToAcceptableTableName(String tableName );
+
+    public List<TablePrinter> getControllerTableStatistics(List<String> tableNames, String controllerFilter, String applicationFilter, String typeFilter) {
+        if( typeFilter != null ) logger.warn("We do not yet support filtering by type so you are getting everything, enjoy...");
+        List<TablePrinter> tablePrinters = new ArrayList<>();
+        for( String tableName : tableNames ) {
+            try (Connection conn = getConnection(); Statement statement = conn.createStatement();) {
+                String query = String.format(" select controller,application,min(starttimeinmillis) as minTime,max(starttimeinmillis) as maxTime, count(*) as rowSize from %s group by controller, application", tableName);
+                ResultSet resultSet = statement.executeQuery(query);
+                while (resultSet.next()) {
+                    if( controllerFilter != null && !controllerFilter.equals(resultSet.getString("controller"))) continue;
+                    if( applicationFilter != null && !applicationFilter.equals(resultSet.getString("application"))) continue;
+                    TablePrinter tablePrinter = new TablePrinter();
+                    tablePrinter.controller = resultSet.getString("controller");
+                    tablePrinter.application = resultSet.getString("application");
+                    tablePrinter.name=tableName;
+                    tablePrinter.type = "ControllerData";
+                    tablePrinter.oldestRowTimestamp = resultSet.getLong("minTime");
+                    tablePrinter.newestRowTimestamp = resultSet.getLong("maxTime");
+                    tablePrinter.size = resultSet.getLong("rowSize");
+                    tablePrinters.add(tablePrinter);
+                }
+                resultSet.close();
+            } catch (SQLException exception) {
+                logger.warn("Error calculating statistics for table %s, Exception: %s", tableName, exception.toString());
+            }
+        }
+        return tablePrinters;
+    }
+
+    public List<TablePrinter> getAnalyticsTableStatistics(List<String> tableNames, Analytics analytics, String controllerFilter, String applicationFilter, String typeFilter) {
+        if( typeFilter != null ) logger.warn("We do not yet support filtering by type so you are getting everything, enjoy...");
+        List<TablePrinter> tablePrinters = new ArrayList<>();
+        if( controllerFilter != null && !controllerFilter.equals(analytics.url.getHost())) return tablePrinters;
+        if( applicationFilter != null && !applicationFilter.equals(analytics.APIAccountName)) return tablePrinters;
+        for( String tableName : tableNames ) {
+            try (Connection conn = getConnection(); Statement statement = conn.createStatement();) {
+                String query = String.format(" select min(starttimestamp) as minTime, max(endtimestamp) as maxTime, count(*) as rowSize from %s", tableName);
+                ResultSet resultSet = statement.executeQuery(query);
+                while (resultSet.next()) {
+                    TablePrinter tablePrinter = new TablePrinter();
+                    tablePrinter.controller = analytics.url.getHost();
+                    tablePrinter.application = analytics.APIAccountName;
+                    tablePrinter.name=tableName;
+                    tablePrinter.type = "AnalyticsData";
+                    tablePrinter.oldestRowTimestamp = resultSet.getDate("minTime").getTime();
+                    tablePrinter.newestRowTimestamp = resultSet.getDate("maxTime").getTime();
+                    tablePrinter.size = resultSet.getLong("rowSize");
+                    tablePrinters.add(tablePrinter);
+                }
+                resultSet.close();
+            } catch (SQLException exception) {
+                logger.warn("Error calculating statistics for table %s, Exception: %s", tableName, exception.toString());
+                TablePrinter tablePrinter = new TablePrinter();
+                tablePrinter.controller = analytics.url.getHost();
+                tablePrinter.application = analytics.APIAccountName;
+                tablePrinter.name=tableName;
+                tablePrinter.type = "AnalyticsData";
+                tablePrinters.add(tablePrinter);
+            }
+        }
+        return tablePrinters;
+    }
 }

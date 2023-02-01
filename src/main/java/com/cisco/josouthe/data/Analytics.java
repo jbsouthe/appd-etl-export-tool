@@ -88,6 +88,13 @@ public class Analytics {
         this.controlTable=controlTable;
     }
 
+    public List<String> getAllSearchTables() {
+        List<String> tableNames = new ArrayList<>();
+        for( Search search : searches )
+            tableNames.add( database.convertToAcceptableTableName( this.tableNamePrefix + search.searchName ) );
+        return tableNames;
+    }
+
     public Result[] getAllSearches() {
         return getAllSearches(null);
     }

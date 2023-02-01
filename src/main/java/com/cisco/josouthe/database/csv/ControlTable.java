@@ -8,7 +8,17 @@ import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ControlTable extends CSVTable implements IControlTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
@@ -91,5 +101,9 @@ public class ControlTable extends CSVTable implements IControlTable {
         return 0;
     }
 
-
+    public List<ControlEntry> getControlEntries() {
+        List<ControlEntry> entries = new ArrayList<>();
+        logger.warn("Sorry CSV files do not support this feature");
+        return entries;
+    }
 }
