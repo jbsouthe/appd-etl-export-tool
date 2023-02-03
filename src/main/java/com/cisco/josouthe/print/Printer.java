@@ -1,5 +1,8 @@
 package com.cisco.josouthe.print;
 
+import com.cisco.josouthe.util.Utility;
+
+import java.util.Date;
 import java.util.List;
 
 public class Printer {
@@ -16,7 +19,7 @@ public class Printer {
             columnSizes[i] = headers[i].length()+1;
         for( IPrintable printable : printables ) {
             for (int i = 0; i < headers.length; i++)
-                if (columnSizes[i] < printable.toArray()[i].toString().length() ) columnSizes[i] = printable.toArray()[i].toString().length()+1;
+                if (columnSizes[i] < formatAsString(printable.toArray()[i]).length() ) columnSizes[i] = formatAsString(printable.toArray()[i]).length()+1;
         }
         StringBuilder outputStringBuilder = new StringBuilder();
         for( int i=0; i< headers.length; i++ ) {
@@ -35,7 +38,7 @@ public class Printer {
 
         for( IPrintable printable : printables ) {
             for (int i = 0; i < headers.length; i++)
-                outputStringBuilder.append("| ").append(paddString(columnSizes[i], printable.toArray()[i].toString(), justifications[i]));
+                outputStringBuilder.append("| ").append(paddString(columnSizes[i], formatAsString(printable.toArray()[i]), justifications[i]));
             outputStringBuilder.append(" |\n");
         }
 
@@ -44,6 +47,15 @@ public class Printer {
         }
         outputStringBuilder.append("--\n").append("rows returned: ").append(printables.length);
         return outputStringBuilder.toString();
+    }
+
+    private static String formatAsString(Object object) {
+        if( object == null ) return "null";
+        if( object instanceof Date || object instanceof java.sql.Date ) {
+            return Utility.formatControlDate( (Date)object );
+        } else {
+            return String.valueOf(object);
+        }
     }
 
     public static String paddString( int size, String string, Justification justification ) {

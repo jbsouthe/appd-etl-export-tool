@@ -80,7 +80,7 @@ public class AnalyticTable extends PGSQLTable implements IAnalyticTable {
                                         } else if( data instanceof String && Utility.isThisStringADate((String)data) ) {
                                             //logger.trace("This String is a date: %s",data);
                                             try {
-                                                preparedStatement.setTimestamp(parameterIndex++, new Timestamp(Utility.parseDateString((String) data)));
+                                                preparedStatement.setTimestamp(parameterIndex++, new Timestamp(Utility.parseAnalyticsDateString((String) data)));
                                             } catch (SQLException exception) {
                                                 throw exception;
                                             } catch (ParseException e) {

@@ -21,6 +21,7 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +53,7 @@ public class ETLControlMain {
                 .help("Only manage a specific data type: {\"MetricData\", \"EventData\", \"AnalyticsData\"}");
         parser.addArgument("command")
                 .nargs("*")
-                .help("Commands are probably too flexible, some examples include: {\"show [status|tables]\", \"[select|drop|delete|update] <rest of sql statement with \\* escaped>\", \"purge [tableName] [newer|older] than [timestamp]\", \"executeScheduler\" }")
+                .help("Commands are probably too flexible, some examples include: {\"show [status|tables]\", \"[select|drop|delete|update] <rest of sql statement with \\* escaped>\", \"purge [tableName] [newer|older] than [yyyy-MM-dd_HH:mm:ss_z]\", \"executeScheduler\" }")
                 .setDefault("executeScheduler");
 
         Namespace namespace = null;
@@ -114,7 +115,8 @@ public class ETLControlMain {
                     break;
                 }
                 case "purge": {
-                    throw new BadCommandException("Purge command not yet implemented", commands.get(0));
+                    parsePurgeCommand(namespace, config);
+                    break;
                 }
                 case "set": {
                     throw new BadCommandException("Set command not yet implemented", commands.get(0));
@@ -128,6 +130,31 @@ public class ETLControlMain {
             printHelpAndExit(parser, -1);
         }
         if( forceExit ) System.exit(0);
+    }
+
+    //purge [tableName] [newer|older] than [yyyy-MM-dd_HH:mm:ss_z]
+    private static void parsePurgeCommand(Namespace namespace, Configuration configuration) throws BadCommandException {
+        Database database = configuration.getDatabase();
+        List<String> commands = Utility.getCommands(namespace);
+        if( commands.size() < 5 ) throw new BadCommandException(String.format("command %s needs 5 arguments", commands.get(0)), null);
+        String tableName = commands.get(1);
+        if( !database.doesTableExist( tableName, configuration ) ) throw new BadCommandException(String.format("command %s table doesn\'t exist or it is just empty", commands.get(0)), commands.get(1));
+        Boolean purgeOlderData;
+        switch( commands.get(2).toLowerCase() ) {
+            case "newer": { purgeOlderData=false; break; }
+            case "older": { purgeOlderData=true; break; }
+            default: { throw new BadCommandException(String.format("command %s direction invalid, must be either newer or older than", commands.get(0)), commands.get(2)); }
+        }
+        if( !commands.get(3).toLowerCase().equals("than") )
+            throw new BadCommandException(String.format("command %s bad format, this is the easy part, just type \"than\" that is all i can accept", commands.get(0)), commands.get(3));
+        long purgeTimestamp = 0l;
+        try {
+            purgeTimestamp = Utility.parseControlDateString( commands.get(4) );
+        } catch (ParseException e) {
+            throw new BadCommandException(String.format("Error trying to parse date string '%s' remember to use this format '%s'", commands.get(4), Utility.controlDateFormatString));
+        }
+        long purgedCount = database.purgeData( tableName, purgeOlderData, purgeTimestamp, configuration);
+        System.out.println(String.format("Purged %d rows from %s table", purgedCount, tableName));
     }
 
     private static void parseShowCommand(Namespace namespace, Configuration configuration) throws BadCommandException {

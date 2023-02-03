@@ -2,10 +2,12 @@ package com.cisco.josouthe.database;
 
 import com.cisco.josouthe.config.Configuration;
 import com.cisco.josouthe.data.Analytics;
+import com.cisco.josouthe.data.Controller;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.data.event.EventData;
 import com.cisco.josouthe.data.metric.BaselineData;
 import com.cisco.josouthe.data.metric.MetricData;
+import com.cisco.josouthe.exceptions.BadCommandException;
 import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.print.IPrintable;
@@ -19,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -251,8 +254,10 @@ public abstract class Database {
                     tablePrinter.application = analytics.APIAccountName;
                     tablePrinter.name=tableName;
                     tablePrinter.type = "AnalyticsData";
-                    tablePrinter.oldestRowTimestamp = resultSet.getDate("minTime").getTime();
-                    tablePrinter.newestRowTimestamp = resultSet.getDate("maxTime").getTime();
+                    java.sql.Date date = resultSet.getDate("minTime");
+                    if( date != null ) tablePrinter.oldestRowTimestamp = date.getTime();
+                    date = resultSet.getDate("maxTime");
+                    if( date != null ) tablePrinter.newestRowTimestamp = date.getTime();
                     tablePrinter.size = resultSet.getLong("rowSize");
                     tablePrinters.add(tablePrinter);
                 }
@@ -311,5 +316,59 @@ public abstract class Database {
         resultSet.close();
         statement.close();
         conn.close();
+    }
+
+    public boolean doesTableExist(String tableName, Configuration configuration) {
+        boolean wellDoesIt = false;
+        try (Connection conn = getConnection(); Statement statement = conn.createStatement();) {
+            String query = String.format(" select count(*) from %s", tableName);
+            ResultSet resultSet = statement.executeQuery(query);
+            if (resultSet.next()) {
+                wellDoesIt=true;
+            }
+            resultSet.close();
+        } catch (SQLException exception) {
+            wellDoesIt=false;
+        }
+        return wellDoesIt;
+    }
+
+    public long purgeData(String tableName, Boolean purgeOlderData, long purgeTimestamp, Configuration configuration) throws BadCommandException {
+        for( Analytics analytics : configuration.getAnalyticsList() )
+            for( String analTable : analytics.getAllSearchTables() )
+                if( analTable.equalsIgnoreCase(tableName) ) return purgeAnalData( tableName, purgeOlderData, purgeTimestamp);
+        for(Controller controller : configuration.getControllerList() )
+            for (String controllerTable : controller.getAllApplicationTables() )
+                if( controllerTable.equalsIgnoreCase(tableName) ) return purgeControllerData( tableName, purgeOlderData, purgeTimestamp);
+        throw new BadCommandException("Not sure how we got this far, but the table no longer exists between confirming it does and purging data");
+    }
+
+    private long purgeAnalData(String tableName, Boolean purgeOlderData, long purgeTimestamp) throws BadCommandException {
+        String query = String.format("delete from %s where starttimestamp %s ? or endtimestamp %s ?", tableName, ( purgeOlderData?"<":">"), ( purgeOlderData?"<":">"));
+        WorkingStatusThread workingStatusThread = new WorkingStatusThread("Database Execute", query, logger);
+        try (Connection conn = getConnection(); PreparedStatement statement = conn.prepareStatement(query);) {
+            workingStatusThread.start();
+            statement.setDate(1, new java.sql.Date(purgeTimestamp) );
+            statement.setDate(2, new java.sql.Date(purgeTimestamp));
+            return statement.executeLargeUpdate();
+        } catch (SQLException e) {
+            throw new BadCommandException(String.format("Error trying to purge Analytics Table '%s', Exception: %s",tableName,e));
+        } finally {
+            workingStatusThread.cancel();
+        }
+    }
+
+    private long purgeControllerData(String tableName, Boolean purgeOlderData, long purgeTimestamp) throws BadCommandException {
+        String query = String.format("delete from %s where starttimeinmillis %s ? ", tableName, ( purgeOlderData?"<":">"));
+        WorkingStatusThread workingStatusThread = new WorkingStatusThread("Database Execute", query, logger);
+        try (Connection conn = getConnection(); PreparedStatement statement = conn.prepareStatement(query);) {
+            workingStatusThread.start();
+            statement.setLong(1, purgeTimestamp);
+            return statement.executeLargeUpdate();
+        } catch (SQLException e) {
+            throw new BadCommandException(String.format("Error trying to purge Controller Table '%s', Exception: %s",tableName,e));
+        } finally {
+            workingStatusThread.cancel();
+        }
     }
 }

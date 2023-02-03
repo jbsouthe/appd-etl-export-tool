@@ -83,7 +83,7 @@ public class AnalyticTable extends OracleTable implements IAnalyticTable {
                                         } else if( data instanceof String && Utility.isThisStringADate((String)data) ) {
                                             //logger.trace("This String is a date: %s",data);
                                             try {
-                                                preparedStatement.setLong(parameterIndex++, Utility.parseDateString((String) data));
+                                                preparedStatement.setLong(parameterIndex++, Utility.parseAnalyticsDateString((String) data));
                                             } catch (SQLException exception) {
                                                 throw exception;
                                             } catch (ParseException e) {
