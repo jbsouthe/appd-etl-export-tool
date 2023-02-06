@@ -18,9 +18,30 @@ The execution of this utility requires a Java VM v1.11 or greater
 
 The command line to execute is:
 
-`java -jar ETLExportTool-<version>.jar <configfile.xml>`
+`java -jar ETLExportTool-<version>.jar -c <configfile.xml>`
 
-It is assumed the XML config file is the first and only argument. Also expected that a log4j2.xml is in the current working directory. Also, on most systems no java arguments are needed, please check the section for kubernetes on what is needed.
+It is assumed the XML config file is given with the -c argument. Also expected that a log4j2.xml is in the current working directory. some new commands have been added to the utlity to assist in analyzing the database and managing the exported data, as well as the control table:
+
+        usage: ETLControl [-h] [-v] [-c ./config-file.xml] [--controller Controller] [--application Application] [--type Type] [command [command ...]]
+
+        Manage ETL Export by Manipulating the Database Control Table and Data Tables.
+
+        positional arguments:
+          command                Commands are probably too flexible, some examples  include:  
+            {"show  [status|tables]",  
+            "[select|drop|delete|update]  <rest  of  sql statement with \* escaped>", 
+            "purge [tableName] [newer|older] than [yyyy-MM-dd_HH:mm:ss_z]", 
+            "set last run [yyyy-MM-dd_HH:mm:ss_z]", 
+            "executeScheduler" } (default: executeScheduler)
+
+        named arguments:
+          -h, --help                        show this help message and exit
+          -v, --version
+          -c, --config ./config-file.xml    Use this specific XML config file. (default: default-config.xml)
+          --controller Controller           Only manage a specific controller
+          --application Application         Only manage a specific application
+          --type Type                       Only manage a specific data type: {"MetricData", "EventData", "AnalyticsData"}
+
 
 ### Command line options for extended debug
 
@@ -46,7 +67,7 @@ Dockerfile:
     COPY appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz /tmp
     RUN tar xzvf /tmp/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz
     WORKDIR /appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}/ETL-Tool
-    ENTRYPOINT java ${JAVA_OPT} -jar ETLExportTool.jar ${CONFIG_FILE}
+    ENTRYPOINT java ${JAVA_OPT} -jar ETLExportTool.jar -c ${CONFIG_FILE}
 
 
 Create the image, and publish it to your repo. Of course the ./target/appdynamics-ETL-Tool-${VERSION}-${BUILD_DATE}-deployment.tar.gz file must be copied to your docker build dir, the release tar.gz is the image we are talking about in this section.
