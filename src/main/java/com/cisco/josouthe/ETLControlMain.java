@@ -53,7 +53,7 @@ public class ETLControlMain {
                 .help("Only manage a specific data type: {\"MetricData\", \"EventData\", \"AnalyticsData\"}");
         parser.addArgument("command")
                 .nargs("*")
-                .help("Commands are probably too flexible, some examples include: {\"show [status|tables]\", \"[select|drop|delete|update] <rest of sql statement with \\* escaped>\", \"purge [tableName] [newer|older] than [yyyy-MM-dd_HH:mm:ss_z]\", \"executeScheduler\" }")
+                .help("Commands are probably too flexible, some examples include: {\"show [status|tables]\", \"[select|drop|delete|update] <rest of sql statement with \\* escaped>\", \"purge [tableName] [newer|older] than [yyyy-MM-dd_HH:mm:ss_z]\", \"set last run [yyyy-MM-dd_HH:mm:ss_z]\", \"executeScheduler\" }")
                 .setDefault("executeScheduler");
 
         Namespace namespace = null;
@@ -119,7 +119,8 @@ public class ETLControlMain {
                     break;
                 }
                 case "set": {
-                    throw new BadCommandException("Set command not yet implemented", commands.get(0));
+                    parseSetCommand(namespace, config);
+                    break;
                 }
                 default: {
                     throw new BadCommandException("Unknown root command", commands.get(0));
@@ -130,6 +131,43 @@ public class ETLControlMain {
             printHelpAndExit(parser, -1);
         }
         if( forceExit ) System.exit(0);
+    }
+
+    private static void parseSetCommand(Namespace namespace, Configuration configuration) throws BadCommandException {
+        List<ControlEntry> controlEntries = configuration.getDatabase().getControlTable().getControlEntries();
+        String controller = namespace.getString("controller");
+        if( controller == null ) throw new BadCommandException("--controller not set, this command requires filters to be set!");
+        String application = namespace.getString("application");
+        if( application == null ) throw new BadCommandException("--application not set, this command requires filters to be set!");
+        String dataType = namespace.getString("type");
+        if( dataType == null ) throw new BadCommandException("--type not set, this command requires filters to be set!");
+        List<String> commands = Utility.getCommands(namespace); //set last run [yyyy-MM-dd_HH:mm:ss_z]
+        if( commands.size() < 4 ) throw new BadCommandException(String.format("command %s needs 4 arguments", commands.get(0)), null);
+        if( !commands.get(1).equalsIgnoreCase("last") || !commands.get(2).equalsIgnoreCase("run") )
+            throw new BadCommandException("set command format is: \"set last run [yyyy-MM-dd_HH:mm:ss_z]\"");
+        long timestamp;
+        try {
+            timestamp = Utility.parseControlDateString(commands.get(3));
+        } catch (ParseException parseException ) {
+            throw new BadCommandException(String.format("Error parsing date entered for set command. Check char at %d Exception: %s", parseException.getErrorOffset(), parseException.toString()));
+        }
+        boolean completedTask = false;
+        for( ControlEntry controlEntry : controlEntries ) {
+            if( !controller.equalsIgnoreCase(controlEntry.controller) ) continue;
+            if( !application.equalsIgnoreCase(controlEntry.application) ) continue;
+            if( !dataType.equalsIgnoreCase(controlEntry.type) ) continue;
+            controlEntry.timestamp = timestamp;
+            configuration.getDatabase().getControlTable().setLastRunTimestamp(controlEntry);
+            completedTask=true;
+            break;
+        }
+        if(!completedTask) {
+            System.out.println("Filters on controller, application, and data type caused no actual change to be performed in the control table");
+        } else {
+            System.out.println(
+                    String.format("Set %s:%s:%s last runtime to %s, the next execution will start the data import from this date", controller, application,
+                            dataType, commands.get(3)));
+        }
     }
 
     //purge [tableName] [newer|older] than [yyyy-MM-dd_HH:mm:ss_z]
