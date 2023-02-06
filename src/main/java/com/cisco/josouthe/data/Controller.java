@@ -120,6 +120,16 @@ public class Controller {
         }
     }
 
+    public List<String> getAllApplicationTables() {
+        List<String> tableNames = new ArrayList<>();
+        for( Application application : applications ) {
+            tableNames.add(application.defaultMetricTableName);
+            tableNames.add(application.defaultBaselineTableName);
+            tableNames.add(application.defaultEventTableName);
+        }
+        return tableNames;
+    }
+
     public boolean isApplicationInList( String name ) {
         if( this.applications == null ) return false;
         for( Application application : this.applications ) {

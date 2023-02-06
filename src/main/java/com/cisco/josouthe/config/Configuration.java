@@ -1,4 +1,4 @@
-package com.cisco.josouthe;
+package com.cisco.josouthe.config;
 
 import com.cisco.josouthe.data.Analytics;
 import com.cisco.josouthe.data.Application;
@@ -14,10 +14,13 @@ import com.cisco.josouthe.database.postgresql.PGSQLDatabase;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
 import org.apache.commons.digester3.Digester;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -69,24 +72,31 @@ public class Configuration {
     public Controller[] getControllerList() { return controllerMap.values().toArray(new Controller[0]); }
     public Analytics[] getAnalyticsList() { return analytics.toArray( new Analytics[0]); }
 
-    public Configuration( String configFileName) throws Exception {
+    public Configuration( String configFileName ) throws Exception { this( configFileName, false); }
+    public Configuration( String configFileName, boolean printInfoLogs ) throws Exception {
+        File file = new File(configFileName);
+        if (!file.exists()) throw new IOException("Config File not found!");
+        if (!file.canRead()) throw new IOException("Config File not readable!");
+        if (!file.isFile()) throw new IOException("Config File not a file?!?!");
+        if( !printInfoLogs ) Configurator.setAllLevels(logger.getName(), Level.WARN);
         logger.info("Processing Config File: %s", configFileName);
         this.properties = new Properties();
         this.controllerMap = new HashMap<>();
         Digester digester = new Digester();
         digester.push(this);
-        int paramCounter=0;
+        int paramCounter = 0;
+
         //scheduler config section default enabled with 10 minute run intervals
-        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 6 );
-        digester.addCallParam("ETLTool/Scheduler", 0 , "enabled");
-        digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1 );
-        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2 );
-        digester.addCallParam("ETLTool/Scheduler/ControllerThreads", 3 );
-        digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", 4 );
-        digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5 );
+        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 6);
+        digester.addCallParam("ETLTool/Scheduler", 0, "enabled");
+        digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1);
+        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2);
+        digester.addCallParam("ETLTool/Scheduler/ControllerThreads", 3);
+        digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", 4);
+        digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5);
 
         //database configuration section
-        paramCounter=0;
+        paramCounter = 0;
         digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 8);
         digester.addCallParam("ETLTool/TargetDB/ConnectionString", paramCounter++);
         digester.addCallParam("ETLTool/TargetDB/User", paramCounter++);
@@ -98,7 +108,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/TargetDB/MaximumColumnNameLength", paramCounter++);
 
         //controller section, which centralizes authentication config
-        paramCounter=0;
+        paramCounter = 0;
         digester.addCallMethod("ETLTool/Controller", "addController", 5);
         digester.addCallParam("ETLTool/Controller/URL", paramCounter++);
         digester.addCallParam("ETLTool/Controller/ClientID", paramCounter++);
@@ -121,15 +131,13 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 10);
         digester.addCallParam("ETLTool/Controller/Application/Name", 11, "regex");
 
-
-
         //metric config, within an application
-        digester.addCallMethod( "ETLTool/Controller/Application/Metric", "addMetric", 3);
+        digester.addCallMethod("ETLTool/Controller/Application/Metric", "addMetric", 3);
         digester.addCallParam("ETLTool/Controller/Application/Metric", 0, "time-range-type");
         digester.addCallParam("ETLTool/Controller/Application/Metric", 1, "duration-in-mins");
         digester.addCallParam("ETLTool/Controller/Application/Metric", 2);
 
-        paramCounter=0;
+        paramCounter = 0;
         digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 6);
         digester.addCallParam("ETLTool/Analytics/URL", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/GlobalAccountName", paramCounter++);
@@ -138,38 +146,40 @@ public class Configuration {
         digester.addCallParam("ETLTool/Analytics/LinkToControllerHostname", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/AdjustEndTimeMinutes", paramCounter++);
 
-        paramCounter=0;
+        paramCounter = 0;
         digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 4);
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "name");
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++);
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
 
-        setSchedulerProperties("false","", "1", "10", "50", "12", false);
+        setSchedulerProperties("false", "", "1", "10", "50", "12", false);
         digester.parse(new InputStreamReader(new FileInputStream(configFileName), StandardCharsets.UTF_8));
 
+
         logger.info("Validating Configured Settings");
-        for( Controller controller : getControllerList() ) {
-            controller.setControlTable( database.getControlTable() );
-            definedController=true;
-            logger.info("%s Authentication: %s",controller.hostname,controller.getBearerToken());
-            for( Application application : controller.applications ){
+        for (Controller controller : getControllerList()) {
+            controller.setControlTable(database.getControlTable());
+            definedController = true;
+            logger.info("%s Authentication: %s", controller.hostname, controller.getBearerToken());
+            for (Application application : controller.applications) {
                 try {
                     application.validateConfiguration(controller);
-                    definedApplication=true;
-                    logger.info("%s %s is valid",controller.hostname,application.name);
+                    definedApplication = true;
+                    logger.info("%s %s is valid", controller.hostname, application.name);
                 } catch (InvalidConfigurationException e) {
-                    logger.info("%s %s is invalid, reason: ",controller.hostname,application.name,e);
+                    logger.info("%s %s is invalid, reason: ", controller.hostname, application.name, e);
                 }
             }
         }
-        for( Analytics analytic : analytics ) {
-            analytic.setControlTable( database.getControlTable() );
+        for (Analytics analytic : analytics) {
+            analytic.setControlTable(database.getControlTable());
         }
-        if( (! definedController || ! definedApplication ) && ! definedAnalytics) {
+        if ((!definedController || !definedApplication) && !definedAnalytics) {
             logger.warn("Config file doesn't have a controller or application and no analytics collection configured? not one? we can't do much here");
             throw new InvalidConfigurationException("Config file doesn't have a controller or application configured? not one? we can't do much here");
         }
+
         if(database != null && database.isDatabaseAvailable()) {
             logger.info("Database is available");
         } else {

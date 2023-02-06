@@ -1,6 +1,6 @@
 package com.cisco.josouthe.database.csv;
 
-import com.cisco.josouthe.Configuration;
+import com.cisco.josouthe.config.Configuration;
 import com.cisco.josouthe.data.analytic.Result;
 import com.cisco.josouthe.database.*;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;

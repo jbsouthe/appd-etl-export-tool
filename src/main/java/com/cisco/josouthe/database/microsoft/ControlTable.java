@@ -12,6 +12,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ControlTable extends MicrosoftTable implements IControlTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
@@ -83,5 +85,23 @@ public class ControlTable extends MicrosoftTable implements IControlTable {
         return 0;
     }
 
-
+    public List<ControlEntry> getControlEntries() {
+        List<ControlEntry> entries = new ArrayList<>();
+        try (Connection conn = database.getConnection(); Statement statement = conn.createStatement(); ){
+            String query = String.format(" select controller,application,dataType,lastRunTimestamp from %s ", this.name);
+            ResultSet resultSet = statement.executeQuery(query);
+            while( resultSet.next() ) {
+                ControlEntry entry = new ControlEntry();
+                entry.controller = resultSet.getString("controller");
+                entry.application = resultSet.getString("application");
+                entry.type = resultSet.getString("dataType");
+                entry.timestamp = resultSet.getLong("lastRunTimestamp");
+                entries.add(entry);
+            }
+            resultSet.close();
+        } catch (SQLException exception) {
+            logger.error("Error getting Control Entries from table %s, Exception: %s", getName(), exception.toString());
+        }
+        return entries;
+    }
 }

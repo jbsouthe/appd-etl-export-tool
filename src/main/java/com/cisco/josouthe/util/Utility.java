@@ -2,6 +2,7 @@ package com.cisco.josouthe.util;
 
 import com.appdynamics.apm.appagent.api.DataScope;
 import com.cisco.josouthe.database.TypeAndSize;
+import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,8 +13,10 @@ import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,7 +25,9 @@ public class Utility {
     private static final Logger logger = LogManager.getFormatterLogger();
     private static Pattern patternConnectionString = Pattern.compile("^(?<jdbc>[j|J][d|D][b|B][c|C]:)?(?<vendor>[^:]+):(?<driver>[^:]+):(?<path>.*);?");
     private static Pattern patternAnalyticsDateString = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
-    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    private static SimpleDateFormat analyticsDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    public static final String controlDateFormatString = "yyy-MM-dd_HH:mm:ss_z";
+    private static SimpleDateFormat controlDateFormat = new SimpleDateFormat(controlDateFormatString);
     private static Set<DataScope> snapshotDatascope;
 
     public static String encode( String original ){
@@ -96,9 +101,21 @@ public class Utility {
         return false;
     }
 
-    public static long parseDateString(String data) throws ParseException {
+    public static long parseAnalyticsDateString(String data) throws ParseException {
         //"2021-10-14T18:00:51.435Z"
-        return simpleDateFormat.parse(data).getTime();
+        return analyticsDateFormat.parse(data).getTime();
+    }
+
+    public static long parseControlDateString( String data ) throws ParseException {
+        return controlDateFormat.parse(data).getTime();
+    }
+
+    public static String formatControlDate( long date ) {
+        return formatControlDate( new Date(date) );
+    }
+
+    public static String formatControlDate( Date date ) {
+        return controlDateFormat.format(date);
     }
 
     public static Set<DataScope> getSnapshotDatascope() {
@@ -117,5 +134,15 @@ public class Utility {
             hostname = hostname.split("\\.")[0];
         if( String.format("%s@%s",apikey,hostname).equals(clientID) ) return true;
         return false;
+    }
+
+    public static List<String> getCommands( Namespace namespace ) {
+        List<String> commands = new ArrayList<>();
+        try {
+            commands = namespace.getList("command");
+        } catch (java.lang.ClassCastException ignored) {
+            commands.add(namespace.getString("command"));
+        }
+        return commands;
     }
 }
