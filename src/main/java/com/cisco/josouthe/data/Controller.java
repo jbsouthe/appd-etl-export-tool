@@ -1,5 +1,6 @@
 package com.cisco.josouthe.data;
 
+import com.cisco.josouthe.config.Configuration;
 import com.cisco.josouthe.data.analytic.Search;
 import com.cisco.josouthe.data.auth.AccessToken;
 import com.cisco.josouthe.data.event.EventData;
@@ -60,6 +61,7 @@ public class Controller {
     private boolean getAllAnalyticsSearchesFlag = false;
     private boolean wireTraceEnabled = false;
     private int minutesToAdjustEndTimestampBy = 5;
+    private Configuration configuration;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
     final ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
@@ -85,7 +87,7 @@ public class Controller {
 
     };
 
-    public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag, ApplicationRegex[] applicationRegexes, int minutesToAdjustEndTimestampBy ) throws MalformedURLException {
+    public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag, ApplicationRegex[] applicationRegexes, int minutesToAdjustEndTimestampBy, Configuration configuration ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
         this.url = new URL(urlString);
         this.hostname = this.url.getHost();
@@ -96,6 +98,7 @@ public class Controller {
         this.client = HttpClientFactory.getHttpClient();
         this.applicationRegexes = applicationRegexes;
         this.minutesToAdjustEndTimestampBy = minutesToAdjustEndTimestampBy;
+        this.configuration = configuration;
         if( System.getProperty("wireTrace") != null && System.getProperty("wireTrace").toLowerCase().contains("controller") ) this.wireTraceEnabled=true;
         if( this.applicationRegexes != null && this.applicationRegexes.length > 0 ) {
             initApplicationIdMap();
@@ -309,6 +312,8 @@ public class Controller {
              */
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now( this.minutesToAdjustEndTimestampBy*-60000 );
+        if( configuration.isTooLongATime( endTimestamp - startTimestamp ) )
+            endTimestamp = startTimestamp + configuration.getMaxQueryDurationInMS();
         WorkingStatusThread workingStatusThread = new WorkingStatusThread("Get Controller Metrics", application.name, logger);
         workingStatusThread.start();
         for( String applicationMetricName : application.metricGraph.getUniqueCompressedMetricNames() ) {
@@ -399,6 +404,8 @@ public class Controller {
              */
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now( this.minutesToAdjustEndTimestampBy*-60000 );
+        if( configuration.isTooLongATime( endTimestamp - startTimestamp ) )
+            endTimestamp = startTimestamp + configuration.getMaxQueryDurationInMS();
         if( application.getAllEvents ) {
             int tries=0;
             boolean succeeded=false;

@@ -104,6 +104,8 @@ public class Analytics {
         ControlEntry controlEntry = this.controlTable.getLastRunTimestamp(url.getHost(), this.APIAccountName, "AnalyticsData");
         long startTimestamp = controlEntry.timestamp;
         long endTimestamp = Utility.now(this.minutesToAdjustEndTimestampBy*-60000 ); //going to try setting the end time to now()-5 minutes to see if this is enough to allow the backend time to finish collecting all data for a period
+        if( database.getConfiguration().isTooLongATime( endTimestamp - startTimestamp ) )
+            endTimestamp = startTimestamp + database.getConfiguration().getMaxQueryDurationInMS();
         logger.trace("Adjustment, if enabled: minutes %d (negated)mil: %d", this.minutesToAdjustEndTimestampBy,this.minutesToAdjustEndTimestampBy*-60000 );
         if( endTimestamp <= startTimestamp ) {
             logger.warn("While trying to set the end timestamp to 5 minutes before now(), we have reached a situation where the end time is less than or equal to the start time, this means we are going to skip this run");

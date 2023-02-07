@@ -371,4 +371,8 @@ public abstract class Database {
             workingStatusThread.cancel();
         }
     }
+
+    public Configuration getConfiguration() {
+        return this.configuration;
+    }
 }

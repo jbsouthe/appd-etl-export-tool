@@ -1,5 +1,6 @@
 package com.cisco.josouthe.database;
 
+import com.cisco.josouthe.config.Configuration;
 import com.cisco.josouthe.exceptions.FailedDataLoadException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,12 +14,14 @@ public abstract class Table {
     protected String name = null;
     protected String type = "UNKNOWN TABLE TYPE";
     protected Database database = null;
+    protected Configuration configuration = null;
     protected boolean initialized=false;
 
     public Table( String tableName, String tableType, Database database ) {
         this.name = tableName;
         this.type = tableType;
         this.database = database;
+        this.configuration = database.configuration;
         columns = new LinkedHashMap<>();
     }
 

@@ -87,13 +87,17 @@ public class Configuration {
         int paramCounter = 0;
 
         //scheduler config section default enabled with 10 minute run intervals
-        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 6);
-        digester.addCallParam("ETLTool/Scheduler", 0, "enabled");
-        digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", 1);
-        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", 2);
-        digester.addCallParam("ETLTool/Scheduler/ControllerThreads", 3);
-        digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", 4);
-        digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", 5);
+        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 8);
+        digester.addCallParam("ETLTool/Scheduler", paramCounter++, "enabled");
+        digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", paramCounter++);
+        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", paramCounter++); //leaving this for a little while, will aim to delete by August 2023
+        digester.addCallParam("ETLTool/Scheduler/ControllerThreads", paramCounter++);
+        digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", paramCounter++);
+        digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", paramCounter++);
+        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfDays", paramCounter++);
+        digester.addCallParam("ETLTool/Scheduler/MaxNumberOfDaysToQueryAtATime", paramCounter++);
+
+
 
         //database configuration section
         paramCounter = 0;
@@ -153,7 +157,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
         digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
 
-        setSchedulerProperties("false", "", "1", "10", "50", "12", false);
+        setSchedulerProperties("false", "", "", "10", "50", "12", "2", "14", false);
         digester.parse(new InputStreamReader(new FileInputStream(configFileName), StandardCharsets.UTF_8));
 
 
@@ -294,7 +298,7 @@ public class Configuration {
             minutesToAdjustEndTimestampBy *= -1;
         }
         try{
-            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag, applicationRegexList.toArray( new ApplicationRegex[0]), minutesToAdjustEndTimestampBy);
+            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag, applicationRegexList.toArray( new ApplicationRegex[0]), minutesToAdjustEndTimestampBy, this);
             applications = new ArrayList<>();
             applicationRegexList = new ArrayList<>();
             controllerMap.put( controller.hostname, controller);
@@ -304,10 +308,10 @@ public class Configuration {
         }
     }
 
-    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours ) {
-        setSchedulerProperties(enabledFlag, pollIntervalMinutes, firstRunHistoricNumberOfHours, numberOfControllerThreads, numberOfDatabaseThreads, numberConfigRefreshHours, true );
+    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours, String firstRunHistoricNumberOfDays, String maxNumberOfDaysToQueryAtATime ) {
+        setSchedulerProperties(enabledFlag, pollIntervalMinutes, firstRunHistoricNumberOfHours, numberOfControllerThreads, numberOfDatabaseThreads, numberConfigRefreshHours, firstRunHistoricNumberOfDays, maxNumberOfDaysToQueryAtATime, true );
     }
-    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours, boolean printOutput ) {
+    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours, String firstRunHistoricNumberOfDays, String maxNumberOfDaysToQueryAtATime, boolean printOutput ) {
         if( "false".equalsIgnoreCase(enabledFlag) ) {
             if(printOutput) logger.info("MainControlScheduler is disabled, running only once");
             properties.setProperty("scheduler-enabled", "false");
@@ -320,6 +324,8 @@ public class Configuration {
         }
         if(printOutput) logger.info("Setting poll interval to every %s minutes", pollIntervalMinutes);
         this.properties.setProperty("scheduler-pollIntervalMinutes", pollIntervalMinutes);
+        if( firstRunHistoricNumberOfDays != null && !"".equals(firstRunHistoricNumberOfDays) )
+            firstRunHistoricNumberOfHours = String.format("%d", Integer.parseInt(firstRunHistoricNumberOfDays)*24);
         if( "".equals(firstRunHistoricNumberOfHours) || firstRunHistoricNumberOfHours == null ) {
             firstRunHistoricNumberOfHours = "48";
         }
@@ -340,6 +346,11 @@ public class Configuration {
         }
         if(printOutput) logger.info("Setting Number of Hours to refresh controller application metric list to %s", numberConfigRefreshHours);
         this.properties.setProperty("scheduler-ConfigRefreshHours", numberConfigRefreshHours);
+        if( "".equals(maxNumberOfDaysToQueryAtATime) || maxNumberOfDaysToQueryAtATime == null ) {
+            maxNumberOfDaysToQueryAtATime="14";
+        }
+        if(printOutput) logger.info("Setting Max Number of Days to Query at a time on the controller to %s", maxNumberOfDaysToQueryAtATime);
+        this.properties.setProperty("scheduler-MaxQueryDays", maxNumberOfDaysToQueryAtATime);
     }
 
     public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable, String maximumColumnNameLengthString ) throws InvalidConfigurationException {
@@ -427,5 +438,13 @@ public class Configuration {
             logger.warn("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s Exception: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!"), e.getMessage());
             throw new InvalidConfigurationException(String.format("Error reading list of forbidden table names from internal file %s, this database may not be supported: %s", filename, getProperty("database-vendor","UNKNOWN DATABASE!")));
         }
+    }
+
+    public boolean isTooLongATime(long naturalDurationMS) {
+        return naturalDurationMS > getMaxQueryDurationInMS();
+    }
+
+    public long getMaxQueryDurationInMS() {
+        return getProperty("scheduler-MaxQueryDays", 14) *24*60*60*1000;
     }
 }
