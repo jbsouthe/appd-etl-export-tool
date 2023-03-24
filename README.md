@@ -10,7 +10,7 @@ Supported Databases:
 * MySQL
 * PostgreSQL
 * MS SQL
-* CSV Files
+* CSV Files - For CSV use a JDBC connection String like this: <ConnectionString>csv:anything:./dataDirectory</ConnectionString>
 
 The execution of this utility requires a Java VM v1.11 or greater
 
