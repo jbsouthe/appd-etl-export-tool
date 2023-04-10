@@ -6,21 +6,15 @@ import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.IControlTable;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
-import com.cisco.josouthe.util.HttpClientFactory;
+import com.cisco.josouthe.http.HttpClientFactory;
 import com.cisco.josouthe.util.Utility;
-import com.cisco.josouthe.util.WorkingStatusThread;
+import com.cisco.josouthe.http.WorkingStatusThread;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.ParseException;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,35 +30,13 @@ public class Analytics {
 
     public String APIAccountName, APIKey, tableNamePrefix="AppDynamics_Analytics_";
     public URL url;
-    public boolean wireTraceEnabled = false;
     private Database database;
     private int minutesToAdjustEndTimestampBy = 5;
     ArrayList<Search> searches = new ArrayList<>();
     HttpClient client = null;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     IControlTable controlTable = null;
-    final ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
-        private String uri = "Unset";
-        public void setUri( String uri ) { this.uri=uri; }
-
-        @Override
-        public String handleResponse( final HttpResponse response) throws IOException {
-            final int status = response.getStatusLine().getStatusCode();
-            if (status >= HttpStatus.SC_OK && status < HttpStatus.SC_TEMPORARY_REDIRECT) {
-                final HttpEntity entity = response.getEntity();
-                try {
-                    String json =entity != null ? EntityUtils.toString(entity) : null;
-                    if( wireTraceEnabled ) logger.info("JSON returned: '%s'",json);
-                    return json;
-                } catch (final ParseException ex) {
-                    throw new ClientProtocolException(ex);
-                }
-            } else {
-                throw new ControllerBadStatusException(response.getStatusLine().toString(), EntityUtils.toString(response.getEntity()), uri);
-            }
-        }
-
-    };
+    private ResponseHandler<String> responseHandler;
 
     public Analytics( String urlString, String APIAccountName, String APIKey, String tableNamePrefix, Database database ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/";
@@ -75,7 +47,7 @@ public class Analytics {
             this.tableNamePrefix=tableNamePrefix;
         this.database = database;
         this.client = HttpClientFactory.getHttpClient();
-        if( System.getProperty("wireTrace") != null && System.getProperty("wireTrace").toLowerCase().contains("analytics") ) this.wireTraceEnabled=true;
+        this.responseHandler = HttpClientFactory.getStringResponseHandler("analytics");
     }
 
     public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searches, int minutesToAdjustEndTimestampBy ) throws MalformedURLException{
@@ -153,7 +125,7 @@ public class Analytics {
             return null;
         }
         logger.trace("Request: %s with query: %s", request.toString(), query);
-        if( wireTraceEnabled ) {
+        if( HttpClientFactory.isWireTraceEnabled("analytics") ) {
             logger.info("Wire Trace Request: '%s' with Body: '%s'",request.toString(), query);
         }
         int tries=0;
@@ -231,7 +203,7 @@ public class Analytics {
             return ;
         }
         logger.trace("Request: %s with query: %s", request.toString(), query);
-        if( wireTraceEnabled ) {
+        if( HttpClientFactory.isWireTraceEnabled("analytics") ) {
             logger.info("Wire Trace Request: '%s' with Body: '%s'",request.toString(), stringBuilder.toString());
         }
         int tries=0;

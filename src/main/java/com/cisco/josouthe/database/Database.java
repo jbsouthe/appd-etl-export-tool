@@ -15,7 +15,7 @@ import com.cisco.josouthe.print.Printer;
 import com.cisco.josouthe.print.ResultSetPrinter;
 import com.cisco.josouthe.print.TablePrinter;
 import com.cisco.josouthe.util.Utility;
-import com.cisco.josouthe.util.WorkingStatusThread;
+import com.cisco.josouthe.http.WorkingStatusThread;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,7 +110,7 @@ public abstract class Database {
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
         if( cntStarted > 0 )
-            logger.info("Attempted to load %d metrics, succeeded in loading %d metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
+            logger.info("Attempted to load %d metrics, succeeded in loading %d metrics. Total Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS);
 
     }
 
@@ -139,7 +139,7 @@ public abstract class Database {
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
         if( cntStarted > 0 )
-            logger.info("Attempted to load %d baseline metrics, succeeded in loading %d baseline metrics. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime, (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
+            logger.info("Attempted to load %d baseline metrics, succeeded in loading %d baseline metrics. Total Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS);
 
     }
 
@@ -165,7 +165,7 @@ public abstract class Database {
             logger.debug("Loaded %d event into the database in time %d(ms)", 1, durationTimeTransaction);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
-        logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS, maxDurationTime, minDurationTime,  (cntStarted>0 ?durationTimeOverallMS/cntStarted : -1));
+        logger.info("Attempted to load %d events, succeeded in loading %d events. Total Time %d(ms)",cntStarted,cntFinished,durationTimeOverallMS);
     }
 
     public void importAnalyticData(Result[] results) throws FailedDataLoadException{
@@ -191,16 +191,9 @@ public abstract class Database {
             logger.debug("Loaded %d analytic search results into the database in time %d(ms)", result.results.length, durationTimeTransaction);
         }
         long durationTimeOverallMS = Utility.now() - startTimeOverall;
-        if( maxDurationTime != minDurationTime ) {
-            logger.info(
-                    "Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms), Max Time %d(ms), Min Time %d(ms), Avg Time %d(ms)",
-                    cntStarted, cntFinished, durationTimeOverallMS, maxDurationTime, minDurationTime,
-                    (cntStarted > 0 ? durationTimeOverallMS / cntStarted : -1));
-        } else {
-            logger.info(
-                    "Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms)",
-                    cntStarted, cntFinished, durationTimeOverallMS);
-        }
+        logger.info(
+                "Attempted to load %d analytic search results, succeeded in loading %d rows. Total Time %d(ms)",
+                cntStarted, cntFinished, durationTimeOverallMS);
     }
 
     public abstract Connection getConnection() throws SQLException;

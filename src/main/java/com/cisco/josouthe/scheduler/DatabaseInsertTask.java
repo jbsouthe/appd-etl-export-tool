@@ -3,7 +3,7 @@ package com.cisco.josouthe.scheduler;
 import com.cisco.josouthe.config.Configuration;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.exceptions.FailedDataLoadException;
-import com.cisco.josouthe.util.WorkingStatusThread;
+import com.cisco.josouthe.http.WorkingStatusThread;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

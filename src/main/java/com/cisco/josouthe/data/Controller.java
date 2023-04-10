@@ -14,9 +14,9 @@ import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.IControlTable;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
-import com.cisco.josouthe.util.HttpClientFactory;
+import com.cisco.josouthe.http.HttpClientFactory;
 import com.cisco.josouthe.util.Utility;
-import com.cisco.josouthe.util.WorkingStatusThread;
+import com.cisco.josouthe.http.WorkingStatusThread;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
@@ -24,7 +24,6 @@ import org.apache.commons.codec.Charsets;
 import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
@@ -59,33 +58,11 @@ public class Controller {
     public Model controllerModel = null;
     private IControlTable controlTable = null;
     private boolean getAllAnalyticsSearchesFlag = false;
-    private boolean wireTraceEnabled = false;
     private int minutesToAdjustEndTimestampBy = 5;
     private Configuration configuration;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
-    final ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
-        private String uri = "Unset";
-        public void setUri( String uri ) { this.uri=uri; }
-
-        @Override
-        public String handleResponse( final HttpResponse response) throws IOException {
-            final int status = response.getStatusLine().getStatusCode();
-            if (status >= HttpStatus.SC_OK && status < HttpStatus.SC_TEMPORARY_REDIRECT) {
-                final HttpEntity entity = response.getEntity();
-                try {
-                    String json =entity != null ? EntityUtils.toString(entity) : null;
-                    if( wireTraceEnabled ) logger.info("JSON returned: '%s'",json);
-                    return json;
-                } catch (final ParseException ex) {
-                    throw new ClientProtocolException(ex);
-                }
-            } else {
-                throw new ControllerBadStatusException(response.getStatusLine().toString(), EntityUtils.toString(response.getEntity()), uri);
-            }
-        }
-
-    };
+    private ResponseHandler<String> responseHandler;
 
     public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag, ApplicationRegex[] applicationRegexes, int minutesToAdjustEndTimestampBy, Configuration configuration ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
@@ -99,7 +76,7 @@ public class Controller {
         this.applicationRegexes = applicationRegexes;
         this.minutesToAdjustEndTimestampBy = minutesToAdjustEndTimestampBy;
         this.configuration = configuration;
-        if( System.getProperty("wireTrace") != null && System.getProperty("wireTrace").toLowerCase().contains("controller") ) this.wireTraceEnabled=true;
+        this.responseHandler = HttpClientFactory.getStringResponseHandler("controller");
         if( this.applicationRegexes != null && this.applicationRegexes.length > 0 ) {
             initApplicationIdMap();
             List<Application> applicationsToAdd = new ArrayList<>();
@@ -174,7 +151,7 @@ public class Controller {
             logger.warn("Unsupported Encoding Exception in post parameter encoding: %s",e.getMessage());
         }
 
-        if( wireTraceEnabled ){
+        if( HttpClientFactory.isWireTraceEnabled("controller") ){
             logger.info("Request to run: %s",request.toString());
             for( Header header : request.getAllHeaders())
                 logger.info("with header: %s",header.toString());
@@ -246,7 +223,7 @@ public class Controller {
         if( ! urlString.contains("output=JSON") ) urlString += "&output=JSON";
         HttpGet request = new HttpGet(urlString);
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
-        if( wireTraceEnabled ) {
+        if( HttpClientFactory.isWireTraceEnabled("controller") ) {
             logger.info("Wire Trace Request: '%s'",request.toString());
         }
         String json = null;
@@ -376,7 +353,7 @@ public class Controller {
             if( baselineData.hasData() )
                 baselines.add(baselineData);
         }
-        logger.debug("Purged a total of %d baseline datasets that were empty");
+        //logger.debug("Purged a total of %d baseline datasets that were empty");
         if( dataQueue != null && !baselines.isEmpty() ) {
             dataQueue.add( baselines.toArray( new BaselineData[0]));
             baselines.clear();
@@ -453,7 +430,7 @@ public class Controller {
         HttpPost request = new HttpPost(String.format("%s%s", this.url.toString(), requestUri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
         logger.trace("HTTP Method: %s with body: '%s'",request, body);
-        if( wireTraceEnabled ) {
+        if( HttpClientFactory.isWireTraceEnabled("controller") ) {
             logger.info("Wire Trace POST Request: '%s' with Body: '%s'",request.toString(), body);
         }
         String json = null;
@@ -480,7 +457,7 @@ public class Controller {
     private String getRequest( String uri ) throws ControllerBadStatusException {
         HttpGet request = new HttpGet(String.format("%s%s", this.url.toString(), uri));
         request.addHeader(HttpHeaders.AUTHORIZATION, getBearerToken());
-        if( wireTraceEnabled ) {
+        if( HttpClientFactory.isWireTraceEnabled("controller") ) {
             logger.info("Wire Trace GET Request: '%s'",request.toString());
         }
         String json = null;

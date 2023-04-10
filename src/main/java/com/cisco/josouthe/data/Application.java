@@ -7,7 +7,7 @@ import com.cisco.josouthe.data.metric.MetricGraph;
 import com.cisco.josouthe.data.metric.MetricPaths;
 import com.cisco.josouthe.data.model.TreeNode;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
-import com.cisco.josouthe.util.WorkingStatusThread;
+import com.cisco.josouthe.http.WorkingStatusThread;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
