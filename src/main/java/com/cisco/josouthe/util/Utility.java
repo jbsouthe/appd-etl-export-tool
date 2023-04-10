@@ -3,6 +3,7 @@ package com.cisco.josouthe.util;
 import com.appdynamics.apm.appagent.api.DataScope;
 import com.cisco.josouthe.database.TypeAndSize;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,11 +14,7 @@ import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -144,5 +141,22 @@ public class Utility {
             commands.add(namespace.getString("command"));
         }
         return commands;
+    }
+
+    public static Level getLevel( String s ) {
+        switch (s.toUpperCase()) {
+            case "TRACE": { return Level.TRACE; }
+            case "DEBUG": { return Level.DEBUG; }
+            case "INFO": { return Level.INFO; }
+            case "WARN": { return Level.WARN; }
+            case "ERROR": { return Level.ERROR; }
+            default: return null;
+        }
+    }
+
+    public static boolean isStringSet( String s ) {
+        if( s == null ) return false;
+        if( "".equalsIgnoreCase(s) ) return false;
+        return true;
     }
 }
