@@ -18,12 +18,10 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.*;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -47,6 +45,8 @@ public class Configuration {
     private boolean definedAnalytics = false;
     private boolean running = true;
     private List<ApplicationRegex> applicationRegexList = new ArrayList<>();
+    private List<LoggerConfigItem> loggerConfigItemList = new ArrayList<>();
+    private static final String LOGGER_NAME = "fileLogger";
 
     public boolean isRunning() { return this.running; }
     public void setRunning( boolean b ) { this.running=b; }
@@ -97,7 +97,21 @@ public class Configuration {
         digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfDays", paramCounter++);
         digester.addCallParam("ETLTool/Scheduler/MaxNumberOfDaysToQueryAtATime", paramCounter++);
 
+        //Log4j Configuration
+        paramCounter = 0;
+        digester.addCallMethod("ETLTool/Logging", "setLoggingConfiguration", 6);
+        digester.addCallParam("ETLTool/Logging/Level", paramCounter++);
+        digester.addCallParam("ETLTool/Logging/FileName", paramCounter++);
+        digester.addCallParam("ETLTool/Logging/FilePattern", paramCounter++);
+        digester.addCallParam("ETLTool/Logging/FileCronPolicy", paramCounter++);
+        digester.addCallParam("ETLTool/Logging/FileSizePolicy", paramCounter++);
+        digester.addCallParam("ETLTool/Logging/Pattern", paramCounter++);
 
+        paramCounter = 0;
+        digester.addCallMethod("ETLTool/Logging/Logger", "addLoggingLogger", 3);
+        digester.addCallParam("ETLTool/Logging/Logger/Name", paramCounter++);
+        digester.addCallParam("ETLTool/Logging/Logger/Level", paramCounter++);
+        digester.addCallParam("ETLTool/Logging/Logger/Additivity", paramCounter++);
 
         //database configuration section
         paramCounter = 0;
@@ -189,6 +203,55 @@ public class Configuration {
         } else {
             throw new InvalidConfigurationException("Database is not configured, available, or authentication information is incorrect. Something is wrong, giving up on this buddy");
         }
+    }
+
+    public void addLoggingLogger( String name, String level, String additivity ) throws InvalidConfigurationException {
+        this.loggerConfigItemList.add(new LoggerConfigItem(name, level, additivity) );
+    }
+
+    public void setLoggingConfiguration( String level, String fileName, String filePattern, String fileCronPolicy, String fileSizePolicy, String pattern ) throws InvalidConfigurationException {
+        if( level == null ) level="INFO";
+        if( fileName == null ) fileName="etl-export.log";
+        if( filePattern == null ) filePattern="etl-export-%d{MM-dd-yy}.log.gz";
+        if( pattern == null ) pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n";
+
+        ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
+
+        LayoutComponentBuilder patternLayout = builder.newLayout("PatternLayout");
+        patternLayout.addAttribute("pattern", pattern);
+
+        Level rootLevel = Utility.getLevel(level);
+        if( rootLevel == null ) throw new InvalidConfigurationException(String.format("<ETLTool><Logging><Level> of '%s' is not valid, please set to one of TRACE|DEBUG|INFO|WARN|ERROR", level));
+        RootLoggerComponentBuilder rootLoggerComponentBuilder = builder.newRootLogger( rootLevel );
+        builder.add(rootLoggerComponentBuilder);
+
+        AppenderComponentBuilder console = builder.newAppender("stdout", "Console");
+        console.add(patternLayout);
+        builder.add(console);
+
+        AppenderComponentBuilder rollingFile = builder.newAppender(LOGGER_NAME, "RollingFile");
+        rollingFile.addAttribute("fileName", fileName);
+        rollingFile.addAttribute("filePattern", filePattern);
+        rollingFile.add(patternLayout);
+        //optional trigger policies
+        if( Utility.isStringSet(fileCronPolicy) || Utility.isStringSet(fileSizePolicy) ) {
+            ComponentBuilder triggeringPolicies = builder.newComponent("Policies");
+            if( Utility.isStringSet(fileCronPolicy)) triggeringPolicies.addComponent(builder.newComponent("CronTriggeringPolicy")
+                    .addAttribute("schedule", fileCronPolicy));
+            if( Utility.isStringSet(fileSizePolicy)) triggeringPolicies.addComponent(builder.newComponent("SizeBasedTriggeringPolicy")
+                    .addAttribute("size", fileSizePolicy));
+            rollingFile.addComponent(triggeringPolicies);
+        }
+        builder.add(rollingFile);
+
+        for( LoggerConfigItem loggerConfigItem : loggerConfigItemList ) {
+            LoggerComponentBuilder loggerComponentBuilder = builder.newAsyncLogger( loggerConfigItem.name, loggerConfigItem.level);
+            loggerComponentBuilder.add(builder.newAppenderRef(LOGGER_NAME));
+            loggerComponentBuilder.addAttribute("additivity", loggerConfigItem.additivity);
+            builder.add(loggerComponentBuilder);
+        }
+
+        Configurator.initialize(builder.build());
     }
 
     public void addAnalyticsSearch( String name, String query, String limit, String visualization ) throws InvalidConfigurationException {
