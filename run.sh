@@ -8,6 +8,7 @@ export JAVA_OPTS="-XX:+UseParallelGC -XX:ParallelGCThreads=10 -XX:MaxGCPauseMill
 
 #Trace analytics
 #export DEBUGARGS="-DwireTrace=analytics"
+#export DEBUGARGS="-DwireTrace=controller"
 
 CP=".:$1"
 for i in ./lib/*.jar
