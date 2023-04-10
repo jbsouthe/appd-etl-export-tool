@@ -1,5 +1,7 @@
-package com.cisco.josouthe.util;
+package com.cisco.josouthe.http;
 
+import com.cisco.josouthe.util.Utility;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
 public class WorkingStatusThread extends Thread {
@@ -35,9 +37,20 @@ public class WorkingStatusThread extends Thread {
             if( running ) {
                 String holdName = Thread.currentThread().getName();
                 Thread.currentThread().setName("Execution-Watchdog-"+ name);
-                logger.info("%s '%s' is still running, so far %d (s)", this.name, this.query, (Utility.now()-this.startTime)/1000 );
+                long runtimeSeconds = getRuntimeSeconds();
+                logger.log( getLogLevel(runtimeSeconds), "%s '%s' is still running, so far %d (s)", this.name, this.query, runtimeSeconds );
                 Thread.currentThread().setName(holdName);
             }
         }
+    }
+
+    private Level getLogLevel(long runtimeSeconds) {
+        if( runtimeSeconds <= 300 ) return Level.INFO;
+        if( runtimeSeconds <= 600 ) return Level.WARN;
+        return Level.ERROR;
+    }
+
+    private long getRuntimeSeconds() {
+        return (Utility.now()-this.startTime)/1000;
     }
 }
