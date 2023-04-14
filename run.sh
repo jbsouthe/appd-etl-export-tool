@@ -22,5 +22,5 @@ if [[ "$2" == "test" ]]; then
   java -cp $CP com.cisco.josouthe.data.Analytics
 #  java -cp $CP com.cisco.josouthe.data.metric.graph.MetricGraph $3
 else
-  time java $DEBUGARGS $JAVA_OPTS -cp $CP com.cisco.josouthe.ETLTransferMain $2
+  time java $DEBUGARGS $JAVA_OPTS -cp $CP com.cisco.josouthe.ETLControlMain -c $2
 fi
