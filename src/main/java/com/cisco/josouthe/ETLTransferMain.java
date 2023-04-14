@@ -16,6 +16,7 @@ public class ETLTransferMain {
     private static final Logger logger = LogManager.getFormatterLogger();
 
     public static void main( String... args ) {
+        logger.warn("USING A DEPRECATED MAIN COMMAND LINE, PLEASE RUN WITH NEW COMMAND VERSION (check usage java -jar <the jar file you built or downloaded>)");
         logger.info("Initializing ETL Transfer Tool version %s build date %s", MetaData.VERSION, MetaData.BUILDTIMESTAMP);
         logger.info("Report issues and concerns to: %s", MetaData.GITHUB);
 
