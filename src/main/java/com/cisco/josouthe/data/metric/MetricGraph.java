@@ -24,6 +24,7 @@ public class MetricGraph {
     private TreeMap<String, Vertex> vertices;
     private long originalSize, newSize, countOfMetricsAdded;
     private Set<String> newAppMetricsStrings = null;
+    private List<String> staticMetrics = new ArrayList<>();
 
     public MetricGraph(List<String> metrics) {
         edges = new ArrayList<>();
@@ -31,19 +32,22 @@ public class MetricGraph {
         startingVertices = new ArrayList<>();
         countOfMetricsAdded=0;
         if( metrics != null )
-            for( String metricName : metrics)
-                addMetricName(metricName);
+            this.staticMetrics.addAll(metrics);
     }
 
-    public long size() { return countOfMetricsAdded; }
+    public long size() { return countOfMetricsAdded + staticMetrics.size(); }
 
     public Set<String> getUniqueCompressedMetricNames() {
         if( newAppMetricsStrings != null ) return newAppMetricsStrings;
         newAppMetricsStrings = new HashSet<>();
+        logger.trace("getUniqueCompressedMetricNames number of vertices: %d edges: %d", vertices.size(), edges.size());
         for( Vertex vertex : vertices.values() ) {                          //O(n^2) or O(n!) lol?!?!
-            if( vertex.isFinal() || vertex.isInitial() || vertex.value.contains("*") ) continue;
+            if( vertex.isInitial() || vertex.value.contains("*") ) {
+                continue;
+            }
             int rCnt=0, lCnt=0;
             for( Edge edge : edges) {
+                logger.trace("Edge %s", edge);
                 if( edge.lVertex == vertex) lCnt++;
                 if( edge.rVertex == vertex) rCnt++;
             }
@@ -52,6 +56,8 @@ public class MetricGraph {
                 newAppMetricsStrings.add( vertex.printWithWildcard() );
             }
         }
+        newAppMetricsStrings.addAll(this.staticMetrics);
+        logger.trace("getUniqueCompressedMetricNames Returning %d metrics: '%s'", newAppMetricsStrings.size(), newAppMetricsStrings);
         return newAppMetricsStrings;
     }
 
@@ -99,11 +105,13 @@ public class MetricGraph {
         public boolean isLeftOf( Vertex v ){ return v == rVertex; }
         public boolean isRightOf( Vertex v ) { return v == lVertex; }
         public boolean isSource() { return lVertex == null; }
+
+        public String toString() { return String.format("left Vertex [%s] right Vertex [%s]", lVertex, rVertex ); }
     }
 
     private class Vertex implements Comparable{
         public String value, original;
-        public int position;
+        public int position=-1;
         private ArrayList<Vertex> rEdges, lEdges;
 
         public Vertex(String word, int position, String original) {
