@@ -88,7 +88,7 @@ public class Utility {
     }
 
     public static long now( long adj ) { return now()+adj; }
-    public static long now() { return new Date().getTime(); }
+    public static long now() { return System.currentTimeMillis(); }
 
     public static boolean isThisStringADate(String data) {
         if( data == null ) return false;
