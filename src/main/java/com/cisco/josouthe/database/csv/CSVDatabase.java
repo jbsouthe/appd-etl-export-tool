@@ -43,6 +43,7 @@ public class CSVDatabase extends Database {
         this.defaulEventTable = new EventTable(eventTable, this, this.databaseDirectory);
         this.defaultBaselineTable = new BaselineTable(baselineTable, this, this.databaseDirectory);
         logger.info("Testing Database connection returned: "+ isDatabaseAvailable());
+        logger.debug("Default Number of hours historical data: "+ firstRunHistoricNumberOfHours);
     }
 
     @Override

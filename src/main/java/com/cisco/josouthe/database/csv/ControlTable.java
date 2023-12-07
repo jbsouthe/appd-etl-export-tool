@@ -22,7 +22,7 @@ import java.util.List;
 
 public class ControlTable extends CSVTable implements IControlTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
-    private int defaultLoadNumberOfHoursIfControlRowMissing = 48;
+    private Integer defaultLoadNumberOfHoursIfControlRowMissing = 48;
     private File baseDir;
 
     public ControlTable( String tableName, Database database, File baseDir ) {
@@ -35,7 +35,10 @@ public class ControlTable extends CSVTable implements IControlTable {
     }
 
     @Override
-    public void setDefaultLoadNumberOfHoursIfControlRowMissing(int hours) { this.defaultLoadNumberOfHoursIfControlRowMissing=hours; }
+    public void setDefaultLoadNumberOfHoursIfControlRowMissing(int hours) {
+        this.defaultLoadNumberOfHoursIfControlRowMissing=hours;
+        logger.trace("Default Load Number of hours if control row missing set to: "+ hours);
+    }
 
     @Override
     public int insert(Object object) {
@@ -48,18 +51,18 @@ public class ControlTable extends CSVTable implements IControlTable {
         controlEntry.controller=controller;
         controlEntry.application=application;
         controlEntry.type=dataType;
-        Long timeStamp = null;
         File controlFile = getControlFile(controlEntry);
+        long defaultAdjustmentInMS = this.defaultLoadNumberOfHoursIfControlRowMissing.longValue() * 60 * 60 * 1000;
+        controlEntry.timestamp = System.currentTimeMillis() - defaultAdjustmentInMS;
+        logger.trace("XXX %s should be %d - %d = %d", controlEntry, System.currentTimeMillis(), defaultAdjustmentInMS, System.currentTimeMillis() - defaultAdjustmentInMS);
         if( controlFile.isFile() ) {
             try {
                 controlEntry.timestamp = readTimestampFromFile(controlFile);
             } catch (IOException ioException) {
                 logger.warn("Error reading timestamp from control file '%s', IOException: %s",controlFile.getAbsolutePath(), ioException.getMessage());
-                controlEntry.timestamp= Utility.now()-(this.defaultLoadNumberOfHoursIfControlRowMissing*60*60*1000);
             }
-        } else {
-            controlEntry.timestamp= Utility.now()-(this.defaultLoadNumberOfHoursIfControlRowMissing*60*60*1000);
         }
+        logger.trace("Returning Control Entry: %s default hours: %d current time: %d", controlEntry, this.defaultLoadNumberOfHoursIfControlRowMissing, System.currentTimeMillis());
         return controlEntry;
     }
 

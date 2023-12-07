@@ -4,7 +4,6 @@ import com.cisco.josouthe.database.ColumnFeatures;
 import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.Database;
 import com.cisco.josouthe.database.IControlTable;
-import com.cisco.josouthe.util.Utility;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,7 +16,7 @@ import java.util.List;
 
 public class ControlTable extends MicrosoftTable implements IControlTable {
     protected static final Logger logger = LogManager.getFormatterLogger();
-    private int defaultLoadNumberOfHoursIfControlRowMissing = 48;
+    private Integer defaultLoadNumberOfHoursIfControlRowMissing = 48;
 
     public ControlTable(String tableName, Database database ) {
         super(tableName,"Control Table", database);
@@ -57,7 +56,7 @@ public class ControlTable extends MicrosoftTable implements IControlTable {
             controlEntry.timestamp = timeStamp;
             controlEntry.rowExistsInDB = true;
         } else {
-            controlEntry.timestamp = Utility.now() - (this.defaultLoadNumberOfHoursIfControlRowMissing * 60 * 60 * 1000);
+            controlEntry.timestamp = System.currentTimeMillis() - (this.defaultLoadNumberOfHoursIfControlRowMissing.longValue() * 60 * 60 * 1000);
             controlEntry.rowExistsInDB = false;
         }
         return controlEntry;
