@@ -135,25 +135,29 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/AdjustEndTimeMinutes", paramCounter++);
 
         //application config, within a controller
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 12);
-        digester.addCallParam("ETLTool/Controller/Application", 0, "getAllAvailableMetrics");
-        digester.addCallParam("ETLTool/Controller/Application/Name", 1);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", 2);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", 3);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", 4);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/BaselineTable", 5);
-        digester.addCallParam("ETLTool/Controller/Application", 6, "getAllEvents");
-        digester.addCallParam("ETLTool/Controller/Application", 7, "getAllHealthRuleViolations");
-        digester.addCallParam("ETLTool/Controller/Application/Events/Include", 8);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", 9);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", 10);
-        digester.addCallParam("ETLTool/Controller/Application/Name", 11, "regex");
+        paramCounter=0;
+        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 14);
+        digester.addCallParam("ETLTool/Controller/Application", paramCounter++, "getAllAvailableMetrics");
+        digester.addCallParam("ETLTool/Controller/Application/Name", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/BaselineTable", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application", paramCounter++, "getAllEvents");
+        digester.addCallParam("ETLTool/Controller/Application", paramCounter++, "getAllHealthRuleViolations");
+        digester.addCallParam("ETLTool/Controller/Application/Events/Include", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Name", paramCounter++, "regex");
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/DataFrequency", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/OnlyGetDefaultBaseline", paramCounter++);
 
         //metric config, within an application
+        paramCounter=0;
         digester.addCallMethod("ETLTool/Controller/Application/Metric", "addMetric", 3);
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 0, "time-range-type");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 1, "duration-in-mins");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", 2);
+        digester.addCallParam("ETLTool/Controller/Application/Metric", paramCounter++, "time-range-type");
+        digester.addCallParam("ETLTool/Controller/Application/Metric", paramCounter++, "duration-in-mins");
+        digester.addCallParam("ETLTool/Controller/Application/Metric", paramCounter++);
 
         paramCounter = 0;
         digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 6);
@@ -305,7 +309,8 @@ public class Configuration {
                                 String metricTable, String eventTable, String baselineTable,
                                 String getAllEvents, String getAllHealthRuleViolations,
                                 String includeEventList, String excludeEventList, String eventSeverities,
-                                String isRegexAppNameFlag
+                                String isRegexAppNameFlag,
+                                String dataFrequency, String onlyGetDefaultBaselineFlag
                                 ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
@@ -316,12 +321,16 @@ public class Configuration {
         if( baselineTable != null && database.isValidDatabaseTableName(baselineTable) ) logger.debug("Application %s Baseline Table set to: %s", name, baselineTable);
         boolean isRegexAppName = false;
         if( isRegexAppNameFlag != null ) isRegexAppName = Boolean.parseBoolean(isRegexAppNameFlag);
+        if( dataFrequency == null ) dataFrequency="ONE_MIN";
+        logger.debug("Application %s Data Frequency set to %s", name, dataFrequency);
+        if( onlyGetDefaultBaselineFlag == null ) onlyGetDefaultBaselineFlag = "true";
+        boolean onlyGetDefaultBaseline = Boolean.parseBoolean(onlyGetDefaultBaselineFlag);
         if( isRegexAppName ) {
             applicationRegexList.add( new ApplicationRegex( name, getAllAvailableMetrics, defaultDisableAutoRollup, metricTable, eventTable, baselineTable,
-                    getAllEvents, getAllHealthRuleViolations, metrics ));
+                    getAllEvents, getAllHealthRuleViolations, metrics, dataFrequency, onlyGetDefaultBaseline ));
         } else {
             Application application = new Application(getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, baselineTable,
-                    getAllEvents, getAllHealthRuleViolations, metrics);
+                    getAllEvents, getAllHealthRuleViolations, metrics, dataFrequency, onlyGetDefaultBaseline);
             application.setEventTypeList(getEventListForApplication(includeEventList, excludeEventList));
             if (eventSeverities != null) application.eventSeverities = eventSeverities;
             applications.add(application);
