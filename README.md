@@ -10,7 +10,7 @@ Supported Databases:
 * MySQL
 * PostgreSQL
 * MS SQL
-* CSV Files - For CSV use a JDBC connection String like this: \<ConnectionString>csv:anything:./dataDirectory \</ConnectionString>
+* CSV Files
 
 The execution of this utility requires a Java VM v1.11 or greater
 
@@ -146,7 +146,22 @@ It's probably bad form to allow this via a java property, but this may greatly s
      -Dallow.self.signed.certs=true
 
 
-## Configure Logging
+## Configure the Extraction Tool
+
+For this utility to run, a configuration must be in place that is minimally viable, and if it is not, then we will exit with helpful messages.
+This file is XML format with specific sections and options that those sections can use to override defaults and apply to other sections in heiarchy.
+
+The sections are assumed to be in this order:
+
+    <ETLTool>
+        <Logging></Logging>
+        <Scheduler></Scheduler>
+        <TargetDB></TargetDB>
+        <Controller></Controller> <!-- can be repeated -->
+        <Analytics></Analytics> <!-- can be repeated -->
+    </ETLTool>
+
+### Logging Section
 
 Here is an example, simple log4j2.xml file as a starting point:
 
@@ -167,19 +182,25 @@ Here is an example, simple log4j2.xml file as a starting point:
       </Loggers>
     </Configuration>
 
-## Configure the Extraction Tool
+As of version 1.13, you can also create an optional XML Section for logging override settings, this basic log4j config will still apply for legacy and simplicity sake.
 
-For this utility to run, a configuration must be in place that is minimally viable, and if it is not, then we will exit with helpful messages.
-This file is XML format with specific sections and options that those sections can use to override defaults and apply to other sections in heiarchy.
+The optional settings are, anything missing will default to the shown text here:
 
-The sections are assumed to be in this order:
-
-    <ETLTool>
-        <Scheduler></Scheduler>
-        <TargetDB></TargetDB>
-        <Controller></Controller> <!-- can be repeated -->
-        <Analytics></Analytics> <!-- can be repeated -->
-    </ETLTool>
+    <Logging>
+        <Level>INFO</Level> <!-- TRACE|DEBUG|INFO|WARN|ERROR -->
+        <FileName>etl-export.log</FileName>
+        <FilePattern>etl-export-%d{MM-dd-yy}.log.gz</FilePattern>
+        <!-- pick one, or both
+        <FileCronPolicy>0 0 0 * * ?</FileCronPolicy>
+        -->
+        <FileSizePolicy>20M</FileSizePolicy>
+        <Pattern>%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Pattern>
+        <Logger> <!-- this section is optional and can repeat -->
+            <Name>com.cisco.josouthe.data.Analytics</Name> <!-- class or package -->
+            <Level>TRACE</Level> <!-- TRACE|DEBUG|INFO|WARN|ERROR -->
+            <Additivity>false</Additivity>
+        </Logger>
+    </Logging>
 
 ### Scheduler Section
 
@@ -251,6 +272,8 @@ Multiple Controller Sections can be defined, but the url must be unique.
                 <MetricTable>ProxyAppMetrics</MetricTable>
                 <EventTable>ProxyAppEvents</EventTable>
                 <BaselineTable>ProxyBaseLines</BaselineTable>
+                <GranularityMinutes>60</GranularityMinutes> <!-- default is 60 minutes, but can be set to 1 minute and if the data hasn't rolled up, you will get it in 1 minute increments -->
+                <OnlyGetDefaultBaseline>true</OnlyGetDefaultBaseline> <!-- default is true, which only gets the default baseline, but setting to false enables fetching every baseline value -->
             </Defaults>
             <!-- if so desired, the events can be filtered by including or excluding events from the internal event list,
             and by limitting the severity. The default is shown here, to just get all event types and severities, leave these blank or missing

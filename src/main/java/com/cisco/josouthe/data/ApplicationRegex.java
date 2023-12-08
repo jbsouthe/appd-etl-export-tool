@@ -9,11 +9,12 @@ import java.util.regex.Pattern;
 
 public class ApplicationRegex {
     private static final Logger logger = LogManager.getFormatterLogger();
-    private String regexString,getAllAvailableMetrics,defaultDisableAutoRollup,metricTable,eventTable,baselineTable,getAllEvents,getAllHealthRuleViolations;
+    private String regexString,getAllAvailableMetrics,defaultDisableAutoRollup,metricTable,eventTable,baselineTable,getAllEvents,getAllHealthRuleViolations, granularityMinutes;
     private ArrayList<String> metrics;
+    private boolean onlyGetDefaultBaseline = true;
     private Pattern pattern;
     public ApplicationRegex(String regexString, String getAllAvailableMetrics, String defaultDisableAutoRollup, String metricTable,
-            String eventTable, String baselineTable, String getAllEvents, String getAllHealthRuleViolations, ArrayList<String> metrics) {
+            String eventTable, String baselineTable, String getAllEvents, String getAllHealthRuleViolations, ArrayList<String> metrics, String granularityMinutes, boolean onlyGetDefaultBaseline) {
         logger.debug("Added new Application Regex for pattern: '%s'",regexString);
         this.regexString=regexString;
         this.getAllAvailableMetrics=getAllAvailableMetrics;
@@ -25,6 +26,8 @@ public class ApplicationRegex {
         this.getAllHealthRuleViolations=getAllHealthRuleViolations;
         this.metrics=metrics;
         this.pattern = Pattern.compile(regexString);
+        this.granularityMinutes = granularityMinutes;
+        this.onlyGetDefaultBaseline = onlyGetDefaultBaseline;
     }
 
     public Application getApplicationIfMatches( String name ) {
@@ -33,7 +36,7 @@ public class ApplicationRegex {
         if(matcher.matches()) {
             logger.debug("Application name '%s' matches pattern '%s', returning application object to Controller", name, this.regexString);
             return new Application(getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, baselineTable,
-                    getAllEvents, getAllHealthRuleViolations, metrics);
+                    getAllEvents, getAllHealthRuleViolations, metrics, granularityMinutes, onlyGetDefaultBaseline);
         }
         return null;
     }

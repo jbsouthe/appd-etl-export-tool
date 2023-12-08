@@ -15,13 +15,18 @@ import com.cisco.josouthe.database.ControlEntry;
 import com.cisco.josouthe.database.IControlTable;
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
 import com.cisco.josouthe.http.HttpClientFactory;
-import com.cisco.josouthe.util.Utility;
 import com.cisco.josouthe.http.WorkingStatusThread;
+import com.cisco.josouthe.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import org.apache.commons.codec.Charsets;
-import org.apache.http.*;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -43,7 +48,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Controller {
@@ -58,7 +68,7 @@ public class Controller {
     public Model controllerModel = null;
     private IControlTable controlTable = null;
     private boolean getAllAnalyticsSearchesFlag = false;
-    private int minutesToAdjustEndTimestampBy = 5;
+    private Integer minutesToAdjustEndTimestampBy = 5;
     private Configuration configuration;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
@@ -203,7 +213,7 @@ public class Controller {
         while (! succeeded && tries < 3 ) {
             try {
                 metrics = getMetricValue(String.format("%scontroller/rest/applications/%s/metric-data?metric-path=%s&time-range-type=BETWEEN_TIMES&start-time=%d&end-time=%d&output=JSON&rollup=false",
-                        this.url, Utility.encode(application.name), Utility.encode(metricName), startTimestamp, endTimestamp)
+                        this.url, Utility.encode(application.name), Utility.encode(metricName), startTimestamp, endTimestamp, application.getGranularityMinutes())
                 );
                 succeeded=true;
             } catch (ControllerBadStatusException controllerBadStatusException) {
@@ -288,9 +298,11 @@ public class Controller {
             serviceEndPoint.collectData("Start-Timestamp", String.valueOf(controlEntry.timestamp), Utility.getSnapshotDatascope());
              */
         long startTimestamp = controlEntry.timestamp;
-        long endTimestamp = Utility.now( this.minutesToAdjustEndTimestampBy*-60000 );
+        long endTimestamp = Utility.now( this.minutesToAdjustEndTimestampBy.longValue() * -60000 );
         if( configuration.isTooLongATime( endTimestamp - startTimestamp ) )
             endTimestamp = startTimestamp + configuration.getMaxQueryDurationInMS();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        logger.debug("Setting start time to %d (%s) and end time to %d (%s)",startTimestamp, sdf.format(startTimestamp), endTimestamp, sdf.format(endTimestamp));
         WorkingStatusThread workingStatusThread = new WorkingStatusThread("Get Controller Metrics", application.name, logger);
         workingStatusThread.start();
         for( String applicationMetricName : application.metricGraph.getUniqueCompressedMetricNames() ) {
@@ -300,7 +312,7 @@ public class Controller {
                 metricData.applicationName = application.name;
                 metricData.targetTable = application.defaultMetricTableName;
                 metrics.add(metricData);
-                getBaselineValue( metricData, application, startTimestamp, endTimestamp, dataQueue);
+                getBaselineValues( metricData, application, startTimestamp, endTimestamp, dataQueue);
             }
             if( dataQueue != null ) {
                 dataQueue.add(metrics.toArray(new MetricData[0]));
@@ -315,12 +327,23 @@ public class Controller {
         return metrics;
     }
 
-    public List<BaselineData> getBaselineValue( MetricData metricData, Application application, long startTimestamp, long endTimestamp, LinkedBlockingQueue<Object[]> dataQueue ) {
-        ArrayList<BaselineData> baselines = new ArrayList<>();
+    public List<BaselineData> getBaselineValues(MetricData metricData, Application application, long startTimestamp, long endTimestamp, LinkedBlockingQueue<Object[]> dataQueue ) {
+        List<BaselineData> baselineDataList = new ArrayList<>();
         if( application.baselines == null || application.baselines.size() == 0 ) {
             logger.warn("No baselines found for app %s(%d)", application.getName(), application.id);
-            return baselines;
+            return baselineDataList;
         }
+        if( application.isOnlyGetDefaultBaselineFlagSet() ) {
+            baselineDataList.addAll(getBaselineValue(metricData, application, application.getDefaultBaseline(), startTimestamp, endTimestamp, dataQueue));
+        } else {
+            for( Baseline baseline : application.getAllBaselines() )
+                baselineDataList.addAll(getBaselineValue(metricData, application, baseline, startTimestamp, endTimestamp, dataQueue));
+        }
+        return baselineDataList;
+    }
+
+    public List<BaselineData> getBaselineValue( MetricData metricData, Application application, Baseline baseline, long startTimestamp, long endTimestamp, LinkedBlockingQueue<Object[]> dataQueue ) {
+        ArrayList<BaselineData> baselines = new ArrayList<>();
         boolean succeeded=false;
         int tries=0;
         String json = "";
@@ -328,9 +351,9 @@ public class Controller {
             tries++;
             try {
                 json = postRequest(
-                        "controller/restui/metricBrowser/getMetricBaselineData?granularityMinutes=1",
+                        String.format("controller/restui/metricBrowser/getMetricBaselineData?granularityMinutes=%s", application.getGranularityMinutes()),
                         String.format("{\"metricDataQueries\":[{\"metricId\":%d,\"entityId\":%d,\"entityType\":\"APPLICATION\"}],\"timeRangeSpecifier\":{\"type\":\"BETWEEN_TIMES\",\"durationInMinutes\":null,\"endTime\":%d,\"startTime\":%d,\"timeRange\":null,\"timeRangeAdjusted\":false},\"metricBaseline\":%d,\"maxSize\":1440}",
-                                metricData.metricId, application.id, endTimestamp, startTimestamp, application.getBaseline().id));
+                                metricData.metricId, application.id, endTimestamp, startTimestamp, baseline.id));
                 succeeded=true;
             } catch (ControllerBadStatusException controllerBadStatusException) {
                 logger.warn("Error in request to pull baseline metrics using an undocumented, internal, api. This is retriable, attempt %d Error: %s", tries, controllerBadStatusException.getMessage());
@@ -338,7 +361,7 @@ public class Controller {
         }
         if( !succeeded ) {
             logger.error("Giving up on attempt to get Baseline metrics, the controller isn't responding properly");
-            return null;
+            return baselines;
         }
         long totalPurgeCount=0;
         for( BaselineData baselineData : gson.fromJson(json, BaselineData[].class)) {
@@ -346,7 +369,7 @@ public class Controller {
             baselineData.controllerHostname = this.hostname;
             baselineData.applicationName = application.name;
             baselineData.targetTable = application.defaultBaselineTableName;
-            baselineData.baseline = application.getBaseline();
+            baselineData.baseline = baseline;
             long purgeCount = baselineData.purgeNullBaselineTimeslices();
             if( purgeCount > 0) logger.trace("Purged %d Baselines that contained no data",purgeCount);
             totalPurgeCount += purgeCount;
@@ -380,7 +403,7 @@ public class Controller {
 
              */
         long startTimestamp = controlEntry.timestamp;
-        long endTimestamp = Utility.now( this.minutesToAdjustEndTimestampBy*-60000 );
+        long endTimestamp = Utility.now( this.minutesToAdjustEndTimestampBy.longValue() * -60000 );
         if( configuration.isTooLongATime( endTimestamp - startTimestamp ) )
             endTimestamp = startTimestamp + configuration.getMaxQueryDurationInMS();
         if( application.getAllEvents ) {

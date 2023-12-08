@@ -1,7 +1,12 @@
 package com.cisco.josouthe.http;
 
 import com.cisco.josouthe.exceptions.ControllerBadStatusException;
-import org.apache.http.*;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpStatus;
+import org.apache.http.ParseException;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.NTCredentials;
@@ -113,6 +118,11 @@ public class HttpClientFactory {
         return new ResponseHandler<String>() {
             private String uri = "Unset";
             public void setUri( String uri ) { this.uri=uri; }
+
+            private HttpRequest request = null;
+            public void setRequest(HttpRequest request) {
+                this.request = request;
+            }
             private boolean wireTraceEnabled = enableWireTrace;
             public void setWireTraceEnabled( boolean b ) { this.wireTraceEnabled=b; }
 

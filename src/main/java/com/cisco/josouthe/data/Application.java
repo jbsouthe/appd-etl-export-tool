@@ -37,8 +37,10 @@ public class Application {
     public List<Baseline> baselines = null;
     public Baseline defaultBaseline = null;
     private MetricPaths metricPaths = null;
+    private String granularityMinutes = "1";
+    private boolean onlyGetDefaultBaseline = true;
 
-    public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String defaultBaselineTableName, String getAllEvents, String getAllHealthRuleViolations, List<String> metrics) {
+    public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String defaultBaselineTableName, String getAllEvents, String getAllHealthRuleViolations, List<String> metrics, String granularityMinutes, boolean onlyGetDefaultBaseline) {
         if( getAllAvailableMetrics != null ) this.getAllAvailableMetrics= Boolean.parseBoolean(getAllAvailableMetrics);
         if( getAllEvents != null ) this.getAllEvents= Boolean.parseBoolean(getAllEvents);
         if( getAllHealthRuleViolations != null ) this.getAllHealthRuleViolations= Boolean.parseBoolean(getAllHealthRuleViolations);
@@ -50,13 +52,16 @@ public class Application {
         this.metricGraph = new MetricGraph(metrics);
         this.baselines = new ArrayList<>();
         this.metricPaths = new MetricPaths();
+        this.granularityMinutes = granularityMinutes;
+        this.onlyGetDefaultBaseline = onlyGetDefaultBaseline;
     }
 
     public boolean isFinishedInitialization() { return finishedInitialization; }
     public void setEventTypeList( String events ) { this.eventTypeList=events; }
+    public String getGranularityMinutes() { return granularityMinutes; }
 
     public void validateConfiguration(Controller controller) throws InvalidConfigurationException {
-        if( !getAllAvailableMetrics && metricGraph.size() == 0 && !getAllEvents && !getAllHealthRuleViolations) {
+        if( !getAllAvailableMetrics && metricGraph.size() == 0 && !getAllEvents && !getAllHealthRuleViolations ) {
             logger.warn("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
             throw new InvalidConfigurationException("getAllAvailableMetrics, getAllEvents, and getAllHealthRuleViolations are false, but the application has no metrics configured, not sure what to do here so i'm just going to toss this Exception");
         }
@@ -134,12 +139,16 @@ public class Application {
         }
     }
 
-    public Baseline getBaseline( String name ) {
+    public Baseline getDefaultBaseline (String name ) {
         if( name == null ) return this.defaultBaseline;
         for( Baseline baseline : baselines )
             if( name.equals(baseline.name) )
                 return baseline;
         return null;
     }
-    public Baseline getBaseline() { return getBaseline(null); }
+    public Baseline getDefaultBaseline () { return getDefaultBaseline(null); }
+
+    public boolean isOnlyGetDefaultBaselineFlagSet() { return this.onlyGetDefaultBaseline; }
+
+    public List<Baseline> getAllBaselines() { return this.baselines; }
 }

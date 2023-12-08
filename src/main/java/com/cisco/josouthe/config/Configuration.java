@@ -149,7 +149,7 @@ public class Configuration {
         digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", paramCounter++);
         digester.addCallParam("ETLTool/Controller/Application/Events/Severities", paramCounter++);
         digester.addCallParam("ETLTool/Controller/Application/Name", paramCounter++, "regex");
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/DataFrequency", paramCounter++);
+        digester.addCallParam("ETLTool/Controller/Application/Defaults/GranularityMinutes", paramCounter++);
         digester.addCallParam("ETLTool/Controller/Application/Defaults/OnlyGetDefaultBaseline", paramCounter++);
 
         //metric config, within an application
@@ -310,7 +310,7 @@ public class Configuration {
                                 String getAllEvents, String getAllHealthRuleViolations,
                                 String includeEventList, String excludeEventList, String eventSeverities,
                                 String isRegexAppNameFlag,
-                                String dataFrequency, String onlyGetDefaultBaselineFlag
+                                String granularityMinutes, String onlyGetDefaultBaselineFlag
                                 ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
@@ -321,16 +321,16 @@ public class Configuration {
         if( baselineTable != null && database.isValidDatabaseTableName(baselineTable) ) logger.debug("Application %s Baseline Table set to: %s", name, baselineTable);
         boolean isRegexAppName = false;
         if( isRegexAppNameFlag != null ) isRegexAppName = Boolean.parseBoolean(isRegexAppNameFlag);
-        if( dataFrequency == null ) dataFrequency="ONE_MIN";
-        logger.debug("Application %s Data Frequency set to %s", name, dataFrequency);
+        if( granularityMinutes == null ) granularityMinutes="1";
+        logger.debug("Application %s Granularity Minutes set to %s", name, granularityMinutes);
         if( onlyGetDefaultBaselineFlag == null ) onlyGetDefaultBaselineFlag = "true";
         boolean onlyGetDefaultBaseline = Boolean.parseBoolean(onlyGetDefaultBaselineFlag);
         if( isRegexAppName ) {
             applicationRegexList.add( new ApplicationRegex( name, getAllAvailableMetrics, defaultDisableAutoRollup, metricTable, eventTable, baselineTable,
-                    getAllEvents, getAllHealthRuleViolations, metrics, dataFrequency, onlyGetDefaultBaseline ));
+                    getAllEvents, getAllHealthRuleViolations, metrics, granularityMinutes, onlyGetDefaultBaseline ));
         } else {
             Application application = new Application(getAllAvailableMetrics, name, defaultDisableAutoRollup, metricTable, eventTable, baselineTable,
-                    getAllEvents, getAllHealthRuleViolations, metrics, dataFrequency, onlyGetDefaultBaseline);
+                    getAllEvents, getAllHealthRuleViolations, metrics, granularityMinutes, onlyGetDefaultBaseline);
             application.setEventTypeList(getEventListForApplication(includeEventList, excludeEventList));
             if (eventSeverities != null) application.eventSeverities = eventSeverities;
             applications.add(application);
@@ -517,6 +517,6 @@ public class Configuration {
     }
 
     public long getMaxQueryDurationInMS() {
-        return getProperty("scheduler-MaxQueryDays", 14) *24*60*60*1000;
+        return getProperty("scheduler-MaxQueryDays", 14l) *24*60*60*1000;
     }
 }
