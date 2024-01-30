@@ -9,12 +9,14 @@ import java.util.regex.Pattern;
 
 public class ApplicationRegex {
     private static final Logger logger = LogManager.getFormatterLogger();
-    private String regexString,getAllAvailableMetrics,defaultDisableAutoRollup,metricTable,eventTable,baselineTable,getAllEvents,getAllHealthRuleViolations, granularityMinutes;
+    private String regexString,metricTable,eventTable,baselineTable;
+    private int granularityMinutes;
+    private Boolean getAllAvailableMetrics,defaultDisableAutoRollup,getAllEvents,getAllHealthRuleViolations;
     private ArrayList<String> metrics;
     private boolean onlyGetDefaultBaseline = true;
     private Pattern pattern;
-    public ApplicationRegex(String regexString, String getAllAvailableMetrics, String defaultDisableAutoRollup, String metricTable,
-            String eventTable, String baselineTable, String getAllEvents, String getAllHealthRuleViolations, ArrayList<String> metrics, String granularityMinutes, boolean onlyGetDefaultBaseline) {
+    public ApplicationRegex(String regexString, Boolean getAllAvailableMetrics, Boolean defaultDisableAutoRollup, String metricTable,
+            String eventTable, String baselineTable, Boolean getAllEvents, Boolean getAllHealthRuleViolations, ArrayList<String> metrics, int granularityMinutes, boolean onlyGetDefaultBaseline) {
         logger.debug("Added new Application Regex for pattern: '%s'",regexString);
         this.regexString=regexString;
         this.getAllAvailableMetrics=getAllAvailableMetrics;

@@ -27,7 +27,7 @@ public class Application {
     public boolean getAllHealthRuleViolations = false;
     public String name;
     public long id = -1;
-    public String defaultDisableDataRollup = "false";
+    public boolean defaultDisableDataRollup = false;
     public String defaultMetricTableName = null;
     public String defaultEventTableName = null;
     public String defaultBaselineTableName = null;
@@ -37,15 +37,25 @@ public class Application {
     public List<Baseline> baselines = null;
     public Baseline defaultBaseline = null;
     private MetricPaths metricPaths = null;
-    private String granularityMinutes = "1";
+    private int granularityMinutes = 1;
     private boolean onlyGetDefaultBaseline = true;
 
-    public Application(String getAllAvailableMetrics, String name, String defaultDisableDataRollup, String defaultMetricTableName, String defaultEventTableName, String defaultBaselineTableName, String getAllEvents, String getAllHealthRuleViolations, List<String> metrics, String granularityMinutes, boolean onlyGetDefaultBaseline) {
-        if( getAllAvailableMetrics != null ) this.getAllAvailableMetrics= Boolean.parseBoolean(getAllAvailableMetrics);
-        if( getAllEvents != null ) this.getAllEvents= Boolean.parseBoolean(getAllEvents);
-        if( getAllHealthRuleViolations != null ) this.getAllHealthRuleViolations= Boolean.parseBoolean(getAllHealthRuleViolations);
+    public Application(boolean getAllAvailableMetrics,
+                       String name,
+                       boolean defaultDisableDataRollup,
+                       String defaultMetricTableName,
+                       String defaultEventTableName,
+                       String defaultBaselineTableName,
+                       boolean getAllEvents,
+                       boolean getAllHealthRuleViolations,
+                       List<String> metrics,
+                       int granularityMinutes,
+                       boolean onlyGetDefaultBaseline) {
+        this.getAllAvailableMetrics = getAllAvailableMetrics;
+        this.getAllEvents = getAllEvents;
+        this.getAllHealthRuleViolations = getAllHealthRuleViolations;
         this.name = name;
-        if( defaultDisableDataRollup != null ) this.defaultDisableDataRollup = defaultDisableDataRollup;
+        this.defaultDisableDataRollup = defaultDisableDataRollup;
         if( defaultMetricTableName != null ) this.defaultMetricTableName = defaultMetricTableName;
         if( defaultEventTableName != null ) this.defaultEventTableName = defaultEventTableName;
         if( defaultBaselineTableName != null ) this.defaultBaselineTableName = defaultBaselineTableName;
@@ -58,7 +68,7 @@ public class Application {
 
     public boolean isFinishedInitialization() { return finishedInitialization; }
     public void setEventTypeList( String events ) { this.eventTypeList=events; }
-    public String getGranularityMinutes() { return granularityMinutes; }
+    public int getGranularityMinutes() { return granularityMinutes; }
 
     public void validateConfiguration(Controller controller) throws InvalidConfigurationException {
         if( !getAllAvailableMetrics && metricGraph.size() == 0 && !getAllEvents && !getAllHealthRuleViolations ) {

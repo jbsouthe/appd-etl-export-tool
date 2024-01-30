@@ -31,7 +31,7 @@ public class Analytics {
     public String APIAccountName, APIKey, tableNamePrefix="AppDynamics_Analytics_";
     public URL url;
     private Database database;
-    private int minutesToAdjustEndTimestampBy = 5;
+    private long minutesToAdjustEndTimestampBy = 5;
     ArrayList<Search> searches = new ArrayList<>();
     HttpClient client = null;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -50,7 +50,7 @@ public class Analytics {
         this.responseHandler = HttpClientFactory.getStringResponseHandler("analytics");
     }
 
-    public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searches, int minutesToAdjustEndTimestampBy ) throws MalformedURLException{
+    public Analytics(String urlString, String accountName, String apiKey, String tableNamePrefix, Database database, ArrayList<Search> searches, long minutesToAdjustEndTimestampBy ) throws MalformedURLException{
         this(urlString, accountName, apiKey, tableNamePrefix, database);
         this.searches=searches;
         this.minutesToAdjustEndTimestampBy=minutesToAdjustEndTimestampBy;
@@ -111,7 +111,7 @@ public class Analytics {
         return runAnalyticsQuery(name, query, Utility.now(), Utility.now(-3600000), 10000, null);
     }
 
-    public Result[] runAnalyticsQuery(String name, String query, long startTimestamp, long endTimestamp, int limit, LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue ) {
+    public Result[] runAnalyticsQuery(String name, String query, long startTimestamp, long endTimestamp, long limit, LinkedBlockingQueue<Object[]> dataToInsertLinkedBlockingQueue ) {
         if( query == null || startTimestamp < 1 ) return null;
         HttpPost request = new HttpPost( String.format("%sevents/query?start=%s&end=%s&limit=%d", this.url.toString(), Utility.getEncodedDateString(startTimestamp), Utility.getEncodedDateString(endTimestamp), limit));
         request.addHeader("X-Events-API-AccountName", this.APIAccountName);

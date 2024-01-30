@@ -5,12 +5,12 @@ import java.util.List;
 
 public class Search {
     public String searchName, searchDescription, searchType, searchMode, viewMode, visualization;
-    public int limit = 20000;
+    public long limit = 20000;
     public List<String> adqlQueries;
 
     public Search() {} //for gson conversion
 
-    public Search(String name, String query, int limit, String visualization) {
+    public Search(String name, String query, long limit, String visualization) {
         this.searchName =name;
         this.adqlQueries = new ArrayList<>();
         this.adqlQueries.add(query);

@@ -68,13 +68,13 @@ public class Controller {
     public Model controllerModel = null;
     private IControlTable controlTable = null;
     private boolean getAllAnalyticsSearchesFlag = false;
-    private Integer minutesToAdjustEndTimestampBy = 5;
+    private Long minutesToAdjustEndTimestampBy = 5l;
     private Configuration configuration;
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
     HttpClient client = null;
     private ResponseHandler<String> responseHandler;
 
-    public Controller( String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag, ApplicationRegex[] applicationRegexes, int minutesToAdjustEndTimestampBy, Configuration configuration ) throws MalformedURLException {
+    public Controller(String urlString, String clientId, String clientSecret, Application[] applications, boolean getAllAnalyticsSearchesFlag, ApplicationRegex[] applicationRegexes, long minutesToAdjustEndTimestampBy, Configuration configuration ) throws MalformedURLException {
         if( !urlString.endsWith("/") ) urlString+="/"; //this simplifies some stuff downstream
         this.url = new URL(urlString);
         this.hostname = this.url.getHost();
