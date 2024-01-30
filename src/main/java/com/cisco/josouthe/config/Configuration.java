@@ -1,5 +1,15 @@
 package com.cisco.josouthe.config;
 
+import com.cisco.josouthe.config.jaxb.AnalyticsConfig;
+import com.cisco.josouthe.config.jaxb.AnalyticsSearchConfig;
+import com.cisco.josouthe.config.jaxb.ApplicationConfig;
+import com.cisco.josouthe.config.jaxb.ApplicationMetricConfig;
+import com.cisco.josouthe.config.jaxb.ControllerConfig;
+import com.cisco.josouthe.config.jaxb.ETLTool;
+import com.cisco.josouthe.config.jaxb.LoggingConfig;
+import com.cisco.josouthe.config.jaxb.OptionalLoggerConfig;
+import com.cisco.josouthe.config.jaxb.SchedulerConfig;
+import com.cisco.josouthe.config.jaxb.TargetDBConfig;
 import com.cisco.josouthe.data.Analytics;
 import com.cisco.josouthe.data.Application;
 import com.cisco.josouthe.data.ApplicationRegex;
@@ -13,18 +23,28 @@ import com.cisco.josouthe.database.oracle.OracleDatabase;
 import com.cisco.josouthe.database.postgresql.PGSQLDatabase;
 import com.cisco.josouthe.exceptions.InvalidConfigurationException;
 import com.cisco.josouthe.util.Utility;
-import org.apache.commons.digester3.Digester;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.builder.api.*;
+import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.LoggerComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 
-import java.io.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +52,7 @@ import java.util.Properties;
 
 public class Configuration {
     private static final Logger logger = LogManager.getFormatterLogger();
+    private final ETLTool configXML;
     private Properties properties = null;
     private Database database = null;
     private HashMap<String, Controller> controllerMap = null;
@@ -74,110 +95,39 @@ public class Configuration {
 
     public Configuration( String configFileName ) throws Exception { this( configFileName, false); }
     public Configuration( String configFileName, boolean printInfoLogs ) throws Exception {
-        File file = new File(configFileName);
-        if (!file.exists()) throw new IOException("Config File not found!");
-        if (!file.canRead()) throw new IOException("Config File not readable!");
-        if (!file.isFile()) throw new IOException("Config File not a file?!?!");
+        File configFile = new File(configFileName);
+        if (!configFile.exists()) throw new IOException("Config File not found!");
+        if (!configFile.canRead()) throw new IOException("Config File not readable!");
+        if (!configFile.isFile()) throw new IOException("Config File not a file?!?!");
         if( !printInfoLogs ) Configurator.setAllLevels(logger.getName(), Level.WARN);
         logger.info("Processing Config File: %s", configFileName);
         this.properties = new Properties();
         this.controllerMap = new HashMap<>();
-        Digester digester = new Digester();
-        digester.push(this);
-        int paramCounter = 0;
 
-        //scheduler config section default enabled with 10 minute run intervals
-        digester.addCallMethod("ETLTool/Scheduler", "setSchedulerProperties", 8);
-        digester.addCallParam("ETLTool/Scheduler", paramCounter++, "enabled");
-        digester.addCallParam("ETLTool/Scheduler/PollIntervalMinutes", paramCounter++);
-        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfHours", paramCounter++); //leaving this for a little while, will aim to delete by August 2023
-        digester.addCallParam("ETLTool/Scheduler/ControllerThreads", paramCounter++);
-        digester.addCallParam("ETLTool/Scheduler/DatabaseThreads", paramCounter++);
-        digester.addCallParam("ETLTool/Scheduler/ConfigurationRefreshEveryHours", paramCounter++);
-        digester.addCallParam("ETLTool/Scheduler/FirstRunHistoricNumberOfDays", paramCounter++);
-        digester.addCallParam("ETLTool/Scheduler/MaxNumberOfDaysToQueryAtATime", paramCounter++);
+        try {
+            // Creating JAXB Context for CMDBSync class
+            JAXBContext jaxbContext = JAXBContext.newInstance(ETLTool.class);
 
-        //Log4j Configuration
-        paramCounter = 0;
-        digester.addCallMethod("ETLTool/Logging", "setLoggingConfiguration", 6);
-        digester.addCallParam("ETLTool/Logging/Level", paramCounter++);
-        digester.addCallParam("ETLTool/Logging/FileName", paramCounter++);
-        digester.addCallParam("ETLTool/Logging/FilePattern", paramCounter++);
-        digester.addCallParam("ETLTool/Logging/FileCronPolicy", paramCounter++);
-        digester.addCallParam("ETLTool/Logging/FileSizePolicy", paramCounter++);
-        digester.addCallParam("ETLTool/Logging/Pattern", paramCounter++);
+            // Creating Unmarshaller
+            Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 
-        paramCounter = 0;
-        digester.addCallMethod("ETLTool/Logging/Logger", "addLoggingLogger", 3);
-        digester.addCallParam("ETLTool/Logging/Logger/Name", paramCounter++);
-        digester.addCallParam("ETLTool/Logging/Logger/Level", paramCounter++);
-        digester.addCallParam("ETLTool/Logging/Logger/Additivity", paramCounter++);
+            // Unmarshalling XML file to CMDBSync object
+            configXML = (ETLTool) jaxbUnmarshaller.unmarshal(configFile);
+        } catch (JAXBException jaxbException) {
+            throw new InvalidConfigurationException(String.format("XML Format error: %s",jaxbException.toString()));
+        }
 
-        //database configuration section
-        paramCounter = 0;
-        digester.addCallMethod("ETLTool/TargetDB", "setTargetDBProperties", 8);
-        digester.addCallParam("ETLTool/TargetDB/ConnectionString", paramCounter++);
-        digester.addCallParam("ETLTool/TargetDB/User", paramCounter++);
-        digester.addCallParam("ETLTool/TargetDB/Password", paramCounter++);
-        digester.addCallParam("ETLTool/TargetDB/DefaultMetricTable", paramCounter++);
-        digester.addCallParam("ETLTool/TargetDB/ControlTable", paramCounter++);
-        digester.addCallParam("ETLTool/TargetDB/DefaultEventTable", paramCounter++);
-        digester.addCallParam("ETLTool/TargetDB/DefaultBaselineTable", paramCounter++);
-        digester.addCallParam("ETLTool/TargetDB/MaximumColumnNameLength", paramCounter++);
+        setLoggingConfiguration( configXML.getLogging() );
 
-        //controller section, which centralizes authentication config
-        paramCounter = 0;
-        digester.addCallMethod("ETLTool/Controller", "addController", 5);
-        digester.addCallParam("ETLTool/Controller/URL", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/ClientID", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/ClientSecret", paramCounter++);
-        digester.addCallParam("ETLTool/Controller", paramCounter++, "getAllAnalyticsSearches");
-        digester.addCallParam("ETLTool/Controller/AdjustEndTimeMinutes", paramCounter++);
+        setSchedulerProperties( configXML.getScheduler() );
 
-        //application config, within a controller
-        paramCounter=0;
-        digester.addCallMethod("ETLTool/Controller/Application", "addApplication", 14);
-        digester.addCallParam("ETLTool/Controller/Application", paramCounter++, "getAllAvailableMetrics");
-        digester.addCallParam("ETLTool/Controller/Application/Name", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/DisableDataRollup", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/MetricTable", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/EventTable", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/BaselineTable", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application", paramCounter++, "getAllEvents");
-        digester.addCallParam("ETLTool/Controller/Application", paramCounter++, "getAllHealthRuleViolations");
-        digester.addCallParam("ETLTool/Controller/Application/Events/Include", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Exclude", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application/Events/Severities", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application/Name", paramCounter++, "regex");
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/GranularityMinutes", paramCounter++);
-        digester.addCallParam("ETLTool/Controller/Application/Defaults/OnlyGetDefaultBaseline", paramCounter++);
+        setTargetDBProperties( configXML.getTargetDB() );
 
-        //metric config, within an application
-        paramCounter=0;
-        digester.addCallMethod("ETLTool/Controller/Application/Metric", "addMetric", 3);
-        digester.addCallParam("ETLTool/Controller/Application/Metric", paramCounter++, "time-range-type");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", paramCounter++, "duration-in-mins");
-        digester.addCallParam("ETLTool/Controller/Application/Metric", paramCounter++);
+        for(ControllerConfig controllerConfig : configXML.getControllerList() )
+            addController(controllerConfig);
 
-        paramCounter = 0;
-        digester.addCallMethod("ETLTool/Analytics", "addAnalytics", 6);
-        digester.addCallParam("ETLTool/Analytics/URL", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/GlobalAccountName", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/APIKey", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/TableNamePrefix", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/LinkToControllerHostname", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/AdjustEndTimeMinutes", paramCounter++);
-
-        paramCounter = 0;
-        digester.addCallMethod("ETLTool/Analytics/Search", "addAnalyticsSearch", 4);
-        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "name");
-        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++);
-        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "limit");
-        digester.addCallParam("ETLTool/Analytics/Search", paramCounter++, "visualization");
-
-        setSchedulerProperties("false", "", "", "10", "50", "12", "2", "14", false);
-        digester.parse(new InputStreamReader(new FileInputStream(configFileName), StandardCharsets.UTF_8));
-
+        for(AnalyticsConfig analyticsConfig : configXML.getAnalyticsList() )
+            addAnalytics(analyticsConfig);
 
         logger.info("Validating Configured Settings");
         for (Controller controller : getControllerList()) {
@@ -209,6 +159,13 @@ public class Configuration {
         }
     }
 
+    private void setLoggingConfiguration (LoggingConfig loggingConfig) throws InvalidConfigurationException {
+        setLoggingConfiguration( loggingConfig.getLevel(), loggingConfig.getFileName(), loggingConfig.getFilePattern(),
+                loggingConfig.getFileCronPolicy(), loggingConfig.getFileSizePolicy(), loggingConfig.getPattern());
+        for(OptionalLoggerConfig loggerConfig : loggingConfig.getLoggerList())
+            addLoggingLogger( loggerConfig.getName(), loggerConfig.getLevel(), String.valueOf(loggerConfig.isAdditivity()));
+    }
+
     public void addLoggingLogger( String name, String level, String additivity ) throws InvalidConfigurationException {
         this.loggerConfigItemList.add(new LoggerConfigItem(name, level, additivity) );
     }
@@ -218,6 +175,9 @@ public class Configuration {
         if( fileName == null ) fileName="etl-export.log";
         if( filePattern == null ) filePattern="etl-export-%d{MM-dd-yy}.log.gz";
         if( pattern == null ) pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n";
+        if( !Utility.isStringSet(fileCronPolicy) && !Utility.isStringSet(fileSizePolicy) ) {
+            fileCronPolicy = "0 0 0 * * ?";
+        }
 
         ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
 
@@ -238,14 +198,14 @@ public class Configuration {
         rollingFile.addAttribute("filePattern", filePattern);
         rollingFile.add(patternLayout);
         //optional trigger policies
-        if( Utility.isStringSet(fileCronPolicy) || Utility.isStringSet(fileSizePolicy) ) {
-            ComponentBuilder triggeringPolicies = builder.newComponent("Policies");
-            if( Utility.isStringSet(fileCronPolicy)) triggeringPolicies.addComponent(builder.newComponent("CronTriggeringPolicy")
-                    .addAttribute("schedule", fileCronPolicy));
-            if( Utility.isStringSet(fileSizePolicy)) triggeringPolicies.addComponent(builder.newComponent("SizeBasedTriggeringPolicy")
-                    .addAttribute("size", fileSizePolicy));
-            rollingFile.addComponent(triggeringPolicies);
-        }
+
+        ComponentBuilder triggeringPolicies = builder.newComponent("Policies");
+        if( Utility.isStringSet(fileCronPolicy)) triggeringPolicies.addComponent(builder.newComponent("CronTriggeringPolicy")
+                .addAttribute("schedule", fileCronPolicy));
+        if( Utility.isStringSet(fileSizePolicy)) triggeringPolicies.addComponent(builder.newComponent("SizeBasedTriggeringPolicy")
+                .addAttribute("size", fileSizePolicy));
+        rollingFile.addComponent(triggeringPolicies);
+
         builder.add(rollingFile);
 
         for( LoggerConfigItem loggerConfigItem : loggerConfigItemList ) {
@@ -258,18 +218,28 @@ public class Configuration {
         Configurator.initialize(builder.build());
     }
 
-    public void addAnalyticsSearch( String name, String query, String limit, String visualization ) throws InvalidConfigurationException {
+
+    private void addAnalytics (AnalyticsConfig analyticsConfig) throws InvalidConfigurationException {
+        for(AnalyticsSearchConfig searchConfig : analyticsConfig.getSearchList()) {
+            addAnalyticsSearch(searchConfig.getName(), searchConfig.getValue(), searchConfig.getLimit(), searchConfig.getVizualization());
+        }
+        addAnalytics(analyticsConfig.getUrl(), analyticsConfig.getGlobalAccountName(), analyticsConfig.getaPIKey(),
+                analyticsConfig.getTableNamePrefix(), analyticsConfig.getLinkToControllerHostname(),
+                analyticsConfig.getAdjustEndTimeMinutes());
+    }
+
+    public void addAnalyticsSearch( String name, String query, long limit, String visualization ) throws InvalidConfigurationException {
         if( name == null || query == null ) {
             logger.warn("No valid minimum config parameters for Analytics Search! The name is used for the destination table and the query is the search");
             throw new InvalidConfigurationException("No valid minimum config parameters for Analytics Search! The name is used for the destination table and the query is the search");
         }
         if( visualization == null ) visualization="TABLE";
-        if( limit == null ) limit="20000";
-        searches.add(new Search(name, query, Integer.parseInt(limit), visualization));
+        if( limit == 0 ) limit = 20000;
+        searches.add(new Search(name, query, limit, visualization));
         logger.info("Added Search %s: '%s' to list for collection",name, query);
     }
 
-    public void addAnalytics( String urlString, String accountName, String apiKey, String tableNamePrefix, String linkedControllerHostname, String minutesToAdjustEndTimestampByString ) throws InvalidConfigurationException {
+    public void addAnalytics( String urlString, String accountName, String apiKey, String tableNamePrefix, String linkedControllerHostname, long minutesToAdjustEndTimestampBy ) throws InvalidConfigurationException {
         if( urlString == null || accountName == null || apiKey == null ) {
             logger.warn("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
             throw new InvalidConfigurationException("No valid minimum config paramters for Analytics, must have a url, global account name, and apikey, try again!");
@@ -277,10 +247,8 @@ public class Configuration {
         Controller controller = getController( linkedControllerHostname);
         if( controller != null && controller.isGetAllAnalyticsSearchesFlag() ) {
             for( Search search : controller.getAllSavedSearchesFromController() )
-                addAnalyticsSearch(search.getName(), search.getQuery(), null, search.visualization);
+                addAnalyticsSearch(search.getName(), search.getQuery(), 0, search.visualization);
         }
-        if( minutesToAdjustEndTimestampByString == null ) minutesToAdjustEndTimestampByString="5";
-        int minutesToAdjustEndTimestampBy = Integer.parseInt(minutesToAdjustEndTimestampByString);
         if( minutesToAdjustEndTimestampBy < 0 ) {
             logger.warn("Configuration option <AdjustEndTimeMinutes>%d</AdjustEndTimeMinutes> is a bit strange, we subtract this from the end timestamp, we are going to swap the negative to positive and subtract that for you, maybe rethink this setting", minutesToAdjustEndTimestampBy);
             minutesToAdjustEndTimestampBy *= -1;
@@ -296,7 +264,7 @@ public class Configuration {
         }
     }
 
-    public void addMetric( String timeRangeType, String durationInMins, String name ) throws InvalidConfigurationException {
+    public void addMetric( String timeRangeType, Integer durationInMins, String name ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
             throw new InvalidConfigurationException("No valid minimum config parameters for Metric! Ensure Metric is named with fully qualified metric path name");
@@ -305,12 +273,12 @@ public class Configuration {
         logger.info("Added metric to list for collection: %s", name);
     }
 
-    public void addApplication( String getAllAvailableMetrics, String name , String defaultDisableAutoRollup,
+    public void addApplication( boolean getAllAvailableMetrics, String name , boolean defaultDisableAutoRollup,
                                 String metricTable, String eventTable, String baselineTable,
-                                String getAllEvents, String getAllHealthRuleViolations,
+                                boolean getAllEvents, boolean getAllHealthRuleViolations,
                                 String includeEventList, String excludeEventList, String eventSeverities,
-                                String isRegexAppNameFlag,
-                                String granularityMinutes, String onlyGetDefaultBaselineFlag
+                                boolean isRegexAppName,
+                                int granularityMinutes, boolean onlyGetDefaultBaseline
                                 ) throws InvalidConfigurationException {
         if( name == null ) {
             logger.warn("No valid minimum config parameters for Application! Ensure Name is configured");
@@ -319,12 +287,7 @@ public class Configuration {
         if( metricTable != null && database.isValidDatabaseTableName(metricTable) ) logger.debug("Application %s Metric Table set to: %s", name, metricTable);
         if( eventTable != null && database.isValidDatabaseTableName(eventTable) ) logger.debug("Application %s Event Table set to: %s", name, eventTable);
         if( baselineTable != null && database.isValidDatabaseTableName(baselineTable) ) logger.debug("Application %s Baseline Table set to: %s", name, baselineTable);
-        boolean isRegexAppName = false;
-        if( isRegexAppNameFlag != null ) isRegexAppName = Boolean.parseBoolean(isRegexAppNameFlag);
-        if( granularityMinutes == null ) granularityMinutes="1";
         logger.debug("Application %s Granularity Minutes set to %s", name, granularityMinutes);
-        if( onlyGetDefaultBaselineFlag == null ) onlyGetDefaultBaselineFlag = "true";
-        boolean onlyGetDefaultBaseline = Boolean.parseBoolean(onlyGetDefaultBaselineFlag);
         if( isRegexAppName ) {
             applicationRegexList.add( new ApplicationRegex( name, getAllAvailableMetrics, defaultDisableAutoRollup, metricTable, eventTable, baselineTable,
                     getAllEvents, getAllHealthRuleViolations, metrics, granularityMinutes, onlyGetDefaultBaseline ));
@@ -338,15 +301,35 @@ public class Configuration {
         metrics = new ArrayList<>();
     }
 
-    public void addController( String urlString, String clientID, String clientSecret, String getAllAnalyticsSearches, String minutesToAdjustEndTimestampByString ) throws InvalidConfigurationException {
+
+    private void addController (ControllerConfig controllerConfig) throws InvalidConfigurationException {
+        //order of this is important, because Apache Digester didn't have context so external lists exist that are added as we go
+        for(ApplicationConfig applicationConfig : controllerConfig.getApplicationList()) {
+            //First, add metrics to the global metric list
+            for(ApplicationMetricConfig metricConfig : applicationConfig.getMetricList() )
+                addMetric( metricConfig.getTimeRangeType(), metricConfig.getDurationInMins(), metricConfig.getValue());
+            //Second, add applications, each of which will purge the metric list and
+            addApplication( applicationConfig.isGetAllAvailableMetrics(), applicationConfig.getName().getName(),
+                    applicationConfig.getDefaults().isDisableDataRollup(), applicationConfig.getDefaults().getMetricTable(),
+                    applicationConfig.getDefaults().getEventTable(), applicationConfig.getDefaults().getBaselineTable(),
+                    applicationConfig.isGetAllEvents(), applicationConfig.isGetAllHealthRuleViolations(),
+                    applicationConfig.getEvents().getInclude(), applicationConfig.getEvents().getExclude(),
+                    applicationConfig.getEvents().getSeverities(), applicationConfig.getName().isRegex(),
+                    applicationConfig.getDefaults().getGranularityMinutes(), applicationConfig.getDefaults().isOnlyGetDefaultBaseline());
+        }
+
+        //Last, add the controller, which adds all the applications in the global list and purges it
+        addController( controllerConfig.getUrl(), controllerConfig.getClientID(), controllerConfig.getClientSecret(),
+                controllerConfig.isGetAllAnalyticsSearches(), controllerConfig.getAdjustEndTimeMinutes());
+    }
+
+
+    public void addController( String urlString, String clientID, String clientSecret, boolean getAllAnalyticsSearches, long minutesToAdjustEndTimestampBy ) throws InvalidConfigurationException {
         if( urlString == null || clientID == null || clientSecret == null ) {
             logger.warn("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for Controller! Ensure URL, ClientID, and ClientSecret are configured");
         }
-        boolean getAllAnalyticsSearchesFlag=false;
-        if( "true".equals(getAllAnalyticsSearches) )
-            getAllAnalyticsSearchesFlag=true;
-        if( ((applications == null || applications.isEmpty()) && (applicationRegexList == null || applicationRegexList.isEmpty())) && !getAllAnalyticsSearchesFlag ) {
+        if( ((applications == null || applications.isEmpty()) && (applicationRegexList == null || applicationRegexList.isEmpty())) && !getAllAnalyticsSearches ) {
             logger.warn("Controller configured, but no applications configured, please add at least one application, or set getAllAnalyticsSearches Flag to true");
             throw new InvalidConfigurationException("Controller configured, but no applications configured, please add at least one application, or set getAllAnalyticsSearches Flag to true");
         }
@@ -363,14 +346,12 @@ public class Configuration {
             String error = String.format("API Key is missing the hostname, it should probably be %s@%s instead of just %s, but I'm not going to automate config error corrections, it is just bad practice, so bailing early", clientID, hostname, clientID);
             throw new InvalidConfigurationException(error);
         }
-        if( minutesToAdjustEndTimestampByString == null ) minutesToAdjustEndTimestampByString="5";
-        int minutesToAdjustEndTimestampBy = Integer.parseInt(minutesToAdjustEndTimestampByString);
         if( minutesToAdjustEndTimestampBy < 0 ) {
             logger.warn("Configuration option <AdjustEndTimeMinutes>%d</AdjustEndTimeMinutes> is a bit strange, we subtract this from the end timestamp, we are going to swap the negative to positive and subtract that for you, maybe rethink this setting", minutesToAdjustEndTimestampBy);
             minutesToAdjustEndTimestampBy *= -1;
         }
         try{
-            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearchesFlag, applicationRegexList.toArray( new ApplicationRegex[0]), minutesToAdjustEndTimestampBy, this);
+            Controller controller = new Controller(urlString, clientID, clientSecret, applications.toArray( new Application[0] ), getAllAnalyticsSearches, applicationRegexList.toArray( new ApplicationRegex[0]), minutesToAdjustEndTimestampBy, this);
             applications = new ArrayList<>();
             applicationRegexList = new ArrayList<>();
             controllerMap.put( controller.hostname, controller);
@@ -380,52 +361,60 @@ public class Configuration {
         }
     }
 
-    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours, String firstRunHistoricNumberOfDays, String maxNumberOfDaysToQueryAtATime ) {
-        setSchedulerProperties(enabledFlag, pollIntervalMinutes, firstRunHistoricNumberOfHours, numberOfControllerThreads, numberOfDatabaseThreads, numberConfigRefreshHours, firstRunHistoricNumberOfDays, maxNumberOfDaysToQueryAtATime, true );
-    }
-    public void setSchedulerProperties( String enabledFlag, String pollIntervalMinutes, String firstRunHistoricNumberOfHours, String numberOfControllerThreads, String numberOfDatabaseThreads, String numberConfigRefreshHours, String firstRunHistoricNumberOfDays, String maxNumberOfDaysToQueryAtATime, boolean printOutput ) {
-        if( "false".equalsIgnoreCase(enabledFlag) ) {
-            if(printOutput) logger.info("MainControlScheduler is disabled, running only once");
-            properties.setProperty("scheduler-enabled", "false");
+    private void setSchedulerProperties (SchedulerConfig schedulerConfig) {
+        if( schedulerConfig == null ) {
+            setSchedulerProperties(false,0l, 2l, 10l, 50l, 12l, 2l, 14l, false);
         } else {
-            properties.setProperty("scheduler-enabled", "true");
-            this.definedScheduler = true;
+            setSchedulerProperties(schedulerConfig.isEnabled(), schedulerConfig.getPollIntervalMinutes(), schedulerConfig.getFirstRunHistoricNumberOfHours(), schedulerConfig.getControllerThreads(), schedulerConfig.getDatabaseThreads(), schedulerConfig.getConfigurationRefreshEveryHours(), schedulerConfig.getFirstRunHistoricNumberOfDays(), schedulerConfig.getMaxNumberOfDaysToQueryAtATime(), true);
         }
-        if( "".equals(pollIntervalMinutes) || pollIntervalMinutes == null ) {
-            pollIntervalMinutes = "10";
-        }
-        if(printOutput) logger.info("Setting poll interval to every %s minutes", pollIntervalMinutes);
-        this.properties.setProperty("scheduler-pollIntervalMinutes", pollIntervalMinutes);
-        if( firstRunHistoricNumberOfDays != null && !"".equals(firstRunHistoricNumberOfDays) )
-            firstRunHistoricNumberOfHours = String.format("%d", Integer.parseInt(firstRunHistoricNumberOfDays)*24);
-        if( "".equals(firstRunHistoricNumberOfHours) || firstRunHistoricNumberOfHours == null ) {
-            firstRunHistoricNumberOfHours = "48";
-        }
-        if(printOutput) logger.info("Setting first run historic data to pull to %s hours", firstRunHistoricNumberOfHours);
-        this.properties.setProperty("scheduler-FirstRunHistoricNumberOfHours", firstRunHistoricNumberOfHours);
-        if( "".equals(numberOfControllerThreads) || numberOfControllerThreads == null ) {
-            numberOfControllerThreads="10";
-        }
-        if(printOutput) logger.info("Setting Number of Controller Communication Threads to %s", numberOfControllerThreads);
-        this.properties.setProperty("scheduler-NumberOfControllerThreads", numberOfControllerThreads);
-        if( "".equals(numberOfDatabaseThreads) || numberOfDatabaseThreads == null ) {
-            numberOfDatabaseThreads="50";
-        }
-        if(printOutput) logger.info("Setting Number of Database Communication Threads to %s", numberOfDatabaseThreads);
-        this.properties.setProperty("scheduler-NumberOfDatabaseThreads", numberOfDatabaseThreads);
-        if( "".equals(numberConfigRefreshHours) || numberConfigRefreshHours == null ) {
-            numberConfigRefreshHours="12";
-        }
-        if(printOutput) logger.info("Setting Number of Hours to refresh controller application metric list to %s", numberConfigRefreshHours);
-        this.properties.setProperty("scheduler-ConfigRefreshHours", numberConfigRefreshHours);
-        if( "".equals(maxNumberOfDaysToQueryAtATime) || maxNumberOfDaysToQueryAtATime == null ) {
-            maxNumberOfDaysToQueryAtATime="14";
-        }
-        if(printOutput) logger.info("Setting Max Number of Days to Query at a time on the controller to %s", maxNumberOfDaysToQueryAtATime);
-        this.properties.setProperty("scheduler-MaxQueryDays", maxNumberOfDaysToQueryAtATime);
     }
 
-    public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable, String maximumColumnNameLengthString ) throws InvalidConfigurationException {
+    public void setSchedulerProperties( boolean enabledFlag, Long pollIntervalMinutes, Long firstRunHistoricNumberOfHours, Long numberOfControllerThreads, Long numberOfDatabaseThreads, Long numberConfigRefreshHours, Long firstRunHistoricNumberOfDays, Long maxNumberOfDaysToQueryAtATime, boolean printOutput ) {
+        if( enabledFlag ) {
+            properties.setProperty("scheduler-enabled", "true");
+            this.definedScheduler = true;
+        } else {
+            if(printOutput) logger.info("MainControlScheduler is disabled, running only once");
+            properties.setProperty("scheduler-enabled", "false");
+        }
+        if(printOutput) logger.info("Setting poll interval to every %d minutes", pollIntervalMinutes);
+        this.properties.setProperty("scheduler-pollIntervalMinutes", pollIntervalMinutes.toString());
+        if( firstRunHistoricNumberOfDays != null && firstRunHistoricNumberOfDays > 0 )
+            firstRunHistoricNumberOfHours = firstRunHistoricNumberOfDays*24;
+        if( firstRunHistoricNumberOfHours == null || firstRunHistoricNumberOfHours <= 0 ) {
+            firstRunHistoricNumberOfHours = 48l;
+        }
+        if(printOutput) logger.info("Setting first run historic data to pull to %d hours", firstRunHistoricNumberOfHours);
+        this.properties.setProperty("scheduler-FirstRunHistoricNumberOfHours", firstRunHistoricNumberOfHours.toString());
+        if( numberOfControllerThreads == null || numberOfControllerThreads < 1 ) {
+            numberOfControllerThreads = 10l;
+        }
+        if(printOutput) logger.info("Setting Number of Controller Communication Threads to %d", numberOfControllerThreads);
+        this.properties.setProperty("scheduler-NumberOfControllerThreads", numberOfControllerThreads.toString());
+        if( "".equals(numberOfDatabaseThreads) || numberOfDatabaseThreads == null ) {
+            numberOfDatabaseThreads = 50l;
+        }
+        if(printOutput) logger.info("Setting Number of Database Communication Threads to %d", numberOfDatabaseThreads);
+        this.properties.setProperty("scheduler-NumberOfDatabaseThreads", numberOfDatabaseThreads.toString());
+        if( numberConfigRefreshHours == null || numberConfigRefreshHours < 0 ) {
+            numberConfigRefreshHours = 12l;
+        }
+        if(printOutput) logger.info("Setting Number of Hours to refresh controller application metric list to %d", numberConfigRefreshHours);
+        this.properties.setProperty("scheduler-ConfigRefreshHours", numberConfigRefreshHours.toString());
+        if( maxNumberOfDaysToQueryAtATime == null || maxNumberOfDaysToQueryAtATime < 1) {
+            maxNumberOfDaysToQueryAtATime = 14l;
+        }
+        if(printOutput) logger.info("Setting Max Number of Days to Query at a time on the controller to %d", maxNumberOfDaysToQueryAtATime);
+        this.properties.setProperty("scheduler-MaxQueryDays", maxNumberOfDaysToQueryAtATime.toString());
+    }
+
+    private void setTargetDBProperties (TargetDBConfig targetDB) throws InvalidConfigurationException {
+        setTargetDBProperties( targetDB.getConnectionString(), targetDB.getUser(), targetDB.getPassword(),
+                targetDB.getDefaultMetricTable(), targetDB.getControlTable(), targetDB.getDefaultEventTable(),
+                targetDB.getDefaultBaselineTable(), targetDB.getMaximumColumnNameLength());
+    }
+
+    public void setTargetDBProperties( String connectionString, String user, String password, String metricTable, String controlTable, String eventTable, String baselineTable, Long maximumColumnNameLength ) throws InvalidConfigurationException {
         if( connectionString == null ) {
             logger.warn("No valid minimum config parameters for ETL Database! Ensure Connection String is configured");
             throw new InvalidConfigurationException("No valid minimum config parameters for ETL Database! Ensure Connection String is configured");
@@ -436,17 +425,10 @@ public class Configuration {
         if( controlTable == null ) controlTable = "AppDynamics_SchedulerControl";
         if( eventTable == null ) eventTable = "AppDynamics_EventTable";
         if( baselineTable == null ) baselineTable = "AppDynamics_BaselineTable";
-        int maxColumnNameLength = 30;
-        if( maximumColumnNameLengthString != null ) {
-            try {
-                maxColumnNameLength = Integer.parseInt(maximumColumnNameLengthString);
-            } catch (NumberFormatException e) {
-                throw new InvalidConfigurationException(String.format("Bad value for MaximumColumnNameLength in Database Configuration Section: %s", maximumColumnNameLengthString) );
-            }
-        }
+
         switch( Utility.parseDatabaseVendor(connectionString).toLowerCase() ) {
             case "oracle": {
-                this.database = new OracleDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L), maxColumnNameLength);
+                this.database = new OracleDatabase(this, connectionString, user, password, metricTable, controlTable, eventTable, baselineTable, getProperty("scheduler-FirstRunHistoricNumberOfHours", 48L), maximumColumnNameLength.intValue());
                 break;
             }
             case "csv": {
