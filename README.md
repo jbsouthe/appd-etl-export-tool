@@ -303,7 +303,7 @@ Multiple Analytics Sections can be defined, but the Global Account Name must be 
         <Search name="UniqueTransactionCount" limit="10000">SELECT transactionName, count(*) FROM transactions</Search> <!--limit is optional and defaults to 20000, name must be unique for this section -->
     </Analytics>
 
-* URL is the event services url, for saas this is pretty easy, but on premise deployments will require the local url https://docs.appdynamics.com/paa/saas-domains-and-ip-ranges
+* URL is the event services url, for saas this is pretty easy, but on premise deployments will require the local url https://docs.appdynamics.com/paa/cisco-appdynamics-saas-domains-and-ip-ranges
 * GlobalAccountName can be taken from the controller license panel
 * APIKey needs to be generated on the analytics settings panels
 * TableNamePrefix will be used on the target database/csv for naming, the Search name will be appended to this
